@@ -1,0 +1,6 @@
+*.py[c|o]
+.project
+*.sw*
+MANIFEST
+dist
+.coverage
