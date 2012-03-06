@@ -27,7 +27,7 @@ STATUS_CODES = {
     UNAVAILABLE: 503,
 }
 
-STATUS_CODES.update({code: status for status, code in STATUS_CODES.items()})
+STATUS_CODES.update(dict((code, status) for status, code in STATUS_CODES.items()))
 
 STATUS_LINES = {
     OK: '200 OK',

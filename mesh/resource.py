@@ -304,7 +304,8 @@ class ControllerMeta(type):
         if controller.version in versions:
             raise SpecificationError('duplicate controller version')
         elif versions:
-            resources = {resource.name} | {version.resource.name for version in versions.itervalues()}
+            resources = set([resource.name])
+            resources |= set(version.resource.name for version in versions.itervalues())
             if len(resources) != 1:
                 raise SpecificationError('mismatching resources')
 

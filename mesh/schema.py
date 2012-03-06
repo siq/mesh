@@ -790,7 +790,7 @@ class Structure(Field):
         return super(Structure, cls).construct(specification)
 
     def describe(self):
-        structure = {name: field.describe() for name, field in self.structure.iteritems()}
+        structure = dict((name, field.describe()) for name, field in self.structure.iteritems())
         return super(Structure, self).describe(structure=structure)
 
     def extract(self, subject):
