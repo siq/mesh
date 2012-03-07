@@ -4,3 +4,5 @@
 MANIFEST
 dist
 .coverage
+.svn
+docs/_build
