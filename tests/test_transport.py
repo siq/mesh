@@ -1,5 +1,5 @@
 import json
-from unittest import TestCase
+from unittest2 import TestCase
 
 from mesh.bundle import *
 from mesh.constants import *

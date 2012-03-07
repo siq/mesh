@@ -1,5 +1,5 @@
 from datetime import date, datetime, time, timedelta
-from unittest import TestCase
+from unittest2 import TestCase
 
 from mesh.constants import *
 from mesh.exceptions import *

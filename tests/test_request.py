@@ -1,4 +1,4 @@
-from unittest import TestCase
+from unittest2 import TestCase
 
 from mesh.constants import *
 from mesh.exceptions import *
@@ -173,7 +173,7 @@ class TestRequest(TestCase):
         request = Request.construct(resource, second)
 
         self.assertIsInstance(request.schema, Structure)
-        self.assertEqual(set(request.schema.structure.keys()), {'id', 'attr'})
+        self.assertEqual(set(request.schema.structure.keys()), set(['id', 'attr']))
 
     def test_request_claiming(self):
         request = construct_example_request(object())

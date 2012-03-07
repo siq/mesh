@@ -1,5 +1,5 @@
 from datetime import date, time
-from unittest import TestCase
+from unittest2 import TestCase
 
 from mesh.standard import *
 from mesh.transport.internal import *

@@ -3,7 +3,7 @@ import os
 import sys
 import time
 from threading import Thread
-from unittest import TestCase
+from unittest2 import TestCase
 from wsgiref.simple_server import make_server
 
 from mesh.standard import *
