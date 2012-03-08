@@ -1,4 +1,9 @@
-import json
+try:
+    import json
+
+except ImportError:
+    import simplejson as json
+
 from unittest2 import TestCase
 
 from mesh.bundle import *
@@ -59,10 +64,6 @@ class TestInternalClient(TestCase):
         specification = Specification(primary_bundle.describe(version=(1,0)))
         client = InternalClient(server, specification)
 
-        with self.assertRaises(InvalidError):
-            client.execute('example', 'create', None, set())
-        with self.assertRaises(GoneError):
-            client.execute('example', 'get', 2, None)
-
-
+        self.assertRaises(InvalidError, lambda:client.execute('example', 'create', None, set()))
+        self.assertRaises(GoneError, lambda:client.execute('example', 'get', 2, None))
 

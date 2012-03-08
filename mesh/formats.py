@@ -1,7 +1,17 @@
-import json
+try:
+    import json
+
+except ImportError:
+    import simplejson as json
+
 import re
+
 from urllib import urlencode
-from urlparse import parse_qsl
+try:
+    from urlparse import parse_qsl
+
+except ImportError:
+    from cgi import parse_qsl
 
 from mesh.constants import *
 
@@ -80,7 +90,7 @@ class UrlEncoded(Format):
                 tokens.append(cls._serialize_content(value))
             return '[%s]' % ','.join(tokens)
         elif isinstance(content, bool):
-            return ('true' if content else 'false')
+            return content and 'true' or 'false'
         else:
             return str(content)
 

@@ -16,10 +16,8 @@ class TestUrlEncoded(FormatTestCase):
             self.assertIs(UrlEncoded.unserialize(value), None)
 
     def test_invalid_data(self):
-        with self.assertRaises(ValueError):
-            UrlEncoded.serialize(True)
-        with self.assertRaises(ValueError):
-            UrlEncoded.unserialize(True)
+        self.assertRaises(ValueError, lambda:UrlEncoded.serialize(True))
+        self.assertRaises(ValueError, lambda:UrlEncoded.unserialize(True))
 
     def test_booleans(self):
         self.assert_correct([

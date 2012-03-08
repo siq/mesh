@@ -1,6 +1,3 @@
-from collections import defaultdict
-from itertools import izip_longest, product
-
 from mesh.exceptions import *
 from mesh.resource import Controller
 from mesh.schema import Field
@@ -104,7 +101,7 @@ class Bundle(object):
                 versions[version] = {}
                 for name, (resource, controller) in resources.iteritems():
                     versions[version][name] = resource.describe(controller, path_prefix)
-        
+
         return description
 
     def slice(self, version=None, min_version=None, max_version=None):
@@ -145,16 +142,19 @@ class Bundle(object):
             ordering.update(mount.versions)
 
         self.ordering = sorted(ordering)
-        self.versions = defaultdict(dict)
+        self.versions = dict()
 
-        for mount, version in product(self.mounts, self.ordering):
-            controller = mount.get(version)
-            if controller:
-                resource = mount.resource
-                if resource.name not in self.versions[version]:
-                    self.versions[version][resource.name] = (resource, controller)
-                else:
-                    raise SpecificationError()
+        for mount in self.mounts:
+            for version in self.ordering:
+                controller = mount.get(version)
+                if controller:
+                    resource = mount.resource
+                    if version not in self.versions:
+                        self.versions[version] = {resource.name: (resource, controller)}
+                    elif resource.name not in self.versions[version]:
+                        self.versions[version][resource.name] = (resource, controller)
+                    else:
+                        raise SpecificationError()
 
 class Specification(object):
     """A bundle specification for a particular version."""

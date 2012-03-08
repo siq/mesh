@@ -38,8 +38,15 @@ class StructuralError(MeshError):
             except AttributeError:
                 pass
 
-        errors = (self._serialize_errors(self.errors) if self.errors else None)
-        structure = (self._serialize_structure() if self.structure else None)
+        if self.errors:
+            errors = self._serialize_errors(self.errors)
+        else:
+            errors = None
+
+        if self.structure:
+            structure = self._serialize_structure()
+        else:
+            structure = None
 
         self._serialized_errors = [errors, structure]
         return self._serialized_errors

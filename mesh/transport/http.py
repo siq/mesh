@@ -1,6 +1,5 @@
 import BaseHTTPServer
 import re
-from collections import defaultdict
 from httplib import HTTPConnection
 
 from mesh.constants import *
@@ -157,9 +156,10 @@ class HttpServer(Server):
 
     def __init__(self, bundles, path_prefix=None, default_format=Json, available_formats=None):
         super(HttpServer, self).__init__(bundles, default_format, available_formats)
-        self.path_expr = re.compile(PATH_EXPR % ('/' + path_prefix.strip('/') if path_prefix else ''))
+        prfx = path_prefix and ('/' + path_prefix.strip('/')) or ''
+        self.path_expr = re.compile(PATH_EXPR % prfx)
 
-        self.groups = defaultdict(dict)
+        self.groups = dict()
         for name, bundle in self.bundles.iteritems():
             for version, resources in bundle.versions.iteritems():
                 for resource, controller in resources.itervalues():
@@ -216,7 +216,11 @@ class HttpServer(Server):
         method, path = request.endpoint
         signature = (bundle, version, path)
 
-        groups = self.groups[signature]
+        if signature in self.groups:
+            groups = self.groups[signature]
+        else:
+            self.groups[signature] = groups = dict()
+
         try:
             group = groups[method]
         except KeyError:
@@ -231,7 +235,7 @@ class HttpClient(Client):
 
         super(HttpClient, self).__init__(specification, environ, format, formats, secondary)
         self.connection = Connection(host)
-        self.prefix = ('/' + prefix.strip('/') if prefix else '')
+        self.prefix = prefix and ('/' + prefix.strip('/')) or ''
         self.paths = {}
         self.initial_path = '%s/%s/%d.%d/' % (self.prefix, specification.name,
             specification.version[0], specification.version[1])

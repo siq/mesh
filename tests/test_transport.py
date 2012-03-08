@@ -1,4 +1,9 @@
-import json
+try:
+    import json
+
+except ImportError:
+    import simplejson as json
+
 from unittest2 import TestCase
 
 from mesh.bundle import *
@@ -34,5 +39,5 @@ class TestServer(TestCase):
         self.assertIs(server.bundles['beta'], beta)
 
         duplicate = Bundle('alpha')
-        with self.assertRaises(Exception):
-            server = Server([alpha, beta, duplicate])
+        self.assertRaises(Exception, lambda:Server([alpha, beta, duplicate]))
+

@@ -209,11 +209,11 @@ class Request(object):
             subject = controller.acquire(request.subject)
             if not subject:
                 log('info', 'request to %r specified unknown subject %r', str(self),
-                    request.subject, request=request)
+                    request.subject)
                 return response(GONE)
         elif request.subject:
             log('info', 'request to %r improperly specified subject %r', str(self),
-                request.subject, request=request)
+                request.subject)
             return response(BAD_REQUEST)
 
         data = None
@@ -222,8 +222,7 @@ class Request(object):
                 data = self.schema.process(request.data, INCOMING, request.serialized)
             except StructuralError, exception:
                 error = exception.serialize()
-                log('info', 'request to %s failed schema validation', str(self),
-                    request=request, description=error)
+                log('info', 'request to %s failed schema validation', str(self))
                 response(INVALID, error)
 
             if self.validators:
@@ -231,11 +230,10 @@ class Request(object):
                     self.validate(data)
                 except StructuralError, exception:
                     error = exception.serialize()
-                    log('info', 'request to %s failed resource validation', str(self),
-                        request=request, description=error)
+                    log('info', 'request to %s failed resource validation', str(self))
                     response(INVALID, error)
         elif request.data:
-            log('info', 'request to %r improperly specified data', str(self), request=request)
+            log('info', 'request to %r improperly specified data', str(self))
             return response(BAD_REQUEST)
 
         if not response.status:
@@ -246,8 +244,7 @@ class Request(object):
                     response.status = OK
             except StructuralError, exception:
                 error = exception.serialize()
-                log('info', 'request to %s failed controller invocation', str(self),
-                    request=request, description=error)
+                log('info', 'request to %s failed controller invocation', str(self))
                 response(INVALID, error)
 
         definition = self.responses[response.status]
@@ -256,11 +253,10 @@ class Request(object):
                 response.content = definition.schema.process(response.content, OUTGOING, request.serialized)
             except StructuralError, exception:
                 error = exception.serialize()
-                log('error', 'response for %s failed schema validation', str(self),
-                    request=request, description=error)
+                log('error', 'response for %s failed schema validation', str(self))
                 return response(SERVER_ERROR)
         elif response.content:
-            log('error', 'response for %s improperly specified content', str(self), request=request)
+            log('error', 'response for %s improperly specified content', str(self))
             return response(SERVER_ERROR)
 
     def validate(self, data):

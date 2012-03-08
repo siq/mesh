@@ -34,7 +34,10 @@ REQUIRED_ERROR = ValidationError({'token': 'required'})
 class FieldTestCase(TestCase):
     def assert_processed(self, field, *tests):
         for test in tests:
-            unserialized, serialized = test if isinstance(test, tuple) else (test, test)
+            if isinstance(test, tuple):
+                unserialized, serialized = test
+            else:
+                unserialized, serialized = (test, test)
             self.assertEqual(field.process(unserialized, INCOMING), unserialized)
             self.assertEqual(field.process(unserialized, OUTGOING), unserialized)
             self.assertEqual(field.process(serialized, INCOMING, True), unserialized)
@@ -160,8 +163,7 @@ class TestBoolean(FieldTestCase):
 
 class TestConstant(FieldTestCase):
     def test_specification(self):
-        with self.assertRaises(SpecificationError):
-            Constant(datetime.now())
+        self.assertRaises(SpecificationError, lambda:Constant(datetime.now()))
 
     def test_processing(self):
         field = Constant('constant')
@@ -216,10 +218,8 @@ class TestDateTime(FieldTestCase):
 
 class TestEnumeration(FieldTestCase):
     def test_specification(self):
-        with self.assertRaises(SpecificationError):
-            Enumeration([datetime.now()])
-        with self.assertRaises(SpecificationError):
-            Enumeration(True)
+        self.assertRaises(SpecificationError, lambda:Enumeration([datetime.now()]))
+        self.assertRaises(SpecificationError, lambda:Enumeration(True))
 
     def test_processing(self):
         values = ['alpha', 1, True]
@@ -230,10 +230,8 @@ class TestEnumeration(FieldTestCase):
 
 class TestFloat(FieldTestCase):
     def test_specification(self):
-        with self.assertRaises(SpecificationError):
-            Float(minimum=True)
-        with self.assertRaises(SpecificationError):
-            Float(maximum=True)
+        self.assertRaises(SpecificationError, lambda:Float(minimum=True))
+        self.assertRaises(SpecificationError, lambda:Float(maximum=True))
 
     def test_processing(self):
         field = Float()
@@ -258,10 +256,8 @@ class TestFloat(FieldTestCase):
 
 class TestInteger(FieldTestCase):
     def test_specification(self):
-        with self.assertRaises(SpecificationError):
-            Integer(minimum='bad')
-        with self.assertRaises(SpecificationError):
-            Integer(maximum='bad')
+        self.assertRaises(SpecificationError, lambda:Integer(minimum='bad'))
+        self.assertRaises(SpecificationError, lambda:Integer(maximum='bad'))
 
     def test_processing(self):
         field = Integer()
@@ -286,8 +282,7 @@ class TestInteger(FieldTestCase):
 
 class TestMap(FieldTestCase):
     def test_specification(self):
-        with self.assertRaises(SpecificationError):
-            Map(True)
+        self.assertRaises(SpecificationError, lambda:Map(True))
 
     def test_processing(self):
         field = Map(Integer())
@@ -338,12 +333,9 @@ class TestSequence(FieldTestCase):
             [yesterday_text, today_text, tomorrow_text])
 
     def test_specification(self):
-        with self.assertRaises(SpecificationError):
-            Sequence(True)
-        with self.assertRaises(SpecificationError):
-            Sequence(Integer(), min_length='bad')
-        with self.assertRaises(SpecificationError):
-            Sequence(Integer(), max_length='bad')
+        self.assertRaises(SpecificationError, lambda:Sequence(True))
+        self.assertRaises(SpecificationError, lambda:Sequence(Integer(), min_length='bad'))
+        self.assertRaises(SpecificationError, lambda:Sequence(Integer(), max_length='bad'))
 
     def test_processing(self):
         field = Sequence(Date())
@@ -396,10 +388,8 @@ class TestSequence(FieldTestCase):
 
 class TestStructure(FieldTestCase):
     def test_specification(self):
-        with self.assertRaises(SpecificationError):
-            Structure(True)
-        with self.assertRaises(SpecificationError):
-            Structure({'a': True})
+        self.assertRaises(SpecificationError, lambda:Structure(True))
+        self.assertRaises(SpecificationError, lambda:Structure({'a': True}))
 
     def test_processing(self):
         field = Structure({})
@@ -458,10 +448,8 @@ class TestStructure(FieldTestCase):
 
 class TestText(FieldTestCase):
     def test_specification(self):
-        with self.assertRaises(SpecificationError):
-            Text(min_length='bad')
-        with self.assertRaises(SpecificationError):
-            Text(max_length='bad')
+        self.assertRaises(SpecificationError, lambda:Text(min_length='bad'))
+        self.assertRaises(SpecificationError, lambda:Text(max_length='bad'))
 
     def test_processing(self):
         field = Text()
@@ -509,8 +497,7 @@ class TestTime(FieldTestCase):
 
 class TestTuple(FieldTestCase):
     def test_specification(self):
-        with self.assertRaises(SpecificationError):
-            Tuple(True)
+        self.assertRaises(SpecificationError, lambda:Tuple(True))
 
     def test_processing(self):
         field = Tuple((Text(), Boolean(), Integer()))
@@ -551,10 +538,8 @@ class TestTuple(FieldTestCase):
 
 class TestUnion(FieldTestCase):
     def test_specification(self):
-        with self.assertRaises(SpecificationError):
-            Union(True)
-        with self.assertRaises(SpecificationError):
-            Union((Date(), True))
+        self.assertRaises(SpecificationError, lambda:Union(True))
+        self.assertRaises(SpecificationError, lambda:Union((Date(), True)))
 
     def test_processing(self):
         field = Union((Text(), Integer()))

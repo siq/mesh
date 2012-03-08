@@ -113,7 +113,10 @@ class Field(object):
         self.__dict__.update(params)
         self.default = default
         self.deferred = deferred
-        self.description = (minimize_string(description) if description else None)
+        if description:
+            self.description = description
+        else:
+            self.description = None
         self.instance_errors = errors or {}
         self.is_identifier = is_identifier
         self.name = name
@@ -894,7 +897,10 @@ class Text(Field):
             raise SpecificationError('TextField.max_length must be an integer >= 0, if specified')
 
     def describe(self):
-        pattern = (repr(self.pattern.pattern) if self.pattern else None)
+        if self.pattern:
+            pattern = repr(self.pattern.pattern)
+        else:
+            pattern = None
         return super(Text, self).describe(pattern=pattern)
 
     def _validate_value(self, value):

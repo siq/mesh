@@ -1,5 +1,4 @@
 import re
-from collections import defaultdict
 from textwrap import dedent
 from types import ClassType
 
@@ -231,7 +230,10 @@ class ResourceMeta(type):
         return ''.join(chars).strip()
 
     def describe(resource, controller, path_prefix=None):
-        version = (controller.version if controller else (resource.version, 0))
+        if controller:
+            version = controller.version
+        else:
+            version = (resource.version, 0)
         description = {
             'controller': identify_class(controller),
             'name': resource.name,

@@ -181,7 +181,7 @@ class construct_get_request(construct_model_request):
             auto_constructed = True,
             resource = resource,
             title = 'Getting a specific %s' % resource.title.lower(),
-            schema = Structure(schema) if schema else None,
+            schema = schema and Structure(schema) or None,
             responses = {
                 OK: Response(response_schema),
                 INVALID: Response(Errors),

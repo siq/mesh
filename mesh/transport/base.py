@@ -92,7 +92,10 @@ class Client(object):
 
     @classmethod
     def get(cls, specification):
-        id = (specification.id if isinstance(specification, Specification) else specification)
+        if isinstance(specification, Specification):
+            id = specification.id
+        else:
+            id = specification
         return cls.clients.get(id)
 
     @classmethod

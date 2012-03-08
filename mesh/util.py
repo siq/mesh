@@ -1,10 +1,11 @@
 import logging
 import re
+from types import ClassType
 
 def construct_all_list(namespace, cls):
     all = []
     for name, value in namespace.items():
-        if isinstance(value, type) and issubclass(value, cls):
+        if isinstance(value, (ClassType, type)) and issubclass(value, cls):
             all.append(name)
     return all
 
@@ -34,8 +35,8 @@ class LogHelper(object):
     def __init__(self, logger):
         self.logger = logger
 
-    def __call__(self, level, message, *args, **params):
-        self.logger.log(self.LEVELS[level], message, *args, extra=params)
+    def __call__(self, level, message, *args):
+        self.logger.log(self.LEVELS[level], message, *args)
 
 def minimize_string(value):
     return re.sub(r'\s+', ' ', value).strip(' ')
