@@ -3,8 +3,9 @@ from mesh.constants import *
 from mesh.exceptions import *
 from mesh.formats import *
 from mesh.schema import Field
+from mesh.util import subclass_registry
 
-__all__ = ('Client', 'Server', 'ServerRequest', 'ServerResponse')
+__all__ = ('Client', 'Server', 'ServerRequest', 'ServerResponse', 'Transport')
 
 class ServerRequest(object):
     """An API request."""
@@ -97,3 +98,18 @@ class Client(object):
     @classmethod
     def register(cls, client):
         cls.clients[client.specification.id] = client
+
+class Transport(object):
+    """A mesh transport."""
+
+    __metaclass__ = subclass_registry('transports', 'name')
+    transports = {}
+
+    request = ServerRequest
+    response = ServerResponse
+    server = Server
+    client = Client
+
+    @classmethod
+    def construct_fixture(cls, bundle, specification):
+        raise NotImplementedError()

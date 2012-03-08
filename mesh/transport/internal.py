@@ -1,3 +1,4 @@
+from mesh.bundle import Specification
 from mesh.constants import *
 from mesh.exceptions import *
 from mesh.formats import *
@@ -73,3 +74,14 @@ class InternalClient(Client):
             return response
         else:
             raise RequestError.construct(response.status, response.content)
+
+class InternalTransport(Transport):
+    name = 'internal'
+    server = InternalServer
+    client = InternalClient
+
+    @classmethod
+    def construct_fixture(cls, bundle, specification, environ=None):
+        server = InternalServer([bundle])
+        client = InternalClient(server, specification, environ, secondary=True)
+        return server, client

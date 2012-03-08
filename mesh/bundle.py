@@ -107,6 +107,35 @@ class Bundle(object):
         
         return description
 
+    def slice(self, version=None, min_version=None, max_version=None):
+        versions = self.versions
+        if version is not None:
+            if version in self.versions:
+                return [version]
+            else:
+                return []
+
+        versions = sorted(versions.keys())
+        if min_version is not None:
+            i = 0
+            try:
+                while versions[i] < min_version:
+                    versions = versions[1:]
+                    i += 1
+            except IndexError:
+                return versions
+
+        if max_version is not None:
+            i = len(versions) - 1
+            try:
+                while versions[i] > max_version:
+                    versions = versions[:-1]
+                    i -= 1
+            except IndexError:
+                return versions
+
+        return versions
+
     def specify(self, version, path_prefix=None):
         return Specification(self.describe(path_prefix, version))
 
