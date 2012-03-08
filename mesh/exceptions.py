@@ -1,5 +1,5 @@
 from mesh.constants import *
-from mesh.util import construct_all_list, subclass_registry
+from mesh.util import construct_all_list
 
 class MeshError(Exception):
     """..."""
@@ -94,9 +94,6 @@ class ValidationError(StructuralError):
 class RequestError(MeshError):
     """Raised when a request fails for some reason."""
 
-    __metaclass__ = subclass_registry('errors', 'status')
-    errors = {}
-
     def __init__(self, content=None):
         self.content = content
 
@@ -135,5 +132,18 @@ class UnimplementedError(RequestError):
 
 class UnavailableError(RequestError):
     status = UNAVAILABLE
+
+RequestError.errors = {
+    BAD_REQUEST: BadRequestError,
+    FORBIDDEN: ForbiddenError,
+    NOT_FOUND: NotFoundError,
+    INVALID: InvalidError,
+    TIMEOUT: TimeoutError,
+    CONFLICT: ConflictError,
+    GONE: GoneError,
+    SERVER_ERROR: ServerError,
+    UNIMPLEMENTED: UnimplementedError,
+    UNAVAILABLE: UnavailableError,
+}
 
 __all__ = construct_all_list(locals(), Exception)
