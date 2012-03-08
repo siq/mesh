@@ -1,3 +1,4 @@
+import BaseHTTPServer
 import re
 from collections import defaultdict
 from httplib import HTTPConnection
@@ -316,3 +317,27 @@ class WsgiServer(HttpServer):
 
         start_response(response.status_line, headers)
         return response.content
+
+class TestingHttpServer(HttpServer):
+    def run(self, address):
+        this = self
+        class handler(BaseHTTPServer.BaseHTTPRequestHandler):
+            def do_GET(self):
+                print self.headers
+                headers = None
+                mimetype = None
+                response = this.dispatch(GET, self.path, mimetype, headers, self.rfile.read())
+
+        server = BaseHTTPServer.HTTPServer(address, handler)
+        server.serve_forever()
+
+class HttpTransport(Transport):
+    name = 'http'
+    request = HttpRequest
+    response = HttpResponse
+    server = HttpServer
+    client = HttpClient
+
+    @classmethod
+    def construct_fixture(cls, bundle, specification, environ=None):
+        pass

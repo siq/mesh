@@ -111,5 +111,5 @@ class Transport(object):
     client = Client
 
     @classmethod
-    def construct_fixture(cls, bundle, specification):
+    def construct_fixture(cls, bundle, specification, environ=None):
         raise NotImplementedError()
