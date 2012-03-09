@@ -8,5 +8,11 @@ setup(
     author_email='mccoy.jordan@gmail.com',
     license='BSD',
     url='http://github.com/jordanm/mesh',
-    packages=['mesh'],
+    packages=[
+        'mesh',
+        'mesh.documentation',
+        'mesh.interface',
+        'mesh.standard',
+        'mesh.transport',
+    ],
 )
