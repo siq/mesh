@@ -1,15 +1,14 @@
-try:
-    import json
-
-except ImportError:
-    import simplejson as json
-
 import os
 import sys
 import time
 from threading import Thread
 from unittest2 import TestCase
 from wsgiref.simple_server import make_server
+
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 from mesh.standard import *
 from mesh.transport.http import *

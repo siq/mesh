@@ -1,15 +1,13 @@
+import re
+from urllib import urlencode
+
 try:
     import json
-
 except ImportError:
     import simplejson as json
 
-import re
-
-from urllib import urlencode
 try:
     from urlparse import parse_qsl
-
 except ImportError:
     from cgi import parse_qsl
 
