@@ -6,4 +6,3 @@ Mesh
     :maxdepth: 2
 
     resource
-    schema
