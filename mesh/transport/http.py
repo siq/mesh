@@ -3,9 +3,9 @@ import re
 from httplib import HTTPConnection
 
 from mesh.constants import *
-from mesh.formats import *
 from mesh.exceptions import *
 from mesh.transport.base import *
+from scheme.formats import *
 
 __all__ = ('HttpClient', 'HttpRequest', 'HttpResponse', 'HttpServer', 'WsgiServer')
 

@@ -3,7 +3,7 @@ from unittest2 import TestCase
 from mesh.constants import *
 from mesh.request import *
 from mesh.resource import *
-from mesh.schema import *
+from scheme import *
 
 def construct_example_request(resource):
     return Request(

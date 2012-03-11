@@ -1,12 +1,11 @@
 import os
 import textwrap
-from collections import defaultdict
 from datetime import date, datetime, time
 
 from mesh.constants import *
 from mesh.resource import *
-from mesh.schema import *
 from mesh.util import format_url_path
+from scheme import *
 
 STATUS_CODES = (
     (OK, '200 OK'),
@@ -125,8 +124,11 @@ class DocumentationGenerator(object):
 
             for name, specification in sorted(resources.iteritems()):
                 content = self._document_resource(specification, version_string, path_prefix)
-                with open(os.path.join(version_path, '%s.rst' % name), 'w+') as openfile:
+                openfile = open(os.path.join(version_path, '%s.rst' % name), 'w+')
+                try:
                     openfile.write(content)
+                finally:
+                    openfile.close()
                 refs.append(os.path.join(version_string, name))
 
             sections.append(SECTION_TEMPLATE % {
@@ -321,5 +323,8 @@ class DocumentationGenerator(object):
             'sections': '\n\n'.join(sections),
         }
 
-        with open(os.path.join(bundle_path, 'index.rst'), 'w+') as openfile:
+        openfile = open(os.path.join(bundle_path, 'index.rst'), 'w+')
+        try:
             openfile.write(content)
+        finally:
+            openfile.close()

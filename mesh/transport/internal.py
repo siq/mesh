@@ -1,8 +1,8 @@
 from mesh.bundle import Specification
 from mesh.constants import *
 from mesh.exceptions import *
-from mesh.formats import *
 from mesh.transport.base import *
+from scheme.formats import *
 
 __all__ = ('InternalClient', 'InternalServer', 'ServerRequest', 'ServerResponse')
 

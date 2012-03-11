@@ -3,8 +3,8 @@ from unittest2 import TestCase
 from mesh.constants import *
 from mesh.exceptions import *
 from mesh.request import *
-from mesh.schema import *
 from mesh.transport.internal import *
+from scheme import *
 
 def construct_example_request(resource, name='test', specific=False, endpoint=(GET, 'resource'),
     auto_constructed=True, schema=None, ok=None, filter=None, batch=False, validators=None):

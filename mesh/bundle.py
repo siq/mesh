@@ -1,7 +1,7 @@
 from mesh.exceptions import *
 from mesh.resource import Controller
-from mesh.schema import Field
 from mesh.util import import_object
+from scheme.fields import Field
 
 __all__ = ('Bundle', 'Specification', 'mount')
 

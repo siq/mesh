@@ -6,8 +6,9 @@ from types import ClassType
 
 from mesh.constants import *
 from mesh.exceptions import *
-from mesh.schema import Field, Structure
 from mesh.util import LogHelper, pull_class_dict
+from scheme.fields import INCOMING, OUTGOING, Field, Structure
+from scheme.exceptions import *
 
 __all__ = ('Context', 'Request', 'Response', 'validator')
 
@@ -37,7 +38,7 @@ class Response(object):
     def describe(self):
         description = {'status': self.status, 'schema': None}
         if self.schema:
-            description['schema'] = self.schema.describe()
+            description['schema'] = self.schema.describe(FIELD_PARAMETERS)
         return description
 
 class Request(object):
@@ -193,7 +194,7 @@ class Request(object):
 
         description['schema'] = None
         if self.schema:
-            description['schema'] = self.schema.describe()
+            description['schema'] = self.schema.describe(FIELD_PARAMETERS)
 
         description['responses'] = {}
         for status, response in self.responses.iteritems():

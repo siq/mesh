@@ -2,10 +2,11 @@ import re
 from textwrap import dedent
 from types import ClassType
 
+from mesh.constants import *
 from mesh.exceptions import *
 from mesh.request import *
-from mesh.schema import *
 from mesh.util import identify_class, import_object, pull_class_dict, set_function_attr
+from scheme import *
 
 __all__ = ('Configuration', 'Controller', 'Resource')
 
@@ -245,7 +246,7 @@ class ResourceMeta(type):
 
         description['schema'] = {}
         for name, field in resource.schema.iteritems():
-            description['schema'][name] = field.describe()
+            description['schema'][name] = field.describe(FIELD_PARAMETERS)
 
         description['requests'] = {}
         for name, request in resource.requests.iteritems():

@@ -1,3 +1,5 @@
+FIELD_PARAMETERS = ('readonly', 'deferred', 'sortable', 'operators')
+
 DELETE = 'DELETE'
 GET = 'GET'
 POST = 'POST'
@@ -28,11 +30,5 @@ VALID_STATUS_CODES = (OK, CREATED, ACCEPTED, PARTIAL)
 
 JSON = 'application/json'
 URLENCODED = 'application/x-www-form-urlencoded'
-XML = 'application/xml'
-
-MIMETYPES = (JSON, URLENCODED, XML)
-
-INCOMING = 'incoming'
-OUTGOING = 'outgoing'
 
 __all__ = [name for name in locals().keys() if name.upper() == name and not name.startswith('_')]

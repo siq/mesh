@@ -2,8 +2,8 @@ from mesh.constants import *
 from mesh.exceptions import *
 from mesh.request import *
 from mesh.resource import *
-from mesh.schema import *
 from mesh.util import pluralize
+from scheme import *
 
 def filter_schema_for_response(resource):
     id_field = resource.id_field
