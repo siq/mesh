@@ -38,22 +38,11 @@ class HarnessController(Controller):
         return storage.get(subject)
 
     def query(self, context, response, subject, data):
-        pass
+        data = data or {}
+
 
     def get(self, context, response, subject, data):
-        data = data or {}
-        include = data.get('include') or []
-        exclude = data.get('exclude') or []
-
-        resource = {}
-        for name, value in subject.iteritems():
-            if name == 'id':
-                resource[name] = value
-            elif name not in exclude:
-                field = self.resource.schema[name]
-                if name in include or not field.deferred:
-                    resource[name] = value
-        response(resource)
+        response(self._prepare_resource(subject, data or {}))
 
     def create(self, context, response, subject, data):
         id = data['id'] = storage.next_id()
@@ -67,6 +56,20 @@ class HarnessController(Controller):
     def delete(self, context, response, subject, data):
         storage.delete(subject['id'])
         response({'id': subject['id']})
+
+    def _prepare_resource(self, subject, data):
+        include = data.get('include') or []
+        exclude = data.get('exclude') or []
+
+        resource = {}
+        for name, value in subject.iteritems():
+            if name == 'id':
+                resource[name] = value
+            elif name not in exclude:
+                field = self.resource.schema[name]
+                if name in include or not field.deferred:
+                    resource[name] = value
+        return resource
 
 class Example(Resource):
     name = 'example'

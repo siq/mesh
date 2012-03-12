@@ -10,7 +10,8 @@ class SpecificationError(MeshError):
 class RequestError(MeshError):
     """Raised when a request fails for some reason."""
 
-    def __init__(self, content=None):
+    def __init__(self, content=None, *args):
+        MeshError.__init__(self, content, *args)
         self.content = content
 
     @classmethod

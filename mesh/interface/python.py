@@ -1,7 +1,7 @@
 from mesh.bundle import Specification
 from mesh.constants import *
 from mesh.exceptions import *
-from mesh.server import Client
+from mesh.transport.base import Client
 
 class ReadOnlyError(Exception):
     """..."""
@@ -92,7 +92,10 @@ class Model(object):
         return cls._get_client().execute(cls._name, 'query', None, params or None)
 
     def save(self, **params):
-        action = ('create' if self.id is None else 'update')
+        action = 'create'
+        if self.id is not None:
+            action = 'update'
+
         request = self._resource['requests'][action]
 
         data = request['schema'].extract(self._data)
