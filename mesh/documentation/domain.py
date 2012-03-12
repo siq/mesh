@@ -108,13 +108,17 @@ class FieldDefinition(Directive):
     }
 
     def run(self):
-        sectional = ('sectional' if 'sectional' in self.options else '')
+        sectional = ('sectional' in self.options) and 'sectional' or ''
         definition = container('field', sectional)
         signature = nodes.paragraph('', '', classes=['field-signature'])
 
-        field = (self.arguments[0] if len(self.arguments) == 1 else None)
+        if len(self.arguments) == 1:
+            field = self.arguments[0]
+        else:
+            field = None
+
         if field:
-            required = ('required' if 'required' in self.options else '')
+            required = ('required' in self.options) and 'required' or ''
             separator = ':'
             if ' ' not in field:
                 try:
