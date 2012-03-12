@@ -1,5 +1,7 @@
 import logging
+import os
 import re
+import sys
 from types import ClassType
 
 def construct_all_list(namespace, cls):
@@ -11,6 +13,28 @@ def construct_all_list(namespace, cls):
 
 def format_url_path(*segments):
     return '/' + '/'.join(segment.strip('/') for segment in segments)
+
+def get_package_data(module, path):
+    if isinstance(module, basestring):
+        module = __import__(module, None, None, [module.split('.')[-1]])
+    if not isinstance(module, list):
+        module = module.__path__
+
+    modulepath = module[0]
+    for prefix in sys.path:
+        if prefix in ('', '..'):
+            prefix = os.getcwd()
+        fullpath = os.path.abspath(os.path.join(prefix, modulepath))
+        if os.path.exists(fullpath):
+            break
+    else:
+        return None
+
+    openfile = open(os.path.join(fullpath, path))
+    try:
+        return openfile.read()
+    finally:
+        openfile.close()
 
 def identify_class(cls):
     return '%s.%s' % (cls.__module__, cls.__name__)

@@ -2,7 +2,7 @@ from mesh.constants import *
 from mesh.util import construct_all_list
 
 class MeshError(Exception):
-    """..."""
+    """A mesh error."""
 
 class SpecificationError(MeshError):
     """Raised when a specification error occurs."""

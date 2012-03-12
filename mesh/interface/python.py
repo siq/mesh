@@ -2,6 +2,7 @@ from mesh.bundle import Specification
 from mesh.constants import *
 from mesh.exceptions import *
 from mesh.transport.base import Client
+from mesh.util import StructureFormatter, get_package_data
 
 class ReadOnlyError(Exception):
     """..."""
@@ -119,3 +120,64 @@ class Model(object):
 
     def _update_model(self, data):
         self._data.update(data)
+
+class BindingGenerator(object):
+    MODEL_TMPL = get_package_data('mesh.interface', 'templates/model.py.tmpl')
+    MODULE_TMPL = get_package_data('mesh.interface', 'templates/module.py.tmpl')
+
+    def __init__(self, path_prefix=None, module_path=None, separate_models=False,
+        specification_var='specification'):
+
+        print module_path
+
+        if module_path:
+            module_path = module_path.strip('.') + '.'
+        else:
+            module_path = ''
+
+        self.module_path = module_path
+        self.path_prefix = path_prefix
+        self.separate_models = separate_models
+        self.specification_var = specification_var
+
+    def generate(self, bundle, version):
+        module_path = '%s%s.' % (self.module_path, bundle.name)
+        description = bundle.describe(self.path_prefix, version)
+
+        models = []
+        for name, model in sorted(description['resources'].iteritems()):
+            models.append((name, self._generate_model(name, model)))
+
+        files = {}
+        if self.separate_models:
+            for name, model in models:
+                module = self._generate_module(module_path, model)
+                files[name] = ('%s.py' % name, module)
+        else:
+            module = self._generate_module(module_path, '\n\n'.join(item[1] for item in models))
+            files['models'] = ('models.py', module)
+
+        specfile = '%s.py' % self.specification_var
+        files['__spec__'] = (specfile, self._generate_specification(description))
+
+        files['__init__'] = ('__init__.py', '')
+        return files
+
+    def _generate_model(self, name, model):
+        return self.MODEL_TMPL % {
+            'class_name': model['title'],
+            'resource_name': name,
+            'specification_var': self.specification_var,
+        }
+
+    def _generate_module(self, module_path, content):
+        imports = ['from %s%s import %s' % (module_path, self.specification_var,
+            self.specification_var)]
+
+        return self.MODULE_TMPL % {
+            'imports': '\n'.join(imports),
+            'content': content,
+        }
+
+    def _generate_specification(self, description):
+        return '%s = %s' % (self.specification_var, StructureFormatter().format(description))
