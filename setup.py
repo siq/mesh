@@ -10,8 +10,8 @@ setup(
     url='http://github.com/siq/mesh',
     packages=[
         'mesh',
+        'mesh.binding',
         'mesh.documentation',
-        'mesh.interface',
         'mesh.standard',
         'mesh.transport',
     ],

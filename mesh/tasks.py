@@ -1,6 +1,6 @@
 from bake import *
 from mesh.documentation.generator import DocumentationGenerator
-from mesh.interface.python import BindingGenerator
+from mesh.binding.python import BindingGenerator
 
 class GenerateDocs(Task):
     name = 'mesh:docs'

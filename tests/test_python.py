@@ -1,6 +1,6 @@
 from unittest2 import TestCase
 
-from mesh.interface.python import *
+from mesh.binding.python import *
 from mesh.standard import *
 from mesh.transport.internal import *
 

@@ -122,8 +122,8 @@ class Model(object):
         self._data.update(data)
 
 class BindingGenerator(object):
-    MODEL_TMPL = get_package_data('mesh.interface', 'templates/model.py.tmpl')
-    MODULE_TMPL = get_package_data('mesh.interface', 'templates/module.py.tmpl')
+    MODEL_TMPL = get_package_data('mesh.binding', 'templates/model.py.tmpl')
+    MODULE_TMPL = get_package_data('mesh.binding', 'templates/module.py.tmpl')
 
     def __init__(self, path_prefix=None, module_path=None, separate_models=False,
         specification_var='specification'):
