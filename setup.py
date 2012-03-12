@@ -15,6 +15,9 @@ setup(
         'mesh.standard',
         'mesh.transport',
     ],
+    package_data={
+        'mesh.binding': ['templates/*'],
+    },
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',

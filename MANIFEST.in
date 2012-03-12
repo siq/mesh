@@ -1,3 +1,4 @@
+recursive-include mesh/binding/templates *.tmpl
 include LICENSE
 include requirements.txt
 include *.rst
@@ -5,5 +6,5 @@ recursive-include tests *.py
 recursive-include examples *.rst *.py
 include docs/conf.py docs/Makefile
 recursive-include docs *.rst
-recursive-include docs/_static *
-recursive-include docs/_templates *
+recursive-include docs/_static *.css
+recursive-include docs/_templates *.html
