@@ -53,10 +53,34 @@ class ModelMeta(type):
         model = type.__new__(metatype, name, bases, namespace)
         return model
 
+class Query(object):
+    """A resource query."""
+
+    def __init__(self, model, **params):
+        self.model = model
+        self.params = params
+
+    def __iter__(self):
+        return iter(self._execute_query())
+
+    def all(self):
+        return self._execute_query()
+
+    def one(self):
+        return self._execute_query()[0]
+
+    def _execute_query(self):
+        model = self.model
+        models = []
+        for result in model._get_client().execute(model._name, 'query', None, self.params or None):
+            models.append(model(**result))
+        return models
+
 class Model(object):
     """A resource model."""
 
     __metaclass__ = ModelMeta
+    query_class = Query
 
     def __init__(self, **params):
         self._data = {}
@@ -90,7 +114,7 @@ class Model(object):
 
     @classmethod
     def query(cls, **params):
-        return cls._get_client().execute(cls._name, 'query', None, params or None)
+        return cls.query_class(cls, **params)
 
     def save(self, **params):
         action = 'create'
@@ -98,8 +122,8 @@ class Model(object):
             action = 'update'
 
         request = self._resource['requests'][action]
-
         data = request['schema'].extract(self._data)
+
         if params:
             data.update(params)
 

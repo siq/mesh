@@ -6,9 +6,17 @@ class GenerateDocs(Task):
     name = 'mesh:docs'
     description = 'generate api documentation for a mesh bundle'
     params = [
+        param('mesh.bundle', 'module path of bundle', required=True),
         param('mesh.docroot', 'path to docroot', required=True),
-        param('mesh.bundles', '...', required=True),
     ]
+
+    def run(self, runtime, environment):
+        docroot = path(environment['mesh.docroot'])
+        if not docroot.exists():
+            raise TaskError("docroot '%s' does not exist" % docroot)
+
+        bundle = import_object(environment['mesh.bundle'])
+        DocumentationGenerator(docroot).generate(bundle.describe())
 
 class GeneratePythonBindings(Task):
     name = 'mesh:py'
