@@ -152,8 +152,6 @@ class BindingGenerator(object):
     def __init__(self, path_prefix=None, module_path=None, separate_models=False,
         specification_var='specification'):
 
-        print module_path
-
         if module_path:
             module_path = module_path.strip('.') + '.'
         else:

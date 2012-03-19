@@ -6,8 +6,9 @@
   <script>
     var require = {
       paths: {
-        'datetime': '../datetime',
         'class': '../class',
+        'datetime': '../datetime',
+        'events': '../events',
         'fields': '../fields'
       },
       waitSeconds: 1
@@ -23,7 +24,8 @@
   <ol id="qunit-tests"></ol>
   <div id="qunit-fixture">test markup, will be hidden</div>
   <script>
-    require({}, ['test_fields.js']);
+    require(['test_fields.js']);
+    require(['test_events.js']);
   </script>
 </body>
 </html>

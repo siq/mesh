@@ -145,7 +145,7 @@ class DocumentationGenerator(object):
         optional = []
         for name, field in sorted(fields.iteritems()):
             if name != 'id':
-                if field['required']:
+                if field.get('required'):
                     yield name, field
                 else:
                     optional.append((name, field))
@@ -155,18 +155,18 @@ class DocumentationGenerator(object):
 
     def _describe_date(self, field, block, role):
         constraints = []
-        if isinstance(field['minimum'], date):
+        if isinstance(field.get('minimum'), date):
             constraints.append('min=%s' % field['minimum'])
-        if isinstance(field['maximum'], date):
+        if isinstance(field.get('maximum'), date):
             constraints.append('max=%s' % field['maximum'])
         if constraints:
             block.set('constraints', ', '.join(constraints))
 
     def _describe_datetime(self, field, block, role):
         constraints = []
-        if isinstance(field['minimum'], datetime):
+        if isinstance(field.get('minimum'), datetime):
             constraints.append('min=%s' % field['minimum'])
-        if isinstance(field['maximum'], datetime):
+        if isinstance(field.get('maximum'), datetime):
             constraints.append('max=%s' % field['maximum'])
         if constraints:
             block.set('constraints', ', '.join(constraints))
@@ -176,77 +176,80 @@ class DocumentationGenerator(object):
 
     def _describe_float(self, field, block, role):
         constraints = []
-        if field['minimum'] is not None:
+        if field.get('minimum') is not None:
             constraints.append('min=%r' % field['minimum'])
-        if field['maximum'] is not None:
+        if field.get('maximum') is not None:
             constraints.append('max=%r' % field['maximum'])
         if constraints:
             block.set('constraints', ' '.join(constraints))
 
     def _describe_integer(self, field, block, role):
         constraints = []
-        if field['minimum'] is not None:
+        if field.get('minimum') is not None:
             constraints.append('min=%r' % field['minimum'])
-        if field['maximum'] is not None:
+        if field.get('maximum') is not None:
             constraints.append('max=%r' % field['maximum'])
         if constraints:
             block.set('constraints', ' '.join(constraints))
 
     def _describe_map(self, field, block, role):
-        if field['required_keys']:
+        if field.get('required_keys'):
             block.set('required_keys', repr(sorted(field['required_keys'])))
-        if field['value']:
-            value = field['value']
-            if not value['description']:
+        value = field.get('value')
+        if value:
+            if not value.get('description'):
                 block.set('subtype', value['type'])
             else:
                 block.append(self._document_field('', value, role))
 
     def _describe_sequence(self, field, block, role):
         constraints = []
-        if field['min_length'] is not None:
+        if field.get('min_length') is not None:
             constraints.append('min=%d' % field['min_length'])
-        if field['max_length'] is not None:
+        if field.get('max_length') is not None:
             constraints.append('max=%d' % field['max_length'])
         if constraints:
             block.set('constraints', ', '.join(constraints))
-        if field['item']:
-            item = field['item']
-            block.append(self._document_field('', field['item'], role))
+        item = field.get('item')
+        if item:
+            block.append(self._document_field('', item, role))
 
     def _describe_structure(self, field, block, role):
-        if field['structure']:
-            for name, subfield in self._collate_fields(field['structure']):
+        structure = field.get('structure')
+        if structure:
+            for name, subfield in self._collate_fields(structure):
                 block.append(self._document_field(name, subfield, role))
 
     def _describe_text(self, field, block, role):
         constraints = []
-        if isinstance(field['min_length'], (int, long)):
+        if isinstance(field.get('min_length'), (int, long)):
             constraints.append('min=%r' % field['min_length'])
-        if isinstance(field['max_length'], (int, long)):
+        if isinstance(field.get('max_length'), (int, long)):
             constraints.append('max=%r' % field['max_length'])
         if constraints:
             block.set('constraints', ', '.join(constraints))
-        if field['pattern']:
+        if field.get('pattern'):
             block.set('pattern', field['pattern'])
 
     def _describe_time(self, field, block, role):
         constraints = []
-        if isinstance(field['minimum'], time):
+        if isinstance(field.get('minimum'), time):
             constraints.append('min=%s' % field['minimum'])
-        if isinstance(field['maximum'], time):
+        if isinstance(field.get('maximum'), time):
             constraints.append('max=%s' % field['maximum'])
         if constraints:
             block.set('constraints', ', '.join(constraints))
 
     def _describe_tuple(self, field, block, role):
-        if field['values']:
-            for i, value in enumerate(field['values']):
+        values = field.get('values')
+        if values:
+            for i, value in enumerate(values):
                 block.append(self._document_field('', value, role))
 
     def _describe_union(self, field, block, role):
-        if field['fields']:
-            for i, subfield in enumerate(field['fields']):
+        fields = field.get('fields')
+        if fields:
+            for i, subfield in enumerate(fields):
                 block.append(self._document_field('', subfield, role))
 
     def _document_field(self, name, field, role=None, sectional=False):
@@ -256,18 +259,21 @@ class DocumentationGenerator(object):
             block.set('sectional', '')
 
         for attr in ('description', 'notes'):
-            if field[attr]:
-                block.set(attr, field[attr])
+            value = field.get(attr)
+            if value:
+                block.set(attr, value)
         for attr in ('nonnull', 'readonly'):
-            if field[attr]:
+            if field.get(attr):
                 block.set(attr, '')
 
-        if field['required'] and role != 'schema':
+        if field.get('required') and role != 'schema':
             block.set('required', '')
-        if field['deferred'] and role != 'request':
+        if field.get('deferred') and role != 'request':
             block.set('deferred', '')
-        if field['default'] is not None:
-            block.set('default', repr(field['default']))
+
+        default = field.get('default')
+        if default is not None:
+            block.set('default', repr(default))
         
         formatter = getattr(self, '_describe_%s' % field['type'], None)
         if formatter:

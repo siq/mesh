@@ -3,11 +3,10 @@ define([
     'class',
     'datetime'
 ], function(_, Class, datetime) {
-
     var isNumber = _.isNumber, isString = _.isString,
         URLENCODED = 'application/x-www-form-urlencoded';
 
-    var _urlencodeMapping = function(mapping) {
+    var urlencodeMapping = function(mapping) {
         var tokens = [], name;
         for (name in mapping) {
             tokens.push(name + ':' + mapping[name]);
@@ -15,7 +14,7 @@ define([
         return '{' + tokens.join(',') + '}';
     };
 
-    var _urlencodeSequence = function(sequence) {
+    var urlencodeSequence = function(sequence) {
         return '[' + sequence.join(',') + ']';
     };
 
@@ -109,6 +108,12 @@ define([
         }
     });
 
+    fields.DateField = Field.extend({
+        _serializeValue: function(value, mimetype) {
+            return datetime.toISO8601(value);
+        }
+    });
+
     fields.DateTimeField = Field.extend({
         _serializeValue: function(value, mimetype) {
             return datetime.toISO8601(value, true);
@@ -120,12 +125,6 @@ define([
             if (!_.isDate(value)) {
                 throw new ValidationError('invalid');
             }
-        }
-    });
-
-    fields.DateField = Field.extend({
-        _serializeValue: function(value, mimetype) {
-            return datetime.toISO8601(value);
         }
     });
 
@@ -219,7 +218,7 @@ define([
                 }
             }
             if (mimetype === URLENCODED) {
-                value = _urlencodeMapping(value);
+                value = urlencodeMapping(value);
             }
             return value;
         },
@@ -257,7 +256,7 @@ define([
                 value[i] = item.serialize(value[i], mimetype);
             }
             if (mimetype === URLENCODED) {
-                value = _urlencodeSequence(value);
+                value = urlencodeSequence(value);
             }
             return value;
         },
@@ -311,7 +310,7 @@ define([
                 }
             }
             if (mimetype === URLENCODED) {
-                value = _urlencodeMapping(value);
+                value = urlencodeMapping(value);
             }
             return value;
         },
@@ -380,7 +379,7 @@ define([
                 value[i] = values[i].serialize(value[i], mimetype);
             }
             if (mimetype === URLENCODED) {
-                value = _urlencodeSequence(value);
+                value = urlencodeSequence(value);
             }
             return value;
         },
