@@ -1,7 +1,10 @@
 define([
     'vendor/underscore',
+    'vendor/jquery',
+    'vendor/json2',
     'class',
-    'events'
+    'events',
+    'fields'
 ], function(_, Class, Eventful) {
     var isArray = _.isArray, isBoolean = _.isBoolean, isEqual = _.isEqual, isString = _.isString;
 
@@ -22,6 +25,59 @@ define([
             var self = this, cache = this.cache, url = this.url,
                 signature, cached, params, deferred;
 
+
+            signature = [url, data];
+            for (var i = 0, l = cache.length; i < l; i++) {
+                cached = cache[i];
+                if (isEqual(cached[0], signature)) {
+                    return cached[1];
+                }
+            }
+
+            params = {
+                contentType: this.mimetype,
+                dataType: 'json',
+                type: this.method,
+                url: url
+            };
+
+            if (data) {
+                if (!isString(data)) {
+                    if (this.schema != null) {
+                        data = this.schema.serialize(data, this.mimetype);
+                    } else {
+                        data = null;
+                    }
+                    if (data && this.mimetype === 'application/json') {
+                        data = JSON.stringify(data);
+                        params.processData = false;
+                    }
+                }
+                params.data = data;
+            }
+
+            deferred = $.Deferred();
+            cached = [signature, deferred];
+
+            params.success = function(data, status, xhr) {
+                var response = self.responses[xhr.status];
+                if (response) {
+                    data = response.schema.unserialize(data, response.mimetype);
+                }
+                cache.splice(_.indexOf(cache, cached), 1);
+                deferred.resolve(data, xhr);
+            };
+
+            params.error = function(xhr) {
+                var error = null;
+                
+                cache.splice(_.indexOf(cache, cached), 1);
+                deferred.reject(error, xhr);
+            };
+
+            cache.push(cached);
+            self.ajax(params);
+            return deferred;
         }
     });
 
@@ -99,6 +155,105 @@ define([
         }
     });
 
+    var Collection = Eventful.extend({
+        init: function(manager, params) {
+            params = params || {};
+            this.cache = {};
+            this.manager = manager;
+            this.models = [];
+            this.plain = params.plain;
+            this.query = params.query || {};
+            this.total = null;
+            this.manager.on('change', this.notify, this);
+        },
+
+        add: function(models, idx) {
+            var self = this, model;
+            if (!isArray(models)) {
+                models = [models];
+            }
+            if (idx == null) {
+                if (self.total != null) {
+                    idx = self.total;
+                } else {
+                    idx = self.models.length;
+                }
+            }
+
+            for (var i = 0, l = models.length; i < l; i++) {
+                model = models[i];
+                this.models.splice(idx + 1, 0, model);
+                if (model.id) {
+                    this.cache[model.id] = model;
+                } else if (model.cid) {
+                    this.cache[model.cid] = model;
+                }
+            }
+
+            this.trigger('update', this);
+            return this;
+        },
+
+        at: function(idx) {
+            return this.models[idx] || null;
+        },
+
+        create: function(attrs, params, idx) {
+            var self = this, model = this.manager.model(attrs);
+            return model.save(params).pipe(function(instance) {
+                self.add([instance], idx);
+                return instance;
+            });
+        },
+
+        get: function(id) {
+            return this.cache[id] || null;
+        },
+
+        load: function(params) {
+
+        },
+
+        notify: function(event, manager, model) {
+            var id = model.id || model.cid;
+            if (this.cache[id]) {
+                this.trigger('change', this, model);
+            }
+        },
+
+        remove: function(models) {
+            var model;
+            if (!isArray(models)) {
+                models = [models];
+            }
+
+            for (var i = 0, l = models.length; i < l; i++) {
+                model = models[i];
+                this.models.splice(_.indexOf(this.models, model), 1);
+                if (model.id) {
+                    delete this.cache[model.id];
+                }
+                if (model.cid) {
+                    delete this.cache[model.cid];
+                }
+            }
+
+            this.trigger('update', this);
+            return this;
+        },
+
+        reset: function(query) {
+            this.cache = {};
+            this.models = [];
+            this.total = null;
+            if (query != null) {
+                this.query = query;
+            }
+            this.trigger('update', this);
+            return this;
+        }
+    });
+
     var Model = Eventful.extend({
         __new__: function(constructor, base, prototype) {
             constructor.manager = function() {
@@ -158,6 +313,24 @@ define([
             return _.escape('' + value);
         },
 
+        refresh: function(params, conditional) {
+            var self = this;
+            if (isBoolean(params)) {
+                conditional = params;
+                params = null;
+            } else if (params != null) {
+                conditional = false;
+            }
+            if (self.id == null || (self._loaded && conditional)) {
+                return $.Deferred().resolve(self);
+            }
+            return self._initiateRequest('get', params).pipe(function(data) {
+                self.set(data);
+                self._loaded = true;
+                return self;
+            });
+        },
+
         save: function(params) {
             var self = this, creating = (this.id == null), request, data;
             request = self._getRequest(creating ? 'create' : 'update');
@@ -175,6 +348,48 @@ define([
                 self._loaded = true;
                 return self;
             });
+        },
+
+        set: function(attr, value, silent) {
+            var attrs, changing, changed, name, currentValue;
+            if (attr != null) {
+                if (isString(attr)) {
+                    attrs = {};
+                    attrs[attr] = value;
+                } else {
+                    attrs = attr;
+                    silent = value;
+                }
+            } else {
+                return this;
+            }
+
+            changing = this._currentlyChanging;
+            this._currentChanging = true;
+
+            changed = false;
+            for (name in attrs) {
+                if (attrs.hasOwnProperty(name)) {
+                    currentValue = this[name];
+                    value = attrs[name];
+                    if (!isEqual(value, currentValue)) {
+                        changed = changed || {};
+                        changed[name] = true;
+                        this[name] = value;
+                    }
+                }
+            }
+
+            if (!changing && changed) {
+                this.construct();
+                if (!silent) {
+                    this.trigger('change', this, changed);
+                    this._manager.notify(this, 'change');
+                }
+            }
+
+            this._currentlyChanging = false;
+            return this;
         },
     
         _getRequest: function(name) {

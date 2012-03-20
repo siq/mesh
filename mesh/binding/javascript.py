@@ -3,12 +3,15 @@ try:
 except ImportError:
     import simplejson as json
 
+from mesh.constants import *
+from mesh.transport.http import STATUS_CODES
 from mesh.util import StructureFormatter
+from scheme import Field
 
 class JavascriptConstructor(object):
     RESERVED_WORDS = ['delete']
 
-    def __init__(self, indent=4, constructor_attr='__func__'):
+    def __init__(self, indent=4, constructor_attr=None):
         self.constructor_attr = constructor_attr
         self.indent = ' ' * indent
 
@@ -93,6 +96,7 @@ class Generator(object):
         'datetime': 'fields.DateTimeField',
         'enumeration': 'fields.EnumerationField',
         'integer': 'fields.IntegerField',
+        'field': 'fields.Field',
         'float': 'fields.FloatField',
         'map': 'fields.MapField',
         'sequence': 'fields.SequenceField',
@@ -102,9 +106,11 @@ class Generator(object):
         'tuple': 'fields.TupleField',
         'union': 'fields.UnionField',
     }
+    IGNORED_ATTRS = ('description', 'notes', 'type')
 
-    def __init__(self, path_prefix=None):
-        self.constructor = JavascriptConstructor()
+    def __init__(self, path_prefix=None, mimetype=JSON):
+        self.constructor = JavascriptConstructor(constructor_attr='type')
+        self.mimetype = mimetype
         self.path_prefix = path_prefix
 
     def generate(self, bundle, version):
@@ -112,19 +118,60 @@ class Generator(object):
 
         description = bundle.describe(self.path_prefix, version)
         for name, resource in description['resources'].iteritems():
-
-            
-
-
-            return JavascriptConstructor().construct(resource)
-
+            specification = self._construct_resource(resource)
+            return specification
 
     def _construct_field(self, field):
-        
+        specification = {'type': self.FIELDS[field['type']]}
+        for name, value in field.iteritems():
+            if name not in self.IGNORED_ATTRS:
+                specification[name] = value
 
-    def _pull_dict(self, subject, attrs, **params):
-        for attr in attrs:
-            value = subject.get(attr)
-            if value is not None and attr not in params:
-                params[attr] = value
-        return params
+        if field.get('structural'):
+            specification.update(Field.visit(field, self._construct_field))
+        return specification
+
+    def _construct_request(self, request):
+        mimetype = self.mimetype
+        if request['endpoint'][0] == GET:
+            mimetype = URLENCODED
+
+        schema = None
+        if request['schema']:
+            schema = self._construct_field(request['schema'])
+
+        responses = {}
+        for status, response in request['responses'].iteritems():
+            code = STATUS_CODES[status]
+            responses[code] = {
+                'status': status,
+                'mimetype': self.mimetype,
+                'schema': self._construct_field(response['schema']),
+            }
+
+        return {
+            'type': 'Request',
+            'name': request['name'],
+            'method': request['endpoint'][0],
+            'mimetype': mimetype,
+            'url': request['path'],
+            'schema': schema,
+            'responses': responses,
+        }
+
+    def _construct_resource(self, resource):
+        schema = {}
+        for name, field in resource['schema'].iteritems():
+            schema[name] = self._construct_field(field)
+
+        requests = {}
+        for name, request in resource['requests'].iteritems():
+            requests[name] = self._construct_request(request)
+
+        specification = {
+            '__name__': resource['name'],
+            '__schema__': schema,
+            '__requests__': requests,
+        }
+
+        return self.constructor.construct(specification)

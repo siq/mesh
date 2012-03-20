@@ -41,6 +41,7 @@ class GeneratePythonBindings(Task):
         root = path(environment['mesh.path'])
         if not root.isdir():
             raise TaskError('...')
+
         if root.basename() != bundle.name:
             root /= bundle.name
             root.mkdir_p()
