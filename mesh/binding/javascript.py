@@ -1,3 +1,5 @@
+import os
+
 try:
     import json
 except ImportError:
@@ -5,7 +7,7 @@ except ImportError:
 
 from mesh.constants import *
 from mesh.transport.http import STATUS_CODES
-from mesh.util import StructureFormatter
+from mesh.util import get_package_data
 from scheme import Field
 
 class JavascriptConstructor(object):
@@ -15,9 +17,13 @@ class JavascriptConstructor(object):
         self.constructor_attr = constructor_attr
         self.indent = ' ' * indent
 
-    def construct(self, value, indent=0):
+    def construct(self, value, indent=0, initial_indent=0):
         source = self._construct_value(value, indent)
         if isinstance(source, list):
+            if initial_indent > 0:
+                source[0] = '%s%s' % (self.indent * initial_indent, source[0])
+            if indent > 0:
+                source[-1] = '%s%s' % (self.indent * indent, source[-1])
             source = '\n'.join(source)
         return source
 
@@ -106,20 +112,26 @@ class Generator(object):
         'tuple': 'fields.TupleField',
         'union': 'fields.UnionField',
     }
-    IGNORED_ATTRS = ('description', 'notes', 'type')
+    IGNORED_ATTRS = ('description', 'notes', 'structural', 'type')
+    MODEL_TMPL = get_package_data('mesh.binding', 'templates/model.js.tmpl')
 
-    def __init__(self, path_prefix=None, mimetype=JSON):
+    def __init__(self, path_prefix=None, template_dir=None, mimetype=JSON):
         self.constructor = JavascriptConstructor(constructor_attr='type')
         self.mimetype = mimetype
         self.path_prefix = path_prefix
+        self.template_dir = template_dir
 
     def generate(self, bundle, version):
         files = {}
 
         description = bundle.describe(self.path_prefix, version)
         for name, resource in description['resources'].iteritems():
-            specification = self._construct_resource(resource)
-            return specification
+            files['%s.js' % name] = self._construct_resource(resource)
+
+        for name, file in files.iteritems():
+            with open('/tmp/%s' % name, 'w+') as openfile:
+                openfile.write(file)
+
 
     def _construct_field(self, field):
         specification = {'type': self.FIELDS[field['type']]}
@@ -150,7 +162,7 @@ class Generator(object):
             }
 
         return {
-            'type': 'Request',
+            'type': 'model.Request',
             'name': request['name'],
             'method': request['endpoint'][0],
             'mimetype': mimetype,
@@ -174,4 +186,18 @@ class Generator(object):
             '__requests__': requests,
         }
 
-        return self.constructor.construct(specification)
+        source = self.constructor.construct(specification, indent=1)
+        return self._get_template(resource['name']) % source
+
+    def _get_template(self, name):
+        template = self.MODEL_TMPL
+        if self.template_dir:
+            filename = os.path.join(self.template_dir, '%s.js' % name)
+            if os.path.exists(filename):
+                openfile = open(filename)
+                try:
+                    return openfile.read()
+                finally:
+                    openfile.close()
+
+        return template
