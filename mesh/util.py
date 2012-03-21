@@ -15,6 +15,13 @@ def format_url_path(*segments):
     return '/' + '/'.join(segment.strip('/') for segment in segments)
 
 def get_package_data(module, path):
+    openfile = open(get_package_path(module, path))
+    try:
+        return openfile.read()
+    finally:
+        openfile.close()
+
+def get_package_path(module, path):
     if isinstance(module, basestring):
         module = __import__(module, None, None, [module.split('.')[-1]])
     if not isinstance(module, list):
@@ -30,11 +37,7 @@ def get_package_data(module, path):
     else:
         return None
 
-    openfile = open(os.path.join(fullpath, path))
-    try:
-        return openfile.read()
-    finally:
-        openfile.close()
+    return os.path.join(fullpath, path)
 
 def identify_class(cls):
     return '%s.%s' % (cls.__module__, cls.__name__)

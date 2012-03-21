@@ -1,4 +1,5 @@
 recursive-include mesh/binding/templates *.tmpl
+recursive-include mesh/documentation/templates *.tmpl
 include LICENSE
 include requirements.txt
 include *.rst

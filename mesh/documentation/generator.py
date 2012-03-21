@@ -1,10 +1,11 @@
 import os
+import shutil
 import textwrap
 from datetime import date, datetime, time
 
 from mesh.constants import *
 from mesh.resource import *
-from mesh.util import format_url_path
+from mesh.util import format_url_path, get_package_data, get_package_path
 from scheme import *
 
 STATUS_CODES = (
@@ -27,25 +28,6 @@ STATUS_CODES = (
 
 RESOURCE_HEADER = """
 .. default-domain:: api
-"""
-
-INDEX_TEMPLATE = """
-================================
-%(name)s
-================================
-
-%(description)s
-
-%(sections)s
-"""
-
-SECTION_TEMPLATE = """
-%(title)s
-======================
-
-.. toctree::
-    :maxdepth: 2
-    %(refs)s
 """
 
 class directive(object):
@@ -103,13 +85,24 @@ class directive(object):
         )
 
 class DocumentationGenerator(object):
-    def __init__(self, root_path):
+    CONF_TEMPLATE = get_package_data('mesh.documentation', 'templates/sphinx-conf.py.tmpl')
+    CSS_PATH = get_package_path('mesh.documentation', 'templates/mesh.css.tmpl')
+    INDEX_TEMPLATE = get_package_data('mesh.documentation', 'templates/index.rst.tmpl')
+    ROOT_TEMPLATE = get_package_data('mesh.documentation', 'templates/root.rst.tmpl')
+    SECTION_TEMPLATE = get_package_data('mesh.documentation', 'templates/section.rst.tmpl')
+
+    def __init__(self, root_path, nested=False):
+        self.nested = nested
         self.root_path = root_path
 
     def generate(self, bundle):
-        bundle_path = os.path.join(self.root_path, bundle['name'])
-        if not os.path.exists(bundle_path):
-            os.mkdir(bundle_path)
+        self._prepare_root()
+        if self.nested:
+            bundle_path = os.path.join(self.root_path, bundle['name'])
+            if not os.path.exists(bundle_path):
+                os.mkdir(bundle_path)
+        else:
+            bundle_path = self.root_path
 
         sections = []
         for version, resources in sorted(bundle['versions'].iteritems(), reverse=True):
@@ -131,7 +124,7 @@ class DocumentationGenerator(object):
                     openfile.close()
                 refs.append(os.path.join(version_string, name))
 
-            sections.append(SECTION_TEMPLATE % {
+            sections.append(self.SECTION_TEMPLATE % {
                 'title': 'Version %s' % version_string,
                 'refs': '\n    '.join(sorted(refs)),
             })
@@ -323,7 +316,7 @@ class DocumentationGenerator(object):
         return RESOURCE_HEADER + block.render()
 
     def _generate_index(self, bundle, bundle_path, sections):
-        content = INDEX_TEMPLATE % {
+        content = self.INDEX_TEMPLATE % {
             'name': bundle['name'],
             'description': bundle['description'] or '',
             'sections': '\n\n'.join(sections),
@@ -334,3 +327,33 @@ class DocumentationGenerator(object):
             openfile.write(content)
         finally:
             openfile.close()
+
+    def _prepare_root(self):
+        root = self.root_path
+        if not os.path.exists(root):
+            os.mkdir(root)
+
+        static = os.path.join(root, '_static')
+        if not os.path.exists(static):
+            os.mkdir(static)
+        
+        css = os.path.join(static, 'mesh.css')
+        if not os.path.exists(css):
+            shutil.copyfile(self.CSS_PATH, css)
+
+        templates = os.path.join(root, '_templates')
+        if not os.path.exists(templates):
+            os.mkdir(templates)
+
+        conf = os.path.join(root, 'conf.py')
+        if not os.path.exists(conf):
+            with open(conf, 'w+') as openfile:
+                openfile.write(self.CONF_TEMPLATE)
+
+        if not self.nested:
+            return
+
+        root_index = os.path.join(root, 'index.rst')
+        if not os.path.exists(root_index):
+            with open(root_index, 'w+') as openfile:
+                openfile.write(self.ROOT_TEMPLATE)

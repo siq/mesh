@@ -8,15 +8,23 @@ class GenerateDocs(Task):
     params = [
         param('mesh.bundle', 'module path of bundle', required=True),
         param('mesh.docroot', 'path to docroot', required=True),
+        param('mesh.view', 'view documentation after building', default=False),
     ]
 
     def run(self, runtime, environment):
+        #HACK
+        environment['sphinx.sourcedir'] = environment['mesh.docroot']
         docroot = path(environment['mesh.docroot'])
-        if not docroot.exists():
-            raise TaskError("docroot '%s' does not exist" % docroot)
-
         bundle = import_object(environment['mesh.bundle'])
         DocumentationGenerator(docroot).generate(bundle.describe())
+        runtime.execute('sphinx:html')
+
+        if environment['mesh.view']:
+            self._view_docs(docroot)
+
+    def _view_docs(self, docroot):
+        import webbrowser
+        webbrowser.open('file://%s' % str(docroot.abspath() / 'html/index.html'))
 
 class GeneratePythonBindings(Task):
     name = 'mesh:py'
