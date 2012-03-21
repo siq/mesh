@@ -17,6 +17,7 @@ setup(
     ],
     package_data={
         'mesh.binding': ['templates/*'],
+        'mesh.documentation': ['templates/*'],
     },
     classifiers=[
         'Development Status :: 3 - Alpha',
