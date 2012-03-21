@@ -149,6 +149,10 @@ class MockController(StandardController):
         data = data or {}
         resources = self.storage.query(self.resource.name)
 
+        query = data.get('query')
+        if query:
+            resources = [r for r in resources if self._filter_resource(r, query)]
+
         total = len(resources)
         if data.get('total'):
             return {'total': total}
@@ -183,6 +187,70 @@ class MockController(StandardController):
     def delete(self, context, response, subject, data):
         self.storage.delete(self.resource.name, subject['id'])
         response({'id': subject['id']})
+
+    def _filter_resource(self, resource, query):
+        for attr, filter in query.iteritems():
+            value = resource.get(attr)
+            if isinstance(filter, dict):
+                for operator, expected in filter.iteritems():
+                    if operator == '$eq':
+                        if value != expected:
+                            return False
+                    elif operator == '$ieq':
+                        if value.lower() != expected:
+                            return False
+                    elif operator == '$ne':
+                        if value == expected:
+                            return False
+                    elif operator == '$ine':
+                        if value.lower() == expected:
+                            return False
+                    elif operator == '$pre':
+                        if not value.startswith(expected):
+                            return False
+                    elif operator == '$ipre':
+                        if not value.lower().startswith(expected):
+                            return False
+                    elif operator == '$suf':
+                        if not value.endswith(expected):
+                            return False
+                    elif operator == '$isuf':
+                        if not value.lower().endswith(expected):
+                            return False
+                    elif operator == '$cnt':
+                        if expected not in value:
+                            return False
+                    elif operator == '$icnt':
+                        if expected not in value.lower():
+                            return False
+                    elif operator == '$gt':
+                        if value <= expected:
+                            return False
+                    elif operator == '$gte':
+                        if value < expected:
+                            return False
+                    elif operator == '$lt':
+                        if value >= expected:
+                            return False
+                    elif operator == '$lte':
+                        if value > expected:
+                            return False
+                    elif operator == '$nul':
+                        if (expected and value is not None) or (not expected and value is None):
+                            return False
+                    elif operator == '$len':
+                        if len(value) != expected:
+                            return False
+                    elif operator == '$in':
+                        if value not in expected:
+                            return False
+                    elif operator == '$nin':
+                        if value in expected:
+                            return False
+            elif value != filter:
+                return False
+        else:
+            return True
 
     def _prepare_resource(self, subject, data):
         include = data.get('include') or []

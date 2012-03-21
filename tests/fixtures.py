@@ -13,7 +13,8 @@ class Example(Resource):
     version = 1
 
     class schema:
-        required_field = Text(required=True, nonnull=True, sortable=True)
+        required_field = Text(required=True, nonnull=True, sortable=True,
+            operators=['eq', 'ne', 'pre', 'suf', 'cnt'])
         deferred_field = Text(deferred=True)
         default_field = Integer(default=1)
         constrained_field = Integer(minimum=2, maximum=4)
@@ -24,7 +25,7 @@ class Example(Resource):
         datetime_field = DateTime()
         enumeration_field = Enumeration([1, 2, 3])
         float_field = Float()
-        integer_field = Integer(sortable=True)
+        integer_field = Integer(sortable=True, operators=['eq', 'in', 'gte', 'lt', 'lte', 'gt'])
         map_field = Map(Integer())
         sequence_field = Sequence(Integer())
         structure_field = Structure({
