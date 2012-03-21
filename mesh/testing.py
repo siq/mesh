@@ -2,7 +2,7 @@ from types import FunctionType
 
 from unittest2 import TestCase
 
-from mesh.transport import Transport
+from mesh.transport.internal import InternalTransport
 
 def versions(version=None, min_version=None, max_version=None):
     def decorator(method):
@@ -32,23 +32,20 @@ class MeshTestCaseMeta(type):
     @staticmethod
     def _generate_tests(testcase, function):
         bundle = testcase.bundle
-        versions = bundle.slice(getattr(function, 'version', None),
+        versions = bundle.slice(
+            getattr(function, 'version', None),
             getattr(function, 'min_version', None),
             getattr(function, 'max_version', None))
 
         for version in versions:
             specification = bundle.specify(version)
-            for name in testcase.transports:
-                transport = Transport.transports[name]
-                def test(self):
-                    server, client = transport.construct_fixture(bundle, specification)
-                    function(self, client)
+            def test(self):
+                server, client = InternalTransport.construct_fixture(bundle, specification)
+                function(self, client)
 
-                test.__name__ = '%s_%d_%d_%s' % (function.__name__, version[0], version[1], name)
-                setattr(testcase, test.__name__, test)
+            test.__name__ = '%s_%d_%d' % (function.__name__, version[0], version[1])
+            setattr(testcase, test.__name__, test)
 
 class MeshTestCase(TestCase):
     __metaclass__ = MeshTestCaseMeta
-
     bundle = None
-    transports = ['internal']

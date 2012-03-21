@@ -72,7 +72,7 @@ class MockStorage(object):
     QUERY = 'select id, data from %s order by id'
     UPDATE = 'update %s set data = ? where id = ?'
 
-    def __init__(self, path, fresh=False):
+    def __init__(self, path=':memory:', fresh=False):
         self.path = path
         self.tables = set()
         if fresh:
