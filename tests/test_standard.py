@@ -29,7 +29,7 @@ class TestStandardResources(TestCase):
         response = server.dispatch(endpoint('create'), {}, None, {'required_field': 'text'})
         self.assertEqual(response.status, OK)
 
-        resource = storage.get(response.content['id'])
+        resource = storage.get('example', response.content['id'])
         self.assertIsInstance(resource, dict)
         self.assertEqual(resource['required_field'], 'text')
 
@@ -37,7 +37,7 @@ class TestStandardResources(TestCase):
         response = server.dispatch(endpoint('create'), {}, None, {'required_field': 'text', 'integer_field': 2})
         id = response.content['id']
 
-        resource = storage.get(id)
+        resource = storage.get('example', id)
         self.assertEqual(resource['required_field'], 'text')
         self.assertEqual(resource['integer_field'], 2)
 
@@ -47,7 +47,7 @@ class TestStandardResources(TestCase):
         self.assertIsInstance(response.content, dict)
         self.assertEqual(response.content.get('id'), id)
 
-        resource = storage.get(id)
+        resource = storage.get('example', id)
         self.assertEqual(resource['required_field'], 'text')
         self.assertEqual(resource['integer_field'], 3)
         self.assertEqual(resource['date_field'], today)
@@ -56,7 +56,7 @@ class TestStandardResources(TestCase):
         response = server.dispatch(endpoint('create'), {}, None, {'required_field': 'text'})
         id = response.content['id']
 
-        resource = storage.get(id)
+        resource = storage.get('example', id)
         self.assertEqual(resource['required_field'], 'text')
         self.assertEqual(resource['default_field'], 1)
 
@@ -65,7 +65,7 @@ class TestStandardResources(TestCase):
         self.assertIsInstance(response.content, dict)
         self.assertEqual(response.content.get('id'), id)
 
-        resource = storage.get(id)
+        resource = storage.get('example', id)
         self.assertIs(resource, None)
 
     def test_resource_get(self):

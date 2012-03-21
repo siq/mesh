@@ -69,8 +69,9 @@ class Query(Query):
 
     def one(self):
         return self.limit(1)._execute_query()[0]
-    
+
     def sort(self, *fields):
+        fields = list(fields)
         if self.params.get('sort') == fields:
             return self
         return self.clone(sort=fields)

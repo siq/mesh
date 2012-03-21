@@ -6,8 +6,12 @@ class StandardController(Controller):
     """The standard controller."""
 
     def _prune_resource(self, resource, data, _empty=[]):
+        if not data:
+            return resource
+
         include = data.get('include') or _empty
         exclude = data.get('exclude') or _empty
+
         if not (include or exclude):
             return resource
 
@@ -21,3 +25,4 @@ class StandardController(Controller):
                     pruned[name] = value
 
         return pruned
+

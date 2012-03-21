@@ -10,8 +10,13 @@ server = InternalServer([primary_bundle])
 specification = primary_bundle.specify((1, 0))
 client = InternalClient(server, specification)
 
+from mesh.standard.python import Model
+
 class Example(Model):
     __resource__ = (specification, 'example')
+
+    def __repr__(self):
+        return '[%s, %s]' % (self.required_field, self.integer_field)
 
 class TestPythonInterface(TestCase):
     def setUp(self):

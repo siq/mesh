@@ -1,82 +1,19 @@
 from datetime import date
 
 from mesh.standard import *
+from mesh.standard.mock import MockStorage, MockController
 
-class storage(object):
-    resources = {}
-    id = 0
+storage = MockStorage(':memory:')
 
-    @classmethod
-    def delete(cls, id):
-        del cls.resources[id]
-
-    @classmethod
-    def get(cls, id):
-        return cls.resources.get(id)
-
-    @classmethod
-    def next_id(cls):
-        cls.id += 1
-        return cls.id
-
-    @classmethod
-    def put(cls, id, resource):
-        cls.resources[id] = resource
-
-    @classmethod
-    def reset(cls):
-        cls.resources = {}
-        cls.id = 0
-
-class HarnessController(Controller):
-    @classmethod
-    def acquire(cls, subject):
-        try:
-            subject = int(subject)
-        except ValueError:
-            return None
-        return storage.get(subject)
-
-    def query(self, context, response, subject, data):
-        data = data or {}
-
-
-    def get(self, context, response, subject, data):
-        response(self._prepare_resource(subject, data or {}))
-
-    def create(self, context, response, subject, data):
-        id = data['id'] = storage.next_id()
-        storage.put(id, data)
-        response({'id': id})
-
-    def update(self, context, response, subject, data):
-        subject.update(data)
-        response({'id': subject['id']})
-
-    def delete(self, context, response, subject, data):
-        storage.delete(subject['id'])
-        response({'id': subject['id']})
-
-    def _prepare_resource(self, subject, data):
-        include = data.get('include') or []
-        exclude = data.get('exclude') or []
-
-        resource = {}
-        for name, value in subject.iteritems():
-            if name == 'id':
-                resource[name] = value
-            elif name not in exclude:
-                field = self.resource.schema[name]
-                if name in include or not field.deferred:
-                    resource[name] = value
-        return resource
+class HarnessController(MockController):
+    storage = storage
 
 class Example(Resource):
     name = 'example'
     version = 1
 
     class schema:
-        required_field = Text(required=True, nonnull=True)
+        required_field = Text(required=True, nonnull=True, sortable=True)
         deferred_field = Text(deferred=True)
         default_field = Integer(default=1)
         constrained_field = Integer(minimum=2, maximum=4)
@@ -87,7 +24,7 @@ class Example(Resource):
         datetime_field = DateTime()
         enumeration_field = Enumeration([1, 2, 3])
         float_field = Float()
-        integer_field = Integer()
+        integer_field = Integer(sortable=True)
         map_field = Map(Integer())
         sequence_field = Sequence(Integer())
         structure_field = Structure({
