@@ -187,3 +187,10 @@ def subclass_registry(collection, *attrs):
 
             return implementation
     return registry
+
+def write_file(path, content):
+    openfile = open(path, 'w+')
+    try:
+        openfile.write(content)
+    finally:
+        openfile.close()

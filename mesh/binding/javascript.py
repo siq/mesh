@@ -7,7 +7,7 @@ except ImportError:
 
 from mesh.constants import *
 from mesh.transport.http import STATUS_CODES
-from mesh.util import get_package_data
+from mesh.util import get_package_data, write_file
 from scheme import Field
 
 class JavascriptConstructor(object):
@@ -129,9 +129,7 @@ class Generator(object):
             files['%s.js' % name] = self._construct_resource(resource)
 
         for name, file in files.iteritems():
-            with open('/tmp/%s' % name, 'w+') as openfile:
-                openfile.write(file)
-
+            write_file('/tmp/%s' % name, file)
 
     def _construct_field(self, field):
         specification = {'type': self.FIELDS[field['type']]}

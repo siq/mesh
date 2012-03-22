@@ -5,7 +5,7 @@ from datetime import date, datetime, time
 
 from mesh.constants import *
 from mesh.resource import *
-from mesh.util import format_url_path, get_package_data, get_package_path
+from mesh.util import format_url_path, get_package_data, get_package_path, write_file
 from scheme import *
 
 STATUS_CODES = (
@@ -347,13 +347,11 @@ class DocumentationGenerator(object):
 
         conf = os.path.join(root, 'conf.py')
         if not os.path.exists(conf):
-            with open(conf, 'w+') as openfile:
-                openfile.write(self.CONF_TEMPLATE)
+            write_file(conf, self.CONF_TEMPLATE)
 
         if not self.nested:
             return
 
         root_index = os.path.join(root, 'index.rst')
         if not os.path.exists(root_index):
-            with open(root_index, 'w+') as openfile:
-                openfile.write(self.ROOT_TEMPLATE)
+            write_file(root_index, self.ROOT_TEMPLATE)
