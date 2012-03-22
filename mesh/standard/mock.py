@@ -1,9 +1,17 @@
-import json as _json
 import os
-import sqlite3
 from datetime import date, datetime, time
 from operator import itemgetter
 from time import mktime, strptime
+
+try:
+    import json as _json
+except ImportError:
+    from scheme import json as _json
+
+try:
+    import sqlite3
+except ImportError:
+    from pysqlite2 import dbapi2 as sqlite3
 
 from mesh.standard.controllers import StandardController
 from scheme.timezone import LOCAL, UTC
@@ -89,7 +97,7 @@ class MockStorage(object):
         self._create_table(name)
         cursor = self.connection.execute(self.GET % name, (id,))
         try:
-            return self._create_resource(next(cursor))
+            return self._create_resource(cursor.next())
         except StopIteration:
             return None
 

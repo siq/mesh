@@ -3,7 +3,7 @@ import os
 try:
     import json
 except ImportError:
-    import simplejson as json
+    from scheme import json
 
 from mesh.constants import *
 from mesh.transport.http import STATUS_CODES

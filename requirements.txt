@@ -1,4 +1,4 @@
 nose
--e git+https://github.com/jordanm/simplejson.git#egg=simplejson
+pysqlite2
 unittest2
 wsgiref
