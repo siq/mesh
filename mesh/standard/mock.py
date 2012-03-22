@@ -77,6 +77,7 @@ class MockStorage(object):
     DELETE = 'delete from %s where id = ?'
     GET = 'select id, data from %s where id = ?'
     INSERT = 'insert into %s (data) values (?)'
+    LOAD = 'insert into %s values (?, ?)'
     QUERY = 'select id, data from %s order by id'
     UPDATE = 'update %s set data = ? where id = ?'
 
@@ -100,6 +101,20 @@ class MockStorage(object):
             return self._create_resource(cursor.next())
         except StopIteration:
             return None
+
+    def load(self, fixtures, serialized=False):
+        if serialized:
+            fixtures = json.decode(fixtures)
+
+        cursor = self.connection.cursor()
+        try:
+            for fixture in fixtures:
+                name = fixture.pop('resource')
+                self._create_table(name)
+                cursor.execute(self.LOAD % name, (fixture['id'], json.encode(fixture)))
+            self.connection.commit()
+        finally:
+            cursor.close()
 
     def query(self, name):
         self._create_table(name)

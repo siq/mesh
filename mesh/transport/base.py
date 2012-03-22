@@ -89,7 +89,7 @@ class Client(object):
         if not secondary and id not in self.clients:
             self.clients[id] = self
         
-    def execute(self, resource, request, subject, data, format=None):
+    def execute(self, resource, request, subject=None, data=None, format=None):
         raise NotImplementedError()
 
     @classmethod

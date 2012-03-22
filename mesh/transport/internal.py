@@ -61,7 +61,7 @@ class InternalClient(Client):
         super(InternalClient, self).__init__(specification, environ, format, formats, secondary)
         self.server = server
 
-    def execute(self, resource, request, subject, data, format=None):
+    def execute(self, resource, request, subject=None, data=None, format=None):
         format = format or self.format
         if not format:
             return self._dispatch_request(resource, request, subject, data)
