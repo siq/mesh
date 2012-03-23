@@ -20,7 +20,6 @@ class Example(Resource):
         constrained_field = Integer(minimum=2, maximum=4)
         readonly_field = Integer(readonly=True)
         boolean_field = Boolean()
-        constant_field = Constant('constant')
         date_field = Date()
         datetime_field = DateTime()
         enumeration_field = Enumeration([1, 2, 3])
@@ -42,7 +41,7 @@ class Example(Resource):
         endpoint = (POST, 'example/id')
         filter = {'operation': 'filter'}
         schema = {
-            'operation': Constant('filter', required=True, nonnull=True),
+            'operation': Text(constant='filter', required=True),
         }
         responses = {
             OK: {'id': Integer(required=True, nonnull=True)},

@@ -1,11 +1,15 @@
 define([], function() {
+    var isNaN = function(obj) {
+        return (obj !== obj);
+    };
+
     var pad = function(value, n) {
-        if(n == null) {
+        if (n == null) {
             n = 2;
         }
         value = value.toString();
-        for(var i = 1; i <= n; i++) {
-            if(value.length < i) {
+        for (var i = 1; i <= n; i++) {
+            if (value.length < i) {
                 value = '0' + value;
             }
         }
@@ -13,11 +17,7 @@ define([], function() {
     };
 
     var Time = function(hour, minute, second) {
-        if(typeof hour == 'string') {
-            this.hour = Number(hour.substr(0, 2));
-            this.minute = Number(hour.substr(3, 2));
-            this.second = Number(hour.substr(6, 2));
-        } else if(hour != null) {
+        if (hour != null) {
             this.hour = hour || 0;
             this.minute = minute || 0;
             this.second = second || 0;
@@ -28,8 +28,33 @@ define([], function() {
             this.second = date.getSeconds();
         }
     };
+
     Time.prototype.toISOString = function() {
         return pad(this.hour ) + ':' + pad(this.minute) + ':' + pad(this.second);
+    };
+
+    Time.fromISO8601 = function(value) {
+        var hour, min, sec;
+        if (value.length != 8) {
+            return null;
+        }
+
+        hour = Number(value.substr(0, 2));
+        if (isNaN(hour)) {
+            return null;
+        }
+
+        min = Number(value.substr(3, 2));
+        if (isNaN(min)) {
+            return null;
+        }
+
+        sec = Number(value.substr(6, 2));
+        if (isNaN(sec)) {
+            return null;
+        }
+
+        return new Time(hour, min, sec);
     };
 
     var ABBREVIATED_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul',
@@ -42,15 +67,31 @@ define([], function() {
 
     return {
         Time: Time,
+
+        equivalent: function(a, b) {
+            if (a instanceof Time && b instanceof Time) {
+                return (a.hour === b.hour && a.minute === b.minute && a.second === b.second);
+            } else {
+                return (a.getUTCFullYear() === b.getUTCFullYear() &&
+                    a.getUTCMonth() === b.getUTCMonth() &&
+                    a.getUTCDate() === b.getUTCDate() &&
+                    a.getUTCHours() === b.getUTCHours() &&
+                    a.getUTCMinutes() === b.getUTCMinutes() &&
+                    a.getUTCSeconds() === b.getUTCSeconds() &&
+                    a.getUTCMilliseconds() === b.getUTCMilliseconds()
+                );
+            }
+        },
+
         format: function(value, format) {
             var result = [], token, n;
-            if(format == null) {
+            if (format == null) {
                 format = '%Y-%m-%d %H:%M:%S';
             }
-            for(var i = 0, l = format.length; i < l; i++) {
+            for (var i = 0, l = format.length; i < l; i++) {
                 token = format.substr(i, 2);
-                if(token.length === 2 && token[0] === '%') {
-                    switch(token) {
+                if (token.length === 2 && token[0] === '%') {
+                    switch (token) {
                         case '%a':
                             result.push(ABBREVIATED_WEEKDAYS[value.getDay()]);
                             break;
@@ -74,7 +115,7 @@ define([], function() {
                             break;
                         case '%I':
                             n = value.getHours();
-                            if(n > 12) {
+                            if (n > 12) {
                                 n -= 12;
                             } else if (n === 0) {
                             	n = 12;
@@ -90,7 +131,7 @@ define([], function() {
                         case '%p':
                         case '%P':
                             n = value.getHours();
-                            if(n >= 12) {
+                            if (n >= 12) {
                                 result.push((token === '%p') ? 'pm' : 'PM');
                             } else {
                                 result.push((token === '%p') ? 'am' : 'AM');
@@ -122,22 +163,58 @@ define([], function() {
             }
             return result.join('');
         },
+
         fromISO8601: function(value) {
-            var result = new Date(2000, 0, 0);
-            result.setUTCFullYear(Number(value.substr(0, 4)),
-                                  Number(value.substr(5, 2)) - 1,
-                                  Number(value.substr(8, 2)));
-            if(value.length > 10) {
-                result.setUTCHours(Number(value.substr(11, 2)));
-                result.setUTCMinutes(Number(value.substr(14, 2)));
-                result.setUTCSeconds(Number(value.substr(17, 2)));
+            var result, year, month, day, hour, min, sec;
+            if (value.length < 10) {
+                return null;
+            }
+
+            year = Number(value.substr(0, 4));
+            if (isNaN(year) || year <= 0) {
+                return null;
+            }
+
+            month = Number(value.substr(5, 2));
+            if (isNaN(month) || month <= 0) {
+                return null;
+            }
+
+            day = Number(value.substr(8, 2));
+            if (isNaN(day) || day <= 0) {
+                return null;
+            }
+
+            result = new Date(2000, 0, 0);
+            result.setUTCFullYear(year, month - 1, day);
+
+            if (value.length > 10) {
+                hour = Number(value.substr(11, 2));
+                if (isNaN(hour) || hour < 0) {
+                    return null;
+                }
+
+                min = Number(value.substr(14, 2));
+                if (isNaN(min) || min < 0) {
+                    return null;
+                }
+
+                sec = Number(value.substr(17, 2));
+                if (isNaN(sec) || sec < 0) {
+                    return null;
+                }
+
+                result.setUTCHours(hour);
+                result.setUTCMinutes(min);
+                result.setUTCSeconds(sec);
             }
             return result;
         },
+
         toISO8601: function(value, include_time) {
             var result = value.getUTCFullYear() + '-' + pad(value.getUTCMonth() + 1)
                 + '-' + pad(value.getUTCDate());
-            if(include_time) {
+            if (include_time) {
                 result += 'T' + pad(value.getUTCHours()) + ':' + pad(value.getUTCMinutes())
                     + ':' + pad(value.getUTCSeconds()) + 'Z';
             }

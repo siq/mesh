@@ -97,7 +97,6 @@ class Generator(object):
 
     FIELDS = {
         'boolean': 'fields.BooleanField',
-        'constant': 'fields.ConstantField',
         'date': 'fields.DateField',
         'datetime': 'fields.DateTimeField',
         'enumeration': 'fields.EnumerationField',
