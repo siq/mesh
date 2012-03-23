@@ -92,7 +92,8 @@ class Bundle(object):
     def describe(self, version=None):
         description = {'name': self.name, 'description': self.description}
         if version is not None:
-            description.update(version=version, resources={})
+            description.update(id='%s-%d.%d' % (self.name, version[0], version[1]),
+                version=version, resources={})
             for name, (resource, controller) in self.versions[version].iteritems():
                 description['resources'][name] = resource.describe(controller, '/' + self.name)
         else:

@@ -124,7 +124,7 @@ class Generator(object):
 
         description = bundle.describe(version)
         for name, resource in description['resources'].iteritems():
-            files['%s.js' % name] = self._construct_resource(resource)
+            files['%s.js' % name] = self._construct_resource(resource, description['id'])
 
         return files
 
@@ -138,7 +138,7 @@ class Generator(object):
             specification.update(Field.visit(field, self._construct_field))
         return specification
 
-    def _construct_request(self, request):
+    def _construct_request(self, request, bundle):
         mimetype = self.mimetype
         if request['endpoint'][0] == GET:
             mimetype = URLENCODED
@@ -158,22 +158,23 @@ class Generator(object):
 
         return {
             'type': 'model.Request',
+            'bundle': bundle,
             'name': request['name'],
             'method': request['endpoint'][0],
             'mimetype': mimetype,
-            'url': request['path'],
+            'path': request['path'],
             'schema': schema,
             'responses': responses,
         }
 
-    def _construct_resource(self, resource):
+    def _construct_resource(self, resource, bundle):
         schema = {}
         for name, field in resource['schema'].iteritems():
             schema[name] = self._construct_field(field)
 
         requests = {}
         for name, request in resource['requests'].iteritems():
-            requests[name] = self._construct_request(request)
+            requests[name] = self._construct_request(request, bundle)
 
         specification = {
             '__name__': resource['name'],

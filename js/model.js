@@ -4,27 +4,42 @@ define([
     'vendor/json2',
     'class',
     'events',
-    'fields'
-], function(_, Class, Eventful) {
+    'fields',
+    'mesh'
+], function(_, $, json2, Class, Eventful, fields, mesh) {
     var isArray = _.isArray, isBoolean = _.isBoolean, isEqual = _.isEqual, isString = _.isString;
 
     var Request = Class.extend({
-        ajax: $.ajax,
+        ajax: $ajax,
+        path_expr: /\/id(?=\/|$)/,
 
         init: function(params) {
+            var url;
+            this.bundle = params.bundle;
             this.cache = [];
             this.method = params.method;
             this.mimetype = params.mimetype;
             this.name = params.name;
+            this.path = params.path;
             this.responses = params.responses;
             this.schema = params.schema;
-            this.url = params.url;
-        },
 
+            this.url = this.path;
+            if (mesh && mesh.bundles) {
+                url = mesh.bundles[this.bundle];
+                if (url) {
+                    this.url = url + this.path;
+                }
+            }
+        },
+        
         initiate: function(id, data) {
             var self = this, cache = this.cache, url = this.url,
                 signature, cached, params, deferred;
 
+            if (id != null) {
+                url = url.replace(self.path_expr, '/' + id);
+            }
 
             signature = [url, data];
             for (var i = 0, l = cache.length; i < l; i++) {
@@ -41,10 +56,21 @@ define([
                 url: url
             };
 
+            deferred = $.Deferred();
+            cached = [signature, deferred];
+
             if (data) {
                 if (!isString(data)) {
                     if (this.schema != null) {
-                        data = this.schema.serialize(data, this.mimetype);
+                        try {
+                            data = this.schema.serialize(data, this.mimetype);
+                        } catch (error) {
+                            if (error instanceof fields.ValidationError) {
+                                return deferred.reject();
+                            } else {
+                                throw error;
+                            }
+                        }
                     } else {
                         data = null;
                     }
@@ -56,22 +82,33 @@ define([
                 params.data = data;
             }
 
-            deferred = $.Deferred();
-            cached = [signature, deferred];
-
             params.success = function(data, status, xhr) {
-                var response = self.responses[xhr.status];
-                if (response) {
-                    data = response.schema.unserialize(data, response.mimetype);
-                }
+                var response;
                 cache.splice(_.indexOf(cache, cached), 1);
+
+                response = self.responses[xhr.status];
+                if (response) {
+                    try {
+                        data = response.schema.unserialize(data, response.mimetype);
+                    } catch (error) {
+                        if (error instanceof fields.ValidationError) {
+                            deferred.reject();
+                        } else {
+                            throw error;
+                        }
+                    }
+                }
                 deferred.resolve(data, xhr);
             };
 
             params.error = function(xhr) {
-                var error = null;
-                
+                var error = null, mimetype;
                 cache.splice(_.indexOf(cache, cached), 1);
+
+                mimetype = xhr.getResponseHeader('content-type');
+                if (mimetype && mimetype.substr(0, 16) === 'application/json') {
+                    error = $.parseJSON(xhr.responseText);
+                }
                 deferred.reject(error, xhr);
             };
 
@@ -402,6 +439,7 @@ define([
     });
 
     return {
+        Collection: Collection,
         Manager: Manager,
         Model: Model,
         Request: Request
