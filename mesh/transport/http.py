@@ -1,6 +1,7 @@
 import BaseHTTPServer
 import re
 from httplib import HTTPConnection
+from urlparse import urlparse
 
 from mesh.constants import *
 from mesh.exceptions import *
@@ -56,15 +57,20 @@ PATH_EXPR = r"""(?x)^%s
     /?$"""
 
 class Connection(object):
-    def __init__(self, host):
-        self.connection = HTTPConnection(host)
-        self.host = host
+    def __init__(self, url):
+        self.scheme, self.host, self.path = urlparse(url)[:3]
+        self.path = self.path.rstrip('/')
 
-    def request(self, method, url, body=None, headers={}):
-        self.connection.request(method, url, body, headers)
+    def request(self, method, url, body=None, headers=None):
+        if url[0] != '/':
+            url = '/' + url
+
+        connection = HTTPConnection(self.host)
+        connection.request(method, self.path + url, body, headers or {})
+
         response = self.connection.getresponse()
-
         content = response.read() or None
+
         mimetype = response.getheader('Content-Type', None)
         return HttpResponse(STATUS_CODES[response.status], content, mimetype)
 
@@ -156,10 +162,14 @@ class HttpServer(Server):
 
     def __init__(self, bundles, path_prefix=None, default_format=Json, available_formats=None):
         super(HttpServer, self).__init__(bundles, default_format, available_formats)
-        prfx = path_prefix and ('/' + path_prefix.strip('/')) or ''
-        self.path_expr = re.compile(PATH_EXPR % prfx)
+        if path_prefix:
+            path_prefix = '/' + path_prefix.strip('/')
+        else:
+            path_prefix = ''
 
-        self.groups = dict()
+        self.path_expr = re.compile(PATH_EXPR % path_prefix)
+        self.groups = {}
+
         for name, bundle in self.bundles.iteritems():
             for version, resources in bundle.versions.iteritems():
                 for resource, controller in resources.itervalues():
@@ -231,14 +241,13 @@ class HttpClient(Client):
     """An HTTP API client."""
 
     def __init__(self, host, specification, environ=None, format=Json, formats=None,
-            secondary=False, prefix=None):
+        secondary=False):
 
         super(HttpClient, self).__init__(specification, environ, format, formats, secondary)
         self.connection = Connection(host)
-        self.prefix = prefix and ('/' + prefix.strip('/')) or ''
         self.paths = {}
-        self.initial_path = '%s/%s/%d.%d/' % (self.prefix, specification.name,
-            specification.version[0], specification.version[1])
+        self.initial_path = '/%s/%d.%d/' % (specification.name, specification.version[0],
+            specification.version[1])
 
     def execute(self, resource, request, subject=None, data=None, format=None):
         format = format or self.format
@@ -321,6 +330,33 @@ class WsgiServer(HttpServer):
 
         start_response(response.status_line, headers)
         return response.content
+
+class ForwardingHttpServer(Server):
+    """An HTTP API server which forwards requests."""
+
+    PATH_EXPR = r'^%s/(?P<bundle>\w+)/(?P<path>.*)$'
+
+    def __init__(self, bundles, path_prefix=None, default_format=Json, available_formats=None):
+        super(ForwardingHttpServer, self).__init__(bundles.keys(), default_format, available_formats)
+        if path_prefix:
+            self.path_expr = self.PATH_EXPR % ('/' + path_prefix.strip('/'))
+        else:
+            self.path_expr = self.PATH_EXPR % ''
+
+        self.connections = {}
+        for bundle, host in bundles.iteritems():
+            self.connections[bundle.name] = Connection(host)
+
+    def dispatch(self, method, path, mimetype, headers, data):
+        match = self.path_expr.match(path)
+        if not match:
+            return response(NOT_FOUND)
+
+        connection = self.connections.get(match.group('bundle'))
+        if not connection:
+            return response(NOT_FOUND)
+
+        response = connection.request(method, match.group('path'), data, headers)
 
 class TestingHttpServer(HttpServer):
     def run(self, address):

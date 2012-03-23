@@ -235,6 +235,7 @@ class ResourceMeta(type):
             version = controller.version
         else:
             version = (resource.version, 0)
+
         description = {
             'controller': identify_class(controller),
             'name': resource.name,
@@ -248,9 +249,13 @@ class ResourceMeta(type):
         for name, field in resource.schema.iteritems():
             description['schema'][name] = field.describe(FIELD_PARAMETERS)
 
+        path = '/%d.%d/' % version
+        if path_prefix:
+            path = path_prefix.rstrip('/') + path
+
         description['requests'] = {}
         for name, request in resource.requests.iteritems():
-            description['requests'][name] = request.describe(path_prefix)
+            description['requests'][name] = request.describe(path)
 
         return description
 

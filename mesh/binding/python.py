@@ -149,7 +149,7 @@ class BindingGenerator(object):
     MODEL_TMPL = get_package_data('mesh.binding', 'templates/model.py.tmpl')
     MODULE_TMPL = get_package_data('mesh.binding', 'templates/module.py.tmpl')
 
-    def __init__(self, path_prefix=None, module_path=None, separate_models=False,
+    def __init__(self, module_path=None, separate_models=False,
         specification_var='specification'):
 
         if module_path:
@@ -158,13 +158,12 @@ class BindingGenerator(object):
             module_path = ''
 
         self.module_path = module_path
-        self.path_prefix = path_prefix
         self.separate_models = separate_models
         self.specification_var = specification_var
 
     def generate(self, bundle, version):
         module_path = '%s%s.' % (self.module_path, bundle.name)
-        description = bundle.describe(self.path_prefix, version)
+        description = bundle.describe(version)
 
         models = []
         for name, model in sorted(description['resources'].iteritems()):

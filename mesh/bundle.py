@@ -89,18 +89,18 @@ class Bundle(object):
         if self.mounts:
             self._collate_mounts()
 
-    def describe(self, path_prefix=None, version=None):
+    def describe(self, version=None):
         description = {'name': self.name, 'description': self.description}
         if version is not None:
             description.update(version=version, resources={})
             for name, (resource, controller) in self.versions[version].iteritems():
-                description['resources'][name] = resource.describe(controller, path_prefix)
+                description['resources'][name] = resource.describe(controller, '/' + self.name)
         else:
             versions = description['versions'] = {}
             for version, resources in self.versions.iteritems():
                 versions[version] = {}
                 for name, (resource, controller) in resources.iteritems():
-                    versions[version][name] = resource.describe(controller, path_prefix)
+                    versions[version][name] = resource.describe(controller, '/' + self.name)
 
         return description
 
@@ -133,8 +133,8 @@ class Bundle(object):
 
         return versions
 
-    def specify(self, version, path_prefix=None):
-        return Specification(self.describe(path_prefix, version))
+    def specify(self, version):
+        return Specification(self.describe(version))
 
     def _collate_mounts(self):
         ordering = set()

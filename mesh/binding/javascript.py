@@ -115,21 +115,19 @@ class Generator(object):
     IGNORED_ATTRS = ('description', 'notes', 'structural', 'type')
     MODEL_TMPL = get_package_data('mesh.binding', 'templates/model.js.tmpl')
 
-    def __init__(self, path_prefix=None, template_dir=None, mimetype=JSON):
+    def __init__(self, template_dir=None, mimetype=None):
         self.constructor = JavascriptConstructor(constructor_attr='type')
-        self.mimetype = mimetype
-        self.path_prefix = path_prefix
+        self.mimetype = mimetype or JSON
         self.template_dir = template_dir
 
     def generate(self, bundle, version):
         files = {}
 
-        description = bundle.describe(self.path_prefix, version)
+        description = bundle.describe(version)
         for name, resource in description['resources'].iteritems():
             files['%s.js' % name] = self._construct_resource(resource)
 
-        for name, file in files.iteritems():
-            write_file('/tmp/%s' % name, file)
+        return files
 
     def _construct_field(self, field):
         specification = {'type': self.FIELDS[field['type']]}
