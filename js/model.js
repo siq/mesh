@@ -16,8 +16,10 @@ define([
             this.models = {};
         },
 
-        associate: function(model) {
-            var id = model.id || model.cid;
+        associate: function(model, id) {
+            if (id == null) {
+                id = model.id || model.cid;
+            }
             if (this.models[id]) {
                 if (this.models[id] !== model) {
                     var name = this.model.prototype.__name__;
@@ -80,6 +82,10 @@ define([
             if (model.id && this.models[model.id]) {
                 this.trigger('change', this, model);
             }
+        },
+
+        query: function(params, request) {
+            return collection.Query(this, params, request);
         }
     });
 
@@ -91,6 +97,9 @@ define([
             constructor.models = prototype.__models__ = constructor.manager();
             constructor.collection = function(params, independent) {
                 return constructor.models.collection(params, independent);
+            };
+            constructor.query = function(params, request) {
+                return constructor.models.query(params, request);
             };
         },
 

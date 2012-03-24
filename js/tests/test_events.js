@@ -2,7 +2,9 @@ require([
     'vendor/underscore',
     'events'
 ], function(_, Eventful) {
-    test('events: subscription and unsubscription', function() {
+    module('events');
+
+    test('subscription and unsubscription', function() {
         var eventful = Eventful(), calls = 0,
             callback = function(event, value) {
                 strictEqual(value, 'value');
@@ -24,7 +26,7 @@ require([
         strictEqual(calls, 1);
     });
 
-    test('events: unsubscription via returning false', function() {
+    test('unsubscription via returning false', function() {
         var eventful = Eventful(), calls = 0,
             callback = function(event) {
                 calls += 1;
@@ -39,7 +41,7 @@ require([
         strictEqual(calls, 1);
     });
 
-    test('events: subscription to all events', function() {
+    test('subscription to all events', function() {
         var eventful = Eventful(), calls = 0,
             callback = function() {
                 calls += 1;

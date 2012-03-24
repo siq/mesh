@@ -69,7 +69,7 @@ define([
                 if (!isString(data)) {
                     if (self.schema != null) {
                         try {
-                            data = self.schema.serialize(data, self.mimetype);
+                            data = self.schema.serialize(data, self.mimetype, true);
                         } catch (error) {
                             if (error instanceof fields.ValidationError) {
                                 return deferred.reject();

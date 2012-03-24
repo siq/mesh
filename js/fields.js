@@ -263,7 +263,7 @@ define([
             return extraction;
         },
 
-        serialize: function(value, mimetype) {
+        serialize: function(value, mimetype, outermost) {
             var value_field = this.value;
             if (value == null) {
                 return value;
@@ -277,7 +277,7 @@ define([
                     value[name] = value_field.serialize(value[name], mimetype);
                 }
             }
-            if (mimetype === URLENCODED) {
+            if (mimetype === URLENCODED && !outermost) {
                 value = urlencodeMapping(value);
             }
             return value;
@@ -365,7 +365,7 @@ define([
             return extraction;
         },
 
-        serialize: function(value, mimetype) {
+        serialize: function(value, mimetype, outermost) {
             var structure = this.structure, name, field;
             if (value == null) {
                 return value;
@@ -383,7 +383,7 @@ define([
                     value[name] = field.serialize(value[name], mimetype);
                 }
             }
-            if (mimetype === URLENCODED) {
+            if (mimetype === URLENCODED && !outermost) {
                 value = urlencodeMapping(value);
             }
             return value;

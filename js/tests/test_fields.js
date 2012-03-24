@@ -5,7 +5,9 @@ require([
 ], function(_, datetime, fields) {
     var URLENCODED = 'application/x-www-form-urlencoded';
 
-    test('boolean fields: serialization', function() {
+    module('boolean fields');
+
+    test('serialization', function() {
         var field = fields.BooleanField();
         strictEqual(field.serialize(null), null);
         _.each([true, 'true', 'True'], function(value) {
@@ -18,14 +20,14 @@ require([
         });
     });
 
-    test('boolean fields: unserialization', function() {
+    test('unserialization', function() {
         var field = fields.BooleanField();
         strictEqual(field.unserialize(null), null);
         strictEqual(field.unserialize(true), true);
         strictEqual(field.unserialize(false), false);
     });
 
-    test('boolean fields: invalid types', function() {
+    test('invalid types', function() {
         var field = fields.BooleanField();
         _.each([new Date(), 1, 1.1, {}, [], new datetime.Time(), ''], function(value) {
             raises(function() {field.serialize(value);}, fields.InvalidTypeError);
@@ -33,7 +35,9 @@ require([
         });
     });
 
-    test('date fields: serialization', function() {
+    module('date fields');
+
+    test('serialization', function() {
         var field = fields.DateField();
         strictEqual(field.serialize(null), null);
 
@@ -41,7 +45,7 @@ require([
         strictEqual(field.serialize(date), '2000-01-01');
     });
 
-    test('date fields: unserialization', function() {
+    test('unserialization', function() {
         var field = fields.DateField();
         strictEqual(field.unserialize(null), null);
 
@@ -49,7 +53,7 @@ require([
         ok(datetime.equivalent(field.unserialize('2000-01-01'), date));
     });
 
-    test('date fields: invalid types', function() {
+    test('invalid types', function() {
         var field = fields.DateField();
         _.each([true, 1, 1.1, {}, [], new datetime.Time(), ''], function(value) {
             raises(function() {field.serialize(value);}, fields.InvalidTypeError);
@@ -57,7 +61,9 @@ require([
         });
     });
 
-    test('datetime fields: serialization', function() {
+    module('datetime fields');
+
+    test('serialization', function() {
         var field = fields.DateTimeField();
         strictEqual(field.serialize(null), null);
 
@@ -65,13 +71,13 @@ require([
         strictEqual(field.serialize(date), datetime.toISO8601(date, true));
     });
 
-    test('datetime fields: unserialization', function() {
+    test('unserialization', function() {
         var field = fields.DateTimeField();
         strictEqual(field.unserialize(null), null);
 
     });
 
-    test('datetime fields: invalid types', function() {
+    test('invalid types', function() {
         var field = fields.DateTimeField();
         _.each([true, 1, 1.1, {}, [], new datetime.Time(), ''], function(value) {
             raises(function() {field.serialize(value);}, fields.InvalidTypeError);
@@ -79,7 +85,9 @@ require([
         });
     });
 
-    test('enumeration fields: serialization', function() {
+    module('enumeration fields');
+
+    test('serialization', function() {
         var field = fields.EnumerationField({enumeration: [true, 1, 1.1, 'test']});
         strictEqual(field.serialize(null), null);
         strictEqual(field.serialize(''), null);
@@ -89,7 +97,7 @@ require([
         strictEqual(field.serialize(true, URLENCODED), 'true');
     });
 
-    test('enumeration fields: unserialization', function() {
+    test('unserialization', function() {
         var field = fields.EnumerationField({enumeration: [true, 1, 1.1, 'test']});
         strictEqual(field.unserialize(null), null);
         _.each(field.enumeration, function(value) {
@@ -97,7 +105,7 @@ require([
         });
     });
 
-    test('enumeration fields: invalid types', function() {
+    test('invalid types', function() {
         var field = fields.EnumerationField({enumeration: [true, 1, 1.1, 'test']});
         _.each([false, new Date(), 0, 0.1, {}, [], new datetime.Time(), 'invalid'], function(value) {
             raises(function() {field.serialize(value);}, fields.InvalidTypeError);
@@ -105,20 +113,22 @@ require([
         });
     });
 
-    test('integer fields: serialization', function() {
+    module('integer fields');
+
+    test('serialization', function() {
         var field = fields.IntegerField();
         strictEqual(field.serialize(null), null);
         strictEqual(field.serialize(1), 1);
         strictEqual(field.serialize('1'), 1);
     });
 
-    test('integer fields: unserialization', function() {
+    test('unserialization', function() {
         var field = fields.IntegerField();
         strictEqual(field.unserialize(null), null);
         strictEqual(field.unserialize(1), 1);
     });
 
-    test('integer fields: invalid types', function() {
+    test('invalid types', function() {
         var field = fields.IntegerField();
         _.each([false, new Date(), 0.1, {}, [], new datetime.Time(), ''], function(value) {
             raises(function() {field.serialize(value);}, fields.InvalidTypeError);
@@ -126,7 +136,9 @@ require([
         });
     });
 
-    test('float fields: serialization', function() {
+    module('float fields');
+
+    test('serialization', function() {
         var field = fields.FloatField();
         strictEqual(field.serialize(null), null);
         strictEqual(field.serialize(1), 1);
@@ -134,13 +146,13 @@ require([
         strictEqual(field.serialize('1.2'), 1.2);
     });
 
-    test('float fields: unserialization', function() {
+    test('unserialization', function() {
         var field = fields.FloatField();
         strictEqual(field.unserialize(null), null);
         strictEqual(field.unserialize(1.2), 1.2);
     });
 
-    test('float fields: invalid types', function() {
+    test('invalid types', function() {
         var field = fields.FloatField();
         _.each([false, new Date(), {}, [], new datetime.Time(), ''], function(value) {
             raises(function() {field.serialize(value);}, fields.InvalidTypeError);
@@ -148,7 +160,9 @@ require([
         });
     });
 
-    test('map fields: serialization', function() {
+    module('map fields');
+
+    test('serialization', function() {
         var field = fields.MapField({value: fields.IntegerField()});
         strictEqual(field.serialize(null), null);
         deepEqual(field.serialize({}), {});
@@ -160,7 +174,7 @@ require([
         strictEqual(field.serialize({a: 1}, URLENCODED), '{a:1}');
     });
 
-    test('map fields: unserialization', function() {
+    test('unserialization', function() {
         var field = fields.MapField({value: fields.IntegerField()});
         strictEqual(field.unserialize(null), null);
         deepEqual(field.unserialize({}), {});
@@ -168,7 +182,7 @@ require([
         deepEqual(field.unserialize({a: 1, b: 2}), {a: 1, b: 2});
     });
 
-    test('map fields: invalid types', function() {
+    test('invalid types', function() {
         var field = fields.MapField({value: fields.IntegerField()});
         _.each([false, new Date(), 1, 1.1, [], new datetime.Time(), ''], function(value) {
             raises(function() {field.serialize(value);}, fields.InvalidTypeError);
@@ -176,7 +190,7 @@ require([
         });
     });
 
-    test('map fields: simple extraction', function() {
+    test('extraction', function() {
         var field = fields.MapField({value: fields.IntegerField()});
         var subject = {'a': 1, 'b': 2, 'c': 3};
         var extraction = field.extract(subject);
@@ -185,7 +199,9 @@ require([
         notStrictEqual(extraction, subject);
     });
 
-    test('sequence fields: serialization', function() {
+    module('sequence fields');
+
+    test('serialization', function() {
         var field = fields.SequenceField({item: fields.IntegerField()});
         strictEqual(field.serialize(null), null);
         deepEqual(field.serialize([]), []);
@@ -198,7 +214,7 @@ require([
         strictEqual(field.serialize([1,2], URLENCODED), '[1,2]');
     });
 
-    test('sequence fields: unserialization', function() {
+    test('unserialization', function() {
         var field = fields.SequenceField({item: fields.IntegerField()});
         strictEqual(field.unserialize(null), null);
         deepEqual(field.unserialize([]), []);
@@ -206,7 +222,7 @@ require([
         deepEqual(field.unserialize([1,2]), [1,2]);
     });
 
-    test('sequence fields: invalid types', function() {
+    test('invalid types', function() {
         var field = fields.SequenceField({item: fields.IntegerField()});
         _.each([false, new Date(), 1, 1.1, {}, new datetime.Time(), ''], function(value) {
             raises(function() {field.serialize(value);}, fields.InvalidTypeError);
@@ -214,7 +230,9 @@ require([
         });
     });
 
-    test('structure fields: serialization', function() {
+    module('structure fields');
+
+    test('serialization', function() {
         var field = fields.StructureField({structure: {
             bool: fields.BooleanField(),
             integer: fields.IntegerField(),
@@ -231,7 +249,7 @@ require([
         strictEqual(field.serialize({text: 'text'}, URLENCODED), '{text:text}');
     });
 
-    test('structure fields: unserialization', function() {
+    test('unserialization', function() {
         var field = fields.StructureField({structure: {
             bool: fields.BooleanField(),
             integer: fields.IntegerField(),
@@ -244,7 +262,7 @@ require([
             {bool: false, integer: 2, text: 'more'});
     });
 
-    test('structure fields: invalid types', function() {
+    test('invalid types', function() {
         var field = fields.StructureField({structure: {
             bool: fields.BooleanField(),
             integer: fields.IntegerField(),
@@ -256,21 +274,23 @@ require([
         });
     });
 
-    test('text fields: serialization', function() {
+    module('text fields');
+
+    test('serialization', function() {
         var field = fields.TextField();
         _.each([null, '', 'text'], function(value) {
             strictEqual(field.serialize(value), value);
         });
     });
 
-    test('text fields: unserialization', function() {
+    test('unserialization', function() {
         var field = fields.TextField();
         _.each([null, '', 'text'], function(value) {
             strictEqual(field.unserialize(value), value);
         });
     });
 
-    test('text fields: invalid types', function() {
+    test('invalid types', function() {
         var field = fields.TextField();
         _.each([false, new Date(), 1, 0.1, {}, [], new datetime.Time()], function(value) {
             raises(function() {field.serialize(value);}, fields.InvalidTypeError);
@@ -278,7 +298,9 @@ require([
         });
     });
 
-    test('time fields: serialization', function() {
+    module('time fields');
+
+    test('serialization', function() {
         var field = fields.TimeField();
         strictEqual(field.serialize(null), null);
 
@@ -286,7 +308,7 @@ require([
         strictEqual(field.serialize(time), '00:00:00');
     });
 
-    test('time fields: unserialization', function() {
+    test('unserialization', function() {
         var field = fields.TimeField();
         strictEqual(field.unserialize(null), null);
 
@@ -294,7 +316,7 @@ require([
         ok(datetime.equivalent(field.unserialize('00:00:00'), time));
     });
 
-    test('time fields: invalid types', function() {
+    test('invalid types', function() {
         var field = fields.TimeField();
         _.each([true, new Date(), 1, 1.1, {}, [], ''], function(value) {
             raises(function() {field.serialize(value);}, fields.InvalidTypeError);
@@ -302,7 +324,9 @@ require([
         });
     });
 
-    test('tuple fields: serialization', function() {
+    module('tuple fields');
+
+    test('serialization', function() {
         var field = fields.TupleField({values: [
             fields.BooleanField(), fields.IntegerField(), fields.TextField()
         ]});
@@ -314,7 +338,7 @@ require([
         raises(function() {field.serialize([true, 1]);}, fields.ValidationError);
     });
 
-    test('tuple fields: unserialization', function() {
+    test('unserialization', function() {
         var field = fields.TupleField({values: [
             fields.BooleanField(), fields.IntegerField(), fields.TextField()
         ]});
@@ -323,7 +347,7 @@ require([
         raises(function() {field.unserialize([true, 1]);}, fields.ValidationError);
     });
 
-    test('tuple fields: invalid types', function() {
+    test('invalid types', function() {
         var field = fields.TupleField({values: [
             fields.BooleanField(), fields.IntegerField(), fields.TextField()
         ]});
@@ -333,7 +357,9 @@ require([
         });
     });
 
-    test('union fields: serialization', function() {
+    module('union fields');
+
+    test('serialization', function() {
         var field = fields.UnionField({fields: [
             fields.BooleanField(), fields.IntegerField(), fields.TextField()
         ]});
@@ -343,7 +369,7 @@ require([
         });
     });
 
-    test('union fields: unserialization', function() {
+    test('unserialization', function() {
         var field = fields.UnionField({fields: [
             fields.BooleanField(), fields.IntegerField(), fields.TextField()
         ]});
@@ -353,7 +379,7 @@ require([
         });
     });
 
-    test('union fields: invalid types', function() {
+    test('invalid types', function() {
         var field = fields.UnionField({fields: [
             fields.BooleanField(), fields.IntegerField(), fields.TextField()
         ]});

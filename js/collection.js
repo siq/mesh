@@ -21,7 +21,7 @@ define([
             }
 
             this.manager = manager;
-            this.params = params;
+            this.params = params || {};
             this.request = request;
         },
 
@@ -58,6 +58,7 @@ define([
                 }
                 data.complete = (xhr.status === 200);
                 data.status = STATUS_CODES[xhr.status];
+                return data;
             });
         },
 
@@ -110,7 +111,7 @@ define([
     var Collection = Eventful.extend({
         init: function(manager, query) {
             if (query && !(query instanceof Query)) {
-                query = Query(query);
+                query = Query(manager, query);
             }
             this.ids = {};
             this.manager = manager;
@@ -165,6 +166,56 @@ define([
         },
 
         load: function(params) {
+            var self = this, params = params || {}, query = self.query.clone(),
+                offset, limit, models;
+
+            query.params.offset = offset = params.offset || 0;
+            if (params.limit != null) {
+                query.limit(params.limit);
+            }
+            if (!query.params.limit && !params.reload && self.total > 0) {
+                query.limit(self.total - offset);
+            }
+            limit = query.params.limit;
+
+            if (params.offset == null && !params.reload && self.total != null) {
+                return $.Deferred().resolve(self.models);
+            }
+
+            if (!params.reload) {
+                models = self.models;
+                while (models[query.params.offset]) {
+                    query.params.offset++;
+                    if (query.params.limit) {
+                        query.params.limit--;
+                        if (query.params.limit === 0) {
+                            models = models.slice(offset, offset + limit);
+                            return $.Deferred().resolve(models);
+                        }
+                    }
+                }
+            }
+
+            if (query.params.offset === 0) {
+                delete query.params.offset;
+            }
+
+            return query.execute().pipe(function(data) {
+                var queryOffset = query.params.offset || 0, instance, results;
+                self.total = data.total;
+                for (var i = 0, l = data.resources.length; i < l; i++) {
+                    instance = data.resources[i];
+                    self.models[queryOffset + i] = instance;
+                    self.ids[instance.id] = instance;
+                }
+                if (limit) {
+                    results = self.models.slice(offset, offset + limit);
+                } else {
+                    results = self.models.slice(offset);
+                }
+                self.trigger('update', self);
+                return $.Deferred().resolve(results, data);
+            });
         },
 
         notify: function(event, manager, model) {
@@ -200,6 +251,9 @@ define([
             this.models = [];
             this.total = null;
             if (query != null) {
+                if (!(query instanceof Query)) {
+                    query = Query(this.manager, query);
+                }
                 this.query = query;
             }
             this.trigger('update', this);
