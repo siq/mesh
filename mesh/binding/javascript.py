@@ -96,20 +96,20 @@ class Generator(object):
     """Generates javascript bindings."""
 
     FIELDS = {
-        'boolean': 'fields.BooleanField',
-        'date': 'fields.DateField',
-        'datetime': 'fields.DateTimeField',
-        'enumeration': 'fields.EnumerationField',
-        'integer': 'fields.IntegerField',
-        'field': 'fields.Field',
-        'float': 'fields.FloatField',
-        'map': 'fields.MapField',
-        'sequence': 'fields.SequenceField',
-        'structure': 'fields.StructureField',
-        'text': 'fields.TextField',
-        'time': 'fields.TimeField',
-        'tuple': 'fields.TupleField',
-        'union': 'fields.UnionField',
+        'boolean': 'mesh.fields.BooleanField',
+        'date': 'mesh.fields.DateField',
+        'datetime': 'mesh.fields.DateTimeField',
+        'enumeration': 'mesh.fields.EnumerationField',
+        'integer': 'mesh.fields.IntegerField',
+        'field': 'mesh.fields.Field',
+        'float': 'mesh.fields.FloatField',
+        'map': 'mesh.fields.MapField',
+        'sequence': 'mesh.fields.SequenceField',
+        'structure': 'mesh.fields.StructureField',
+        'text': 'mesh.fields.TextField',
+        'time': 'mesh.fields.TimeField',
+        'tuple': 'mesh.fields.TupleField',
+        'union': 'mesh.fields.UnionField',
     }
     IGNORED_ATTRS = ('description', 'notes', 'structural', 'type')
     MODEL_TMPL = get_package_data('mesh.binding', 'templates/model.js.tmpl')
@@ -157,7 +157,7 @@ class Generator(object):
             }
 
         return {
-            'type': 'model.Request',
+            'type': 'mesh.Request',
             'bundle': bundle,
             'name': request['name'],
             'method': request['endpoint'][0],

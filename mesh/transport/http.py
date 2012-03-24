@@ -87,6 +87,10 @@ class HttpRequest(ServerRequest):
 class HttpResponse(ServerResponse):
     """An HTTP response."""
 
+    def __init__(self, status=None, content=None, mimetype=None):
+        super(HttpResponse, self).__init__(status, content, mimetype)
+        self.headers = {}
+
     @property
     def status_code(self):
         return STATUS_CODES[self.status]
@@ -94,6 +98,9 @@ class HttpResponse(ServerResponse):
     @property
     def status_line(self):
         return STATUS_LINES[self.status]
+
+    def header(self, name, value):
+        self.headers[name] = value
 
 class Path(object):
     """An HTTP request path."""
@@ -160,6 +167,13 @@ class EndpointGroup(object):
 class HttpServer(Server):
     """The HTTP API server."""
 
+    ACCESS_CONTROL_HEADERS = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'DELETE, GET, OPTIONS, POST, PUT',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Max-Age': '2592000',
+    }
+
     def __init__(self, bundles, path_prefix=None, default_format=Json, available_formats=None):
         super(HttpServer, self).__init__(bundles, default_format, available_formats)
         if path_prefix:
@@ -178,9 +192,19 @@ class HttpServer(Server):
                             self._construct_endpoint(name, version, resource, controller, request)
 
     def dispatch(self, method, path, mimetype, headers, data):
-        request = HttpRequest(method=method, mimetype=mimetype, headers=headers)
         response = HttpResponse()
+        if method == OPTIONS:
+            for name, value in self.ACCESS_CONTROL_HEADERS.iteritems():
+                response.header(name, value)
+            return response(OK)
 
+        mimetype = mimetype or URLENCODED
+        if ';' in mimetype:
+            mimetype, charset = mimetype.split(';', 1)
+        if mimetype not in self.formats:
+            mimetype = URLENCODED
+
+        request = HttpRequest(method=method, mimetype=mimetype, headers=headers)
         try:
             request.path = path = Path(self, path)
         except Exception:
@@ -214,11 +238,14 @@ class HttpServer(Server):
         if path.format:
             format = self.formats[path.format]
         elif mimetype and mimetype != URLENCODED:
-            format = self.formats[mimetype]
+            format = self.formats.get(mimetype)
 
+        response.header('Access-Control-Allow-Origin', '*')
         if response.content:
             response.mimetype = format.mimetype
             response.content = format.serialize(response.content)
+            response.header('Content-Type', response.mimetype)
+            response.header('Content-Length', str(len(response.content)))
 
         return response
 
@@ -307,29 +334,25 @@ class WsgiServer(HttpServer):
         try:
             return self._dispatch_wsgi_request(environ, start_response)
         except Exception, exception:
-            start_response('500 Internal Server Error', {})
-            return None
+            import traceback; traceback.print_exc()
+            start_response('500 Internal Server Error', [])
+            return ''
 
     def _dispatch_wsgi_request(self, environ, start_response):
         method = environ['REQUEST_METHOD']
         if method == GET:
             data = environ['QUERY_STRING']
+        elif method == OPTIONS:
+            data = None
         else:
+            print environ['wsgi.input']
             data = environ['wsgi.input'].read()
-
-        mimetype = environ.get('CONTENT_TYPE', URLENCODED)
-        if ';' in mimetype:
-            mimetype, charset = mimetype.split(';', 1)
-
+    
         path = environ['PATH_INFO']
-        response = self.dispatch(method, path, mimetype, environ, data)
+        response = self.dispatch(method, path, environ.get('CONTENT_TYPE'), environ, data)
 
-        headers = []
-        if response.mimetype:
-            headers.append(('Content-Type', response.mimetype))
-
-        start_response(response.status_line, headers)
-        return response.content
+        start_response(response.status_line, response.headers.items())
+        return response.content or ''
 
 class ForwardingHttpServer(Server):
     """An HTTP API server which forwards requests."""
@@ -357,19 +380,6 @@ class ForwardingHttpServer(Server):
             return response(NOT_FOUND)
 
         response = connection.request(method, match.group('path'), data, headers)
-
-class TestingHttpServer(HttpServer):
-    def run(self, address):
-        this = self
-        class handler(BaseHTTPServer.BaseHTTPRequestHandler):
-            def do_GET(self):
-                print self.headers
-                headers = None
-                mimetype = None
-                response = this.dispatch(GET, self.path, mimetype, headers, self.rfile.read())
-
-        server = BaseHTTPServer.HTTPServer(address, handler)
-        server.serve_forever()
 
 class HttpTransport(Transport):
     name = 'http'

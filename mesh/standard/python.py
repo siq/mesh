@@ -36,19 +36,9 @@ class Query(Query):
     def filter(self, **params):
         if 'query' in self.params:
             query = deepcopy(self.params['query'])
+            query.update(params)
         else:
-            query = {}
-
-        for name, value in params.iteritems():
-            if '__' in name:
-                name, operator = name.rsplit('__', 1)
-                if name in query and isinstance(query[name], dict):
-                    query[name]['$' + operator] = value
-                else:
-                    query[name] = {'$' + operator: value}
-            else:
-                query[name] = value
-
+            query = params
         return self.clone(query=query)
 
     def include(self, *fields):

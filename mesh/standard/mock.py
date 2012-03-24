@@ -13,6 +13,7 @@ try:
 except ImportError:
     from pysqlite2 import dbapi2 as sqlite3
 
+from mesh.standard import *
 from mesh.standard.controllers import StandardController
 from scheme.timezone import LOCAL, UTC
 

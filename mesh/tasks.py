@@ -88,5 +88,25 @@ class GeneratePythonBindings(Task):
         for token, (filename, content) in files.iteritems():
             filepath = root / filename
             if not filepath.exists():
-                filepath.write_bytes(content)       
+                filepath.write_bytes(content)
+
+class StartWsgiServer(Task):
+    name = 'mesh:wsgi'
+    description = 'runs a wsgi test server for a mesh bundle'
+    params = [
+        param('mesh.bundle', 'module path to bundle', required=True),
+        param('mesh.hostname', 'host', required=True),
+    ]
+
+    def run(self, runtime, environment):
+        from wsgiref.simple_server import make_server
+        from mesh.transport.http import WsgiServer
+
+        bundle = import_object(environment['mesh.bundle'])
+        application = WsgiServer([bundle])
+
+        hostname, port = environment['mesh.hostname'].split(':')
+        httpd = make_server(hostname, int(port), application)
         
+        httpd.serve_forever()
+

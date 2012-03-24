@@ -38,24 +38,23 @@ class construct_model_request(object):
 
 class construct_query_request(construct_model_request):
     operators = {
-        'eq': 'Equals.',
-        'ieq': 'Case-insensitive equals.',
-        'ne': 'Not equal.',
-        'ine': 'Case-insensitive not equal.',
-        'pre': 'Prefix search.',
-        'ipre': 'Case-insensitive prefix search.',
-        'suf': 'Suffix search.',
-        'isuf': 'Case-insensitive suffix search.',
-        'cnt': 'Contains.',
-        'icnt': 'Case-insensitive contains.',
+        'equal': 'Equals',
+        'iequal': 'Case-insensitive equals.',
+        'not': 'Not equal.',
+        'inot': 'Case-insensitive not equal.',
+        'prefix': 'Prefix search.',
+        'iprefix': 'Case-insensitive prefix search.',
+        'suffix': 'Suffix search.',
+        'isuffix': 'Case-insensitive suffix search.',
+        'contains': 'Contains.',
+        'icontains': 'Case-insensitive contains.',
         'gt': 'Greater then.',
         'gte': 'Greater then or equal to.',
         'lt': 'Less then.',
         'lte': 'Less then or equal to.',
-        'nul': 'Is null.',
-        'len': 'Length.',
+        'null': 'Is null.',
         'in': 'In given values.',
-        'nin': 'Not in given values.',
+        'notin': 'Not in given values.',
     }
 
     def __call__(self, resource):
@@ -84,9 +83,7 @@ class construct_query_request(construct_model_request):
         operators = {}
         for name, field in fields.iteritems():
             if field.operators:
-                operator_field = self._construct_operator_field(field)
-                if operator_field:
-                    operators[name] = operator_field
+                self._construct_operator_fields(operators, field)
 
         if operators:
             schema['query'] = Structure(operators,
@@ -121,44 +118,31 @@ class construct_query_request(construct_model_request):
             return Sequence(Enumeration(sorted(tokens), nonnull=True),
                 description='The sort order for this query.')
 
-    def _construct_operator_field(self, field):
-        if field.operators == ['eq']:
-            return self._construct_eq_operator(field, self.operators['eq'])
-
-        operators = Structure({})
+    def _construct_operator_fields(self, operators, field):
         for operator in field.operators:
             description = self.operators.get(operator)
-            if description and operator != 'eq':
+            if description:
                 constructor = getattr(self, '_construct_%s_operator' % operator, None)
                 if constructor:
-                    op = constructor(field, description)
+                    operator_field = constructor(field, description)
                 else:
-                    op = type(field)(name='$' + operator, description=description, nonnull=True)
-                operators.structure[op.name] = op
+                    name = '%s__%s' % (field.name, operator)
+                    operator_field = type(field)(name=name, description=description, nonnull=True)
+                operators[operator_field.name] = operator_field
 
-        if 'eq' in field.operators:
-            op = self._construct_eq_operator(field, self.operators['eq'])
-            operators = Union((operators, op))
-
-        return operators
-
-    def _construct_eq_operator(self, field, description):
+    def _construct_equal_operator(self, field, description):
         return type(field)(name=field.name, description=description, nonnull=True)
 
-    def _construct_nul_operator(self, field, description):
-        return Boolean(name='$nul', description=description, nonnull=True)
-
-    def _construct_len_operator(self, field, description):
-        return Integer(name='$len', description=description,
-            nonnull=True, minimum=0)
-
     def _construct_in_operator(self, field, description):
-        return Sequence(type(field)(nonnull=True), name='$in',
-            description=description, nonnull=True, min_length=1)
+        return Sequence(type(field)(nonnull=True), name='%s__in' % field.name,
+            description=description, nonnull=True)
 
-    def _construct_nin_operator(self, field, description):
-        return Sequence(type(field)(nonnull=True), name='$nin',
-            description=description, nonnull=True, min_length=1)
+    def _construct_notin_operator(self, field, description):
+        return Sequence(type(field)(nonnull=True), name='%s__notin' % field.name,
+            description=description, nonnull=True)
+
+    def _construct_null_operator(self, field, description):
+        return Boolean(name='%s__null' % field.name, description=description, nonnull=True)
 
 class construct_get_request(construct_model_request):
     def __call__(self, resource):

@@ -2,10 +2,11 @@ FIELD_PARAMETERS = ('readonly', 'deferred', 'sortable', 'operators')
 
 DELETE = 'DELETE'
 GET = 'GET'
+OPTIONS = 'OPTIONS'
 POST = 'POST'
 PUT = 'PUT'
 
-HTTP_METHODS = (DELETE, GET, POST, PUT)
+HTTP_METHODS = (DELETE, GET, OPTIONS, POST, PUT)
 
 OK = 'OK'
 CREATED = 'CREATED'
