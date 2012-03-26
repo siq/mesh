@@ -345,7 +345,6 @@ class WsgiServer(HttpServer):
         elif method == OPTIONS:
             data = None
         else:
-            print environ['wsgi.input']
             data = environ['wsgi.input'].read()
     
         path = environ['PATH_INFO']
