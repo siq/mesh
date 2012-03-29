@@ -68,7 +68,7 @@ class Connection(object):
         connection = HTTPConnection(self.host)
         connection.request(method, self.path + url, body, headers or {})
 
-        response = self.connection.getresponse()
+        response = connection.getresponse()
         content = response.read() or None
 
         mimetype = response.getheader('Content-Type', None)
@@ -358,10 +358,11 @@ class ForwardingHttpServer(WsgiServer):
     def __init__(self, bundles, path_prefix=None, default_format=Json, available_formats=None):
         super(ForwardingHttpServer, self).__init__(bundles.keys(), default_format, available_formats)
         if path_prefix:
-            self.path_expr = self.PATH_EXPR % ('/' + path_prefix.strip('/'))
+            path_prefix = '/' + path_prefix.strip('/')
         else:
-            self.path_expr = self.PATH_EXPR % ''
+            path_prefix = ''
 
+        self.path_expr = re.compile(self.PATH_EXPR % path_prefix)
         self.connections = {}
         for bundle, host in bundles.iteritems():
             self.connections[bundle.name] = Connection(host)
