@@ -164,7 +164,28 @@ class EndpointGroup(object):
             return response(BAD_REQUEST)
         definition.process(self.controller, request, response)
 
-class HttpServer(Server):
+class WsgiServer(Server):
+    def __call__(self, environ, start_response):
+        try:
+            method = environ['REQUEST_METHOD']
+            if method == GET:
+                data = environ['QUERY_STRING']
+            elif method == OPTIONS:
+                data = None
+            else:
+                data = environ['wsgi.input'].read()
+
+            path = environ['PATH_INFO']
+            response = self.dispatch(method, path, environ.get('CONTENT_TYPE'), environ, data)
+
+            start_response(response.status_line, response.headers.items())
+            return response.content or ''
+        except Exception, exception:
+            import traceback; traceback.print_exc()
+            start_response('500 Internal Server Error', [])
+            return ''
+
+class HttpServer(WsgiServer):
     """The HTTP API server."""
 
     ACCESS_CONTROL_HEADERS = {
@@ -190,26 +211,6 @@ class HttpServer(Server):
                     for request in resource.requests.itervalues():
                         if request.endpoint:
                             self._construct_endpoint(name, version, resource, controller, request)
-
-    def __call__(self, environ, start_response):
-        try:
-            method = environ['REQUEST_METHOD']
-            if method == GET:
-                data = environ['QUERY_STRING']
-            elif method == OPTIONS:
-                data = None
-            else:
-                data = environ['wsgi.input'].read()
-
-            path = environ['PATH_INFO']
-            response = self.dispatch(method, path, environ.get('CONTENT_TYPE'), environ, data)
-
-            start_response(response.status_line, response.headers.items())
-            return response.content or ''
-        except Exception, exception:
-            import traceback; traceback.print_exc()
-            start_response('500 Internal Server Error', [])
-            return ''
 
     def dispatch(self, method, path, mimetype, headers, data):
         response = HttpResponse()
@@ -349,7 +350,7 @@ class HttpClient(Client):
             self.paths[path] = template
             return template
 
-class ForwardingHttpServer(HttpServer):
+class ForwardingHttpServer(WsgiServer):
     """An HTTP API server which forwards requests."""
 
     PATH_EXPR = r'^%s/(?P<bundle>\w+)/(?P<path>.*)$'
