@@ -349,7 +349,7 @@ class HttpClient(Client):
             self.paths[path] = template
             return template
 
-class ForwardingHttpServer(Server):
+class ForwardingHttpServer(HttpServer):
     """An HTTP API server which forwards requests."""
 
     PATH_EXPR = r'^%s/(?P<bundle>\w+)/(?P<path>.*)$'
