@@ -191,7 +191,7 @@ class DocumentationGenerator(object):
         value = field.get('value')
         if value:
             if not value.get('description'):
-                block.set('subtype', value['type'])
+                block.set('subtype', value['__type__'])
             else:
                 block.append(self._document_field('', value, role))
 
@@ -247,7 +247,7 @@ class DocumentationGenerator(object):
 
     def _document_field(self, name, field, role=None, sectional=False):
         block = directive('field', name)
-        block.set('type', field['type'])
+        block.set('type', field['__type__'])
         if sectional:
             block.set('sectional', '')
 
@@ -268,7 +268,7 @@ class DocumentationGenerator(object):
         if default is not None:
             block.set('default', repr(default))
         
-        formatter = getattr(self, '_describe_%s' % field['type'], None)
+        formatter = getattr(self, '_describe_%s' % field['__type__'], None)
         if formatter:
             formatter(field, block, role)
         return block

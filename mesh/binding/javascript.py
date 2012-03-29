@@ -111,11 +111,11 @@ class Generator(object):
         'tuple': 'mesh.fields.TupleField',
         'union': 'mesh.fields.UnionField',
     }
-    IGNORED_ATTRS = ('description', 'notes', 'structural', 'type')
+    IGNORED_ATTRS = ('description', 'notes', 'structural', '__type__')
     MODEL_TMPL = get_package_data('mesh.binding', 'templates/model.js.tmpl')
 
     def __init__(self, template_dir=None, mimetype=None):
-        self.constructor = JavascriptConstructor(constructor_attr='type')
+        self.constructor = JavascriptConstructor(constructor_attr='__type__')
         self.mimetype = mimetype or JSON
         self.template_dir = template_dir
 
@@ -129,7 +129,7 @@ class Generator(object):
         return files
 
     def _construct_field(self, field):
-        specification = {'type': self.FIELDS[field['type']]}
+        specification = {'__type__': self.FIELDS[field['__type__']]}
         for name, value in field.iteritems():
             if name not in self.IGNORED_ATTRS:
                 specification[name] = value
@@ -157,7 +157,7 @@ class Generator(object):
             }
 
         return {
-            'type': 'mesh.Request',
+            '__type__': 'mesh.Request',
             'bundle': bundle,
             'name': request['name'],
             'method': request['endpoint'][0],
