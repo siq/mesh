@@ -37,6 +37,24 @@ define([
             return this;
         },
 
+        collection: function(query, independent) {
+            var cache = this.cache, instance, cached;
+            if (independent || !query) {
+                return collection.Collection(this, query);
+            }
+
+            for (var i = 0, l = cache.length; i < l; i++) {
+                cached = cache[i];
+                if (isEqual(cached.query, query)) {
+                    return cached;
+                }
+            }
+
+            instance = Collection(this, query);
+            cache.push(instance);
+            return instance;
+        },
+
         dissociate: function(model) {
             if (model.id) {
                 delete this.models[model.id];
