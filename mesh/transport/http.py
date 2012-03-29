@@ -8,7 +8,7 @@ from mesh.exceptions import *
 from mesh.transport.base import *
 from scheme.formats import *
 
-__all__ = ('HttpClient', 'HttpRequest', 'HttpResponse', 'HttpServer', 'WsgiServer')
+__all__ = ('ForwardingHttpServer', 'HttpClient', 'HttpRequest', 'HttpResponse', 'HttpServer')
 
 STATUS_CODES = {
     OK: 200,
@@ -191,6 +191,26 @@ class HttpServer(Server):
                         if request.endpoint:
                             self._construct_endpoint(name, version, resource, controller, request)
 
+    def __call__(self, environ, start_response):
+        try:
+            method = environ['REQUEST_METHOD']
+            if method == GET:
+                data = environ['QUERY_STRING']
+            elif method == OPTIONS:
+                data = None
+            else:
+                data = environ['wsgi.input'].read()
+
+            path = environ['PATH_INFO']
+            response = self.dispatch(method, path, environ.get('CONTENT_TYPE'), environ, data)
+
+            start_response(response.status_line, response.headers.items())
+            return response.content or ''
+        except Exception, exception:
+            import traceback; traceback.print_exc()
+            start_response('500 Internal Server Error', [])
+            return ''
+
     def dispatch(self, method, path, mimetype, headers, data):
         response = HttpResponse()
         if method == OPTIONS:
@@ -329,30 +349,6 @@ class HttpClient(Client):
             self.paths[path] = template
             return template
 
-class WsgiServer(HttpServer):
-    def __call__(self, environ, start_response):
-        try:
-            return self._dispatch_wsgi_request(environ, start_response)
-        except Exception, exception:
-            import traceback; traceback.print_exc()
-            start_response('500 Internal Server Error', [])
-            return ''
-
-    def _dispatch_wsgi_request(self, environ, start_response):
-        method = environ['REQUEST_METHOD']
-        if method == GET:
-            data = environ['QUERY_STRING']
-        elif method == OPTIONS:
-            data = None
-        else:
-            data = environ['wsgi.input'].read()
-    
-        path = environ['PATH_INFO']
-        response = self.dispatch(method, path, environ.get('CONTENT_TYPE'), environ, data)
-
-        start_response(response.status_line, response.headers.items())
-        return response.content or ''
-
 class ForwardingHttpServer(Server):
     """An HTTP API server which forwards requests."""
 
@@ -378,7 +374,8 @@ class ForwardingHttpServer(Server):
         if not connection:
             return response(NOT_FOUND)
 
-        response = connection.request(method, match.group('path'), data, headers)
+        fullpath = '%s/%s' % (match.group('bundle'), match.group('path'))
+        return connection.request(method, fullpath, data)
 
 class HttpTransport(Transport):
     name = 'http'

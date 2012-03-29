@@ -15,7 +15,6 @@ from mesh.transport.http import *
 from fixtures import *
 
 server = HttpServer([primary_bundle, secondary_bundle])
-wsgi_server = WsgiServer([primary_bundle, secondary_bundle])
 
 def http(method, data=None, resource='example', mimetype=None, **params):
     path = params.pop('path', None)
