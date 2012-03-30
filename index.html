@@ -63,13 +63,16 @@
     
       <h2>Install</h2>
       <p>
-        Mesh and Scheme are up on <a href="http://pypi.python.org">PyPI</a> and should 
-        work fine with <code>easy_install</code>:
+        First install scheme:
+        <pre>$ git clone git://github.com/siq/scheme
+$ cd scheme ; python setup.py install</pre>
+      <p>Intsall mesh:
+        <pre>$ git clone git://github.com/siq/mesh
+$ cd mesh ; python setup.py install</pre>
       </p>
-      <p>
-        <pre>$ easy_install scheme
-$ easy_install mesh</pre>
-      </p>
+      <p>Also: to get auto documentation to work, install bake.
+      <pre>$ git clone git://github.com/siq/bake
+$ cd bake ; python setup.py install</pre>
 
       <ul>
         <li><a href="http://pypi.python.org/pypi/mesh">Mesh on PyPI</a></li>
