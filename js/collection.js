@@ -110,9 +110,14 @@ define([
 
     var Collection = Eventful.extend({
         init: function(manager, query) {
-            if (query && !(query instanceof Query)) {
-                query = Query(manager, query);
+            if (query) {
+                if (!(query instanceof Query)) {
+                    query = Query(manager, query);
+                }
+            } else {
+                query = Query(manager);
             }
+
             this.ids = {};
             this.manager = manager;
             this.models = [];
@@ -166,7 +171,7 @@ define([
         },
 
         load: function(params) {
-            var self = this, params = params || {}, query = self.query.clone(),
+            var self = this, params = params || {}, query = this.query.clone(),
                 offset, limit, models;
 
             query.params.offset = offset = params.offset || 0;
