@@ -39,7 +39,7 @@ class BlogController(MeshlogController):
 
     def query(self, context, response, subject, data):
         blog_lst = []
-        query_val = data['query']['title']['$cnt']
+        query_val = data['query']['title__contains']
         for blog_id in storage[self.resource]:
             blog = storage[blog_id]
             if query_val in blog['title']:
@@ -64,7 +64,7 @@ class PostController(MeshlogController):
             posts = storage[self.resource]
 
         if 'title' in query:
-            posts = filter(lambda p:query['title']['$cnt'] in p['title'], posts)
+            posts = filter(lambda p:query['title__contains'] in p['title'], posts)
 
         if 'author' in query:
             posts = filter(lambda p:query['author'] == p['author'], posts)

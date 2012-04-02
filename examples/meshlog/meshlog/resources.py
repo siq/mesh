@@ -7,7 +7,7 @@ class Blog(Resource):
     version = 1
 
     class schema:
-        title = Text(required=True, nonull=True, operators=['cnt'])
+        title = Text(required=True, nonull=True, operators=['contains'])
         posts = Sequence(Integer())
 
 class Post(Resource):
@@ -17,8 +17,8 @@ class Post(Resource):
     version = 1
 
     class schema:
-        title = Text(operators=['cnt'])
+        title = Text(operators=['contains'])
         author = Text(operators=['eq'])
-        body = Text(operators=['cnt'])
+        body = Text(operators=['contains'])
         blog = Integer(required=True, nonnull=True, operators=['eq'])
 
