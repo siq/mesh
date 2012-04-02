@@ -55,7 +55,7 @@ def client(argv):
 
     def query_blog_action(params):
         q = get_param(params, 'query')
-        response = client.execute('blog', 'query', None, {'query': {'title': {'$cnt': q}}})
+        response = client.execute('blog', 'query', None, {'query': {'title__contains': q}})
         print 'Number of results:', response.content['total']
         for blog in response.content['resources']:
             print blog
@@ -87,8 +87,8 @@ def client(argv):
         q = get_param(params, 'query')
         query = {'query':
                     {'blog': blog_id,
-                     'title': {'$cnt': q},
-                     'body': {'$cnt': q}}}
+                     'title__contains': q,
+                     'body__contains': q}}
         response = client.execute('post', 'query', None, query)
         print 'Number of posts:', response.content['total']
         for post in response.content['resources']:
