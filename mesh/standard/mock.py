@@ -75,6 +75,7 @@ class json(object):
 
 class MockStorage(object):
     DDL = 'create table if not exists %s (id integer primary key, data text)'
+    DDL_STR = 'create table if not exists %s (id text primary key, data text)'
     DELETE = 'delete from %s where id = ?'
     GET = 'select id, data from %s where id = ?'
     INSERT = 'insert into %s (data) values (?)'
@@ -82,9 +83,11 @@ class MockStorage(object):
     QUERY = 'select id, data from %s order by id'
     UPDATE = 'update %s set data = ? where id = ?'
 
-    def __init__(self, path=':memory:', fresh=False):
+    def __init__(self, path=':memory:', fresh=False, id_type=int):
         self.path = path
         self.tables = set()
+        assert id_type in [str, int]
+        self.id_type = id_type
         if fresh:
             self.reset()
         else:
@@ -156,7 +159,8 @@ class MockStorage(object):
 
     def _create_table(self, name):
         if name not in self.tables:
-            self.connection.execute(self.DDL % name)
+            dispatch = {int: self.DDL, str: self.DDL_STR}
+            self.connection.execute(dispatch[self.id_type] % name)
             self.tables.add(name)
 
 class MockController(StandardController):
