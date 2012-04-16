@@ -1,10 +1,10 @@
 define([
-    'vendor/underscore',
-    'vendor/jquery',
-    'class',
-    'events',
-    'fields',
-    'collection'
+    'path!vendor:underscore',
+    'path!vendor:jquery',
+    'path!mesh:class',
+    'path!mesh:events',
+    'path!mesh:fields',
+    'path!mesh:collection'
 ], function(_, $, Class, Eventful, fields, collection) {
     var isArray = _.isArray, isBoolean = _.isBoolean, isEmpty = _.isEmpty,
         isEqual = _.isEqual, isString = _.isString;

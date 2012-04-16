@@ -1,8 +1,8 @@
 define([
-    'vendor/underscore',
-    'vendor/jquery',
-    'class',
-    'events'
+    'path!vendor:underscore',
+    'path!vendor:jquery',
+    'path!mesh:class',
+    'path!mesh:events'
 ], function(_, $, Class, Eventful) {
     var extend = $.extend, intersection = _.intersection, isArray = _.isArray,
         isString = _.isString, toArray = _.toArray;

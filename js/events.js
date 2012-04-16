@@ -1,5 +1,5 @@
 define([
-    'class'
+    'path!mesh:class'
 ], function(Class) {
     return Class.extend({
         on: function(name, callback, context) {

@@ -1,8 +1,8 @@
 define([
-    'vendor/underscore',
-    'vendor/jquery',
-    'class',
-    'fields',
+    'path!vendor:underscore',
+    'path!vendor:jquery',
+    'path!mesh:class',
+    'path!mesh:fields',
     'meshconf'
 ], function(_, $, Class, fields, meshconf) {
     var Deferred = $.Deferred, isEqual = _.isEqual, indexOf = _.indexOf, isString = _.isString;
