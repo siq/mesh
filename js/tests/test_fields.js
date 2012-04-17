@@ -1,7 +1,8 @@
+/*global test, asyncTest, ok, equal, deepEqual, start, module, strictEqual, notStrictEqual, raises*/
 require([
-    'vendor/underscore',
-    'datetime',
-    'fields'
+    'path!vendor:underscore',
+    'path!mesh:datetime',
+    'path!mesh:fields'
 ], function(_, datetime, fields) {
     var URLENCODED = 'application/x-www-form-urlencoded';
 
@@ -388,4 +389,6 @@ require([
             raises(function() {field.unserialize(value);}, fields.InvalidTypeError);
         });
     });
+
+    start();
 });

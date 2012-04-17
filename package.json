@@ -9,11 +9,12 @@
   "version": "0.0.1",
   "dependencies": {
     "siq-vendor-js": "0.0.x",
-    "siq-js-component": "0.0.x"
+    "siq-js-component": "0.0.x",
+    "bedrockjs": "0.0.x"
   },
   "component": {
       "name": "mesh",
       "sourceDirectory": "js",
-      "testDirectory": "test"
+      "testTemplate": "js/tests/testTemplate.html"
   }
 }

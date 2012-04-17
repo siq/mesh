@@ -1,9 +1,9 @@
+/*global test, asyncTest, ok, equal, deepEqual, start, module, strictEqual, notStrictEqual, raises*/
 require([
-    'vendor/underscore',
-    'vendor/jquery',
-    'mesh',
-    'example'
-], function(_, $, mesh, Example) {
+    'path!vendor:underscore',
+    'path!vendor:jquery',
+    'path!mesh:tests/example'
+], function(_, $, Example) {
     module('queries');
 
     var ajax_failed = function() {
@@ -65,4 +65,6 @@ require([
             start();
         }, ajax_failed);
     });
+
+    start();
 });

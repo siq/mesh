@@ -1,15 +1,15 @@
 define([
     'path!vendor:underscore',
     'path!vendor:jquery',
-    'path!mesh:class',
-    'path!mesh:events',
+    'path!bedrock:class',
+    'path!bedrock:events',
     'path!mesh:fields',
     'path!mesh:collection'
-], function(_, $, Class, Eventful, fields, collection) {
+], function(_, $, Class, Eventable, fields, collection) {
     var isArray = _.isArray, isBoolean = _.isBoolean, isEmpty = _.isEmpty,
         isEqual = _.isEqual, isString = _.isString;
 
-    var Manager = Eventful.extend({
+    var Manager = Class.extend({
         init: function(model) {
             this.cache = [];
             this.model = model;
@@ -50,7 +50,7 @@ define([
                 }
             }
 
-            instance = Collection(this, query);
+            instance = collection.Collection(this, query);
             cache.push(instance);
             return instance;
         },
@@ -105,9 +105,9 @@ define([
         query: function(params, request) {
             return collection.Query(this, params, request);
         }
-    });
+    }, {mixins: [Eventable]});
 
-    var Model = Eventful.extend({
+    var Model = Class.extend({
         __new__: function(constructor, base, prototype) {
             constructor.manager = function() {
                 return Manager(constructor);
@@ -279,7 +279,7 @@ define([
         _initiateRequest: function(name, params) {
             return this._getRequest(name).initiate(this.id, params);
         }
-    });
+    }, {mixins: [Eventable]});
 
     return {
         Manager: Manager,

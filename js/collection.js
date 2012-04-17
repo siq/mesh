@@ -1,9 +1,9 @@
 define([
     'path!vendor:underscore',
     'path!vendor:jquery',
-    'path!mesh:class',
-    'path!mesh:events'
-], function(_, $, Class, Eventful) {
+    'path!bedrock:class',
+    'path!bedrock:events'
+], function(_, $, Class, Eventable) {
     var extend = $.extend, intersection = _.intersection, isArray = _.isArray,
         isString = _.isString, toArray = _.toArray;
 
@@ -108,7 +108,7 @@ define([
         }
     });
 
-    var Collection = Eventful.extend({
+    var Collection = Class.extend({
         init: function(manager, query) {
             if (query) {
                 if (!(query instanceof Query)) {
@@ -264,7 +264,7 @@ define([
             this.trigger('update', this);
             return this;
         }
-    });
+    }, {mixins: [Eventable]});
 
     return {
         Collection: Collection,

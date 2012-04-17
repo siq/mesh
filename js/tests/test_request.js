@@ -1,6 +1,7 @@
+/*global test, asyncTest, ok, equal, deepEqual, start, module */
 require([
-    'vendor/underscore',
-    'example'
+    'path!vendor:underscore',
+    'path!mesh:tests/example'
 ], function(_, Example) {
     asyncTest('requests: GET', function() {
         var request = Example.prototype.__requests__.query;
@@ -30,4 +31,6 @@ require([
             }
         );
     });
+
+    start();
 });

@@ -1,9 +1,10 @@
+/*global test, asyncTest, ok, equal, deepEqual, start, module, strictEqual */
 require([
-    'vendor/underscore',
-    'vendor/jquery',
-    'mesh',
-    'example'
-], function(_, $, mesh, Example) {
+    'path!vendor:underscore',
+    'path!vendor:jquery',
+    'path!mesh:request',
+    'path!mesh:tests/example'
+], function(_, $, Request, Example) {
     var manager = Example.models, last_ajax_call;
 
     var ajax_failed = function() {
@@ -13,13 +14,13 @@ require([
 
     module('models', {
         setup: function() {
-            mesh.Request.prototype.ajax = function(params) {
+            Request.prototype.ajax = function(params) {
                 last_ajax_call = params;
                 return $.ajax(params);
             };
         },
         teardown: function() {
-            mesh.Request.ajax = $.ajax;
+            Request.ajax = $.ajax;
         }
     });
 
@@ -124,4 +125,5 @@ require([
         });
     });
 
+    start();
 });

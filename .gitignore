@@ -7,3 +7,4 @@ dist
 .svn
 docs/_build
 node_modules
+.test

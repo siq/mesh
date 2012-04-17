@@ -1,7 +1,7 @@
 define([
     'path!vendor:underscore',
     'path!vendor:jquery',
-    'path!mesh:class',
+    'path!bedrock:class',
     'path!mesh:fields',
     'meshconf'
 ], function(_, $, Class, fields, meshconf) {
