@@ -1,5 +1,8 @@
 define([
-    'mesh'
-], function(mesh) {
-    return mesh.Model.extend(%s);
+    'path!mesh:request',
+    'path!mesh:fields',
+    'path!mesh:model',
+    'path!mesh:collection'
+], function(Request, fields, model, collection) {
+    return model.Model.extend(%s);
 });
