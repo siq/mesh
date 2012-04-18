@@ -355,16 +355,18 @@ class ForwardingHttpServer(WsgiServer):
 
     PATH_EXPR = r'^%s/(?P<bundle>\w+)/(?P<path>.*)$'
 
-    def __init__(self, bundles, path_prefix=None, default_format=Json, available_formats=None):
-        super(ForwardingHttpServer, self).__init__(bundles.keys(), default_format, available_formats)
+    def __init__(self, forwards, path_prefix=None, default_format=Json, available_formats=None):
+        bundles = [forward[0] for forward in forwards]
+        super(ForwardingHttpServer, self).__init__(bundles, default_format, available_formats)
+
         if path_prefix:
             path_prefix = '/' + path_prefix.strip('/')
         else:
             path_prefix = ''
-
         self.path_expr = re.compile(self.PATH_EXPR % path_prefix)
+
         self.connections = {}
-        for bundle, host in bundles.iteritems():
+        for bundle, host in forwards.iteritems():
             self.connections[bundle.name] = Connection(host)
 
     def dispatch(self, method, path, mimetype, headers, data):
