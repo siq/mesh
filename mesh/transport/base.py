@@ -53,19 +53,11 @@ class ServerResponse(object):
 class Server(object):
     """An API server."""
 
-    def __init__(self, bundles, default_format=None, available_formats=None):
-        self.bundles = {}
-        for bundle in bundles:
-            if bundle.name not in self.bundles:
-                self.bundles[bundle.name] = bundle
-            else:
-                raise Exception()
-
+    def __init__(self, default_format=None, available_formats=None):
+        self.default_format = default_format
         self.formats = {}
         for format in (available_formats or STANDARD_FORMATS):
             self.formats[format.name] = self.formats[format.mimetype] = format
-
-        self.default_format = default_format
 
     def dispatch(self):
         raise NotImplementedError()

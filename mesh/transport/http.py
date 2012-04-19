@@ -196,15 +196,21 @@ class HttpServer(WsgiServer):
     }
 
     def __init__(self, bundles, path_prefix=None, default_format=Json, available_formats=None):
-        super(HttpServer, self).__init__(bundles, default_format, available_formats)
+        super(HttpServer, self).__init__(default_format, available_formats)
         if path_prefix:
             path_prefix = '/' + path_prefix.strip('/')
         else:
             path_prefix = ''
-
         self.path_expr = re.compile(PATH_EXPR % path_prefix)
-        self.groups = {}
+        
+        self.bundles = {}
+        for bundle in bundles:
+            if bundle.name not in self.bundles:
+                self.bundles[bundle.name] = bundle
+            else:
+                raise Exception()
 
+        self.groups = {}
         for name, bundle in self.bundles.iteritems():
             for version, resources in bundle.versions.iteritems():
                 for resource, controller in resources.itervalues():
@@ -355,10 +361,8 @@ class ForwardingHttpServer(WsgiServer):
 
     PATH_EXPR = r'^%s/(?P<bundle>\w+)/(?P<path>.*)$'
 
-    def __init__(self, forwards, path_prefix=None, default_format=Json, available_formats=None):
-        bundles = [forward[0] for forward in forwards]
-        super(ForwardingHttpServer, self).__init__(bundles, default_format, available_formats)
-
+    def __init__(self, bundles, path_prefix=None, default_format=Json, available_formats=None):
+        super(ForwardingHttpServer, self).__init__(default_format, available_formats)
         if path_prefix:
             path_prefix = '/' + path_prefix.strip('/')
         else:
@@ -366,8 +370,8 @@ class ForwardingHttpServer(WsgiServer):
         self.path_expr = re.compile(self.PATH_EXPR % path_prefix)
 
         self.connections = {}
-        for bundle, host in forwards.iteritems():
-            self.connections[bundle.name] = Connection(host)
+        for name, url in bundles.iteritems():
+            self.connections[name] = Connection(url)
 
     def dispatch(self, method, path, mimetype, headers, data):
         match = self.path_expr.match(path)

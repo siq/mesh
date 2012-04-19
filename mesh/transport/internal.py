@@ -10,7 +10,14 @@ class InternalServer(Server):
     """An API server."""
 
     def __init__(self, bundles, default_format=None, available_formats=None):
-        super(InternalServer, self).__init__(bundles, default_format, available_formats)
+        super(InternalServer, self).__init__(default_format, available_format)
+
+        self.bundles = {}
+        for bundle in bundles:
+            if bundle.name not in self.bundles:
+                self.bundles[bundle.name] = bundle
+            else:
+                raise Exception()
 
         self.endpoints = {}
         for name, bundle in self.bundles.iteritems():
