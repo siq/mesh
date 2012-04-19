@@ -18,6 +18,7 @@ class Context(object):
     """A request context."""
 
     def __init__(self, request):
+        self.environ = request.environ
         self.request = request
 
 class Response(object):

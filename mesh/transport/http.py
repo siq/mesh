@@ -165,6 +165,9 @@ class EndpointGroup(object):
         definition.process(self.controller, request, response)
 
 class WsgiServer(Server):
+    HEADER_PREFIX = 'HTTP_X_MESH_'
+    HEADER_PREFIX_LENGTH = len(HEADER_PREFIX)
+
     def __call__(self, environ, start_response):
         try:
             method = environ['REQUEST_METHOD']
@@ -175,8 +178,16 @@ class WsgiServer(Server):
             else:
                 data = environ['wsgi.input'].read()
 
+            prefix = self.HEADER_PREFIX
+            prefix_len = self.HEADER_PREFIX_LENGTH
+
+            context = {}
+            for name, value in environ.iteritems():
+                if name[:prefix_len] == prefix:
+                    context[name[prefix_len:].lower()] = value
+
             path = environ['PATH_INFO']
-            response = self.dispatch(method, path, environ.get('CONTENT_TYPE'), environ, data)
+            response = self.dispatch(method, path, environ.get('CONTENT_TYPE'), context, data)
 
             start_response(response.status_line, response.headers.items())
             return response.content or ''
