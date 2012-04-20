@@ -129,6 +129,11 @@ class Request(object):
         schema = getattr(declaration, 'schema', None)
         if schema is not None:
             if isinstance(schema, dict):
+                for name, field in schema.items():
+                    if isinstance(field, basestring):
+                        field = resource.schema.get(field)
+                        if field:
+                            schema[name] = field
                 schema = Structure(schema)
             if not schema.name:
                 schema.name = 'request'

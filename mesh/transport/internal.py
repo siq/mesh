@@ -10,7 +10,7 @@ class InternalServer(Server):
     """An API server."""
 
     def __init__(self, bundles, default_format=None, available_formats=None):
-        super(InternalServer, self).__init__(default_format, available_format)
+        super(InternalServer, self).__init__(default_format, available_formats)
 
         self.bundles = {}
         for bundle in bundles:
