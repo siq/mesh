@@ -68,6 +68,9 @@ class Client(object):
     clients = {}
 
     def __init__(self, specification, environ=None, format=None, formats=None, secondary=False):
+        if not isinstance(specification, Specification):
+            specification = Specification(specification)
+
         self.environ = environ or {}
         self.format = format
         self.specification = specification

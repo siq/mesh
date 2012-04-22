@@ -45,6 +45,7 @@ class GeneratePythonBindings(Task):
     name = 'mesh.python'
     description = 'generate python bindings for a mesh bundle'
     parameters = {
+        'binding': Text(description='binding module'),
         'bundle': ObjectReference(description='module path of bundle', required=True),
         'package': Text(description='package prefix for generated modules'),
         'path': Path(description='path to target directory', required=True),
@@ -54,10 +55,13 @@ class GeneratePythonBindings(Task):
 
     def run(self, runtime):
         from mesh.binding.python import BindingGenerator
-        generator = BindingGenerator(module_path=self['package'], separate_models=self['separate'])
+        generator = BindingGenerator(module_path=self['package'], separate_models=self['separate'],
+            binding_module=self['binding'])
         files = generator.generate(self['bundle'], self['version'])
 
         root = self['path']
+        if not root.exists():
+            root.mkdir()
         if not root.isdir():
             raise TaskError('...')
 

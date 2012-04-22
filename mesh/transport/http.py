@@ -3,9 +3,11 @@ import re
 from httplib import HTTPConnection
 from urlparse import urlparse
 
+from mesh.bundle import Specification
 from mesh.constants import *
 from mesh.exceptions import *
 from mesh.transport.base import *
+from scheme.fields import INCOMING, OUTGOING
 from scheme.formats import *
 
 __all__ = ('ForwardingHttpServer', 'HttpClient', 'HttpRequest', 'HttpResponse', 'HttpServer')
@@ -305,14 +307,15 @@ class HttpServer(WsgiServer):
 class HttpClient(Client):
     """An HTTP API client."""
 
-    def __init__(self, host, specification, environ=None, format=Json, formats=None,
-        secondary=False):
+    def __init__(self, url, specification, environ=None, format=Json,
+        formats=None, secondary=False):
 
         super(HttpClient, self).__init__(specification, environ, format, formats, secondary)
-        self.connection = Connection(host)
+        self.connection = Connection(url)
         self.paths = {}
-        self.initial_path = '/%s/%d.%d/' % (specification.name, specification.version[0],
-            specification.version[1])
+        self.url = url
+        self.initial_path = '/%s/%d.%d/' % (self.specification.name,
+            self.specification.version[0], self.specification.version[1])
 
     def execute(self, resource, request, subject=None, data=None, format=None):
         format = format or self.format

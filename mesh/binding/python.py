@@ -34,7 +34,7 @@ class ModelMeta(type):
         if resource is not None:
             specification, resource = resource
             if not isinstance(specification, Specification):
-                raise Exception('bad specification')
+                specification = Specification(specification)
         else:
             return type.__new__(metatype, name, bases, namespace)
 
@@ -150,13 +150,14 @@ class BindingGenerator(object):
     MODULE_TMPL = get_package_data('mesh.binding', 'templates/module.py.tmpl')
 
     def __init__(self, module_path=None, separate_models=False,
-        specification_var='specification'):
+        binding_module='mesh.binding.python', specification_var='specification'):
 
         if module_path:
             module_path = module_path.strip('.') + '.'
         else:
             module_path = ''
 
+        self.binding_module = binding_module
         self.module_path = module_path
         self.separate_models = separate_models
         self.specification_var = specification_var
@@ -192,8 +193,10 @@ class BindingGenerator(object):
         }
 
     def _generate_module(self, module_path, content):
-        imports = ['from %s%s import %s' % (module_path, self.specification_var,
-            self.specification_var)]
+        imports = [
+            'from %s import *' % self.binding_module,
+            'from %s%s import %s' % (module_path, self.specification_var, self.specification_var)
+        ]
 
         return self.MODULE_TMPL % {
             'imports': '\n'.join(imports),
