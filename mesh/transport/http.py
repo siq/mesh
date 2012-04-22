@@ -79,8 +79,11 @@ class Connection(object):
 class HttpRequest(ServerRequest):
     """An HTTP API request."""
 
-    def __init__(self, method=None, path=None, mimetype=None, headers=None, serialized=True, **params):
+    def __init__(self, method=None, path=None, mimetype=None, headers=None,
+        context=None, serialized=True, **params):
+
         super(HttpRequest, self).__init__(serialized=serialized, **params)
+        self.context = context
         self.headers = headers
         self.method = method
         self.mimetype = mimetype
@@ -180,16 +183,8 @@ class WsgiServer(Server):
             else:
                 data = environ['wsgi.input'].read()
 
-            prefix = self.HEADER_PREFIX
-            prefix_len = self.HEADER_PREFIX_LENGTH
-
-            context = {}
-            for name, value in environ.iteritems():
-                if name[:prefix_len] == prefix:
-                    context[name[prefix_len:].lower()] = value
-
             path = environ['PATH_INFO']
-            response = self.dispatch(method, path, environ.get('CONTENT_TYPE'), context, data)
+            response = self.dispatch(method, path, environ.get('CONTENT_TYPE'), environ, data)
 
             start_response(response.status_line, response.headers.items())
             return response.content or ''
@@ -207,6 +202,8 @@ class HttpServer(WsgiServer):
         'Access-Control-Allow-Headers': 'Content-Type',
         'Access-Control-Max-Age': '2592000',
     }
+    CONTEXT_HEADER_PREFIX = 'HTTP_X_MESH_'
+    CONTEXT_HEADER_PREFIX_LENGTH = len(CONTEXT_HEADER_PREFIX)
 
     def __init__(self, bundles, path_prefix=None, default_format=Json, available_formats=None):
         super(HttpServer, self).__init__(default_format, available_formats)
@@ -244,7 +241,15 @@ class HttpServer(WsgiServer):
         if mimetype not in self.formats:
             mimetype = URLENCODED
 
-        request = HttpRequest(method=method, mimetype=mimetype, headers=headers)
+        prefix = self.CONTEXT_HEADER_PREFIX
+        prefix_len = self.CONTEXT_HEADER_PREFIX_LENGTH
+
+        context = {}
+        for name, value in headers.iteritems():
+            if name[:prefix_len] == prefix:
+                context[name[prefix_len:].lower()] = value
+
+        request = HttpRequest(method=method, mimetype=mimetype, headers=headers, context=context)
         try:
             request.path = path = Path(self, path)
         except Exception:
@@ -307,15 +312,20 @@ class HttpServer(WsgiServer):
 class HttpClient(Client):
     """An HTTP API client."""
 
-    def __init__(self, url, specification, environ=None, format=Json,
-        formats=None, secondary=False):
+    CONTEXT_HEADER_PREFIX = 'X-MESH-'
 
-        super(HttpClient, self).__init__(specification, environ, format, formats, secondary)
+    def __init__(self, url, specification, context=None, format=Json, formats=None):
+
+        super(HttpClient, self).__init__(specification, context, format, formats)
         self.connection = Connection(url)
         self.paths = {}
         self.url = url
         self.initial_path = '/%s/%d.%d/' % (self.specification.name,
             self.specification.version[0], self.specification.version[1])
+
+        self.headers = {}
+        for name, value in self.context.iteritems():
+            self.headers[self.CONTEXT_HEADER_PREFIX + name] = value
 
     def execute(self, resource, request, subject=None, data=None, format=None):
         format = format or self.format
@@ -339,7 +349,7 @@ class HttpClient(Client):
         else:
             path = path % format.name
 
-        headers = {}
+        headers = self.headers.copy()
         if mimetype:
             headers['Content-Type'] = mimetype
 

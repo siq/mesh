@@ -64,8 +64,8 @@ class InternalServer(Server):
 class InternalClient(Client):
     """An internal API client."""
 
-    def __init__(self, server, specification, environ=None, format=None, formats=None, secondary=False):
-        super(InternalClient, self).__init__(specification, environ, format, formats, secondary)
+    def __init__(self, server, specification, context=None, format=None, formats=None):
+        super(InternalClient, self).__init__(specification, context, format, formats)
         self.server = server
 
     def execute(self, resource, request, subject=None, data=None, format=None):
@@ -75,7 +75,7 @@ class InternalClient(Client):
 
     def _dispatch_request(self, resource, request, subject, data):
         endpoint = (self.specification.name, self.specification.version, resource, request)
-        response = self.server.dispatch(endpoint, self.environ, subject, data)
+        response = self.server.dispatch(endpoint, self.context, subject, data)
 
         if response.ok:
             return response

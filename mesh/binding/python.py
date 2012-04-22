@@ -140,7 +140,7 @@ class Model(object):
 
     @classmethod
     def _get_client(cls):
-        return Client.get(cls._specification)
+        return Client.get_client(cls._specification)
 
     def _update_model(self, data):
         self._data.update(data)

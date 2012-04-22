@@ -54,7 +54,7 @@ class TestInternalClient(TestCase):
 
     def test_client_requests(self):
         specification = Specification(primary_bundle.describe(version=(1,0)))
-        client = InternalClient(server, specification)
+        client = InternalClient(server, specification).register(False)
 
         response = client.execute('example', 'create', None, {'required_field': 'text'})
         self.assertEqual(response.status, OK)

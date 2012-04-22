@@ -1,3 +1,5 @@
+import threading
+
 from mesh.bundle import Specification
 from mesh.constants import *
 from mesh.exceptions import *
@@ -12,10 +14,10 @@ STANDARD_FORMATS = (Json, UrlEncoded)
 class ServerRequest(object):
     """An API request."""
 
-    def __init__(self, endpoint=None, environ=None, subject=None, data=None, serialized=False):
+    def __init__(self, endpoint=None, context=None, subject=None, data=None, serialized=False):
+        self.context = context
         self.data = data
         self.endpoint = endpoint
-        self.environ = environ
         self.serialized = serialized
         self.subject = subject
 
@@ -62,16 +64,43 @@ class Server(object):
     def dispatch(self):
         raise NotImplementedError()
 
+class ClientManager(object):
+    def __init__(self):
+        self.clients = {}
+
+    def clear(self):
+        self.clients = {}
+
+    def get(self, specification):
+        if isinstance(specification, Specification):
+            id = specification.id
+        else:
+            id = specification
+        return self.clients.get(id)
+
+    def register(self, client):
+        self.clients[client.specification.id] = client
+
+    def unregister(self, client):
+        id = client.specification.id
+        if self.clients.get(id) is client:
+            del self.clients[id]
+
+class LocalClients(threading.local):
+    def __init__(self):
+        self.manager = ClientManager()
+
 class Client(object):
     """An API client."""
 
-    clients = {}
+    global_clients = ClientManager()
+    local_clients = LocalClients()
 
-    def __init__(self, specification, environ=None, format=None, formats=None, secondary=False):
+    def __init__(self, specification, context=None, format=None, formats=None):
         if not isinstance(specification, Specification):
             specification = Specification(specification)
 
-        self.environ = environ or {}
+        self.context = context or {}
         self.format = format
         self.specification = specification
 
@@ -79,25 +108,31 @@ class Client(object):
         for format in (formats or STANDARD_FORMATS):
             for key in (format, format.name, format.mimetype):
                 self.formats[key] = format
-
-        id = specification.id
-        if not secondary and id not in self.clients:
-            self.clients[id] = self
         
     def execute(self, resource, request, subject=None, data=None, format=None):
         raise NotImplementedError()
 
     @classmethod
-    def get(cls, specification):
-        if isinstance(specification, Specification):
-            id = specification.id
+    def get_client(cls, specification):
+        client = cls.local_clients.manager.get(specification)
+        if client:
+            return client
         else:
-            id = specification
-        return cls.clients.get(id)
+            return cls.global_clients.get(specification)
 
-    @classmethod
-    def register(cls, client):
-        cls.clients[client.specification.id] = client
+    def register(self, local=True):
+        if local:
+            self.local_clients.manager.register(self)
+        else:
+            self.global_clients.register(self)
+        return self
+
+    def unregister(self, local=True):
+        if local:
+            self.local_clients.manager.unregister(self)
+        else:
+            self.global_clients.unregister(self)
+        return self
 
 class Transport(object):
     """A mesh transport."""
