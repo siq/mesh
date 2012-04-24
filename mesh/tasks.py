@@ -85,8 +85,8 @@ class StartWsgiServer(Task):
 
     def run(self, runtime):
         from wsgiref.simple_server import make_server
-        from mesh.transport.http import WsgiServer
+        from mesh.transport.http import HttpServer
 
-        application = WsgiServer([self['bundle']])
+        application = HttpServer([self['bundle']])
         hostname, port = self['hostname'].split(':')
-        make_server(hostname, int(port), application).server_forever()
+        make_server(hostname, int(port), application).serve_forever()
