@@ -67,6 +67,10 @@ class Connection(object):
         if url[0] != '/':
             url = '/' + url
 
+        if method == GET and body:
+            url = '%s?%s' % (url, body)
+            body = None
+
         connection = HTTPConnection(self.host)
         connection.request(method, self.path + url, body, headers or {})
 

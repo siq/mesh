@@ -13,6 +13,7 @@ def client(argv):
 
     from meshlog.bundles import meshlog_bundle
     from mesh.transport.internal import InternalServer, InternalClient
+    from mesh.transport.http import HttpServer, HttpClient
     from mesh.bundle import Specification
     import re
 
@@ -29,8 +30,7 @@ def client(argv):
         server = InternalServer([meshlog_bundle])
         client = InternalClient(server, specification)
     else:
-        print >>stderr, 'not supported yet'
-        return 1
+        client = HttpClient('http://%s:%s/' % (opt.host, opt.port), specification)
 
     state = dict(blog=None, user=None)
 

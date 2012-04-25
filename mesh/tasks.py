@@ -84,9 +84,14 @@ class StartWsgiServer(Task):
     }
 
     def run(self, runtime):
-        from wsgiref.simple_server import make_server
+        from mesh.transport.wsgiserver import CherryPyWSGIServer
         from mesh.transport.http import HttpServer
 
         application = HttpServer([self['bundle']])
         hostname, port = self['hostname'].split(':')
-        make_server(hostname, int(port), application).serve_forever()
+
+        server = CherryPyWSGIServer((hostname, int(port)), application)
+        try:
+            server.start()
+        except (KeyboardInterrupt, SystemExit):
+            server.stop()
