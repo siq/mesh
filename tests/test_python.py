@@ -8,7 +8,7 @@ from fixtures import *
 
 server = InternalServer([primary_bundle])
 specification = primary_bundle.specify((1, 0))
-client = InternalClient(server, specification).register(False)
+client = InternalClient(server, specification).register()
 
 from mesh.standard.python import Model
 

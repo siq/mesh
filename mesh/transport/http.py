@@ -316,20 +316,23 @@ class HttpServer(WsgiServer):
 class HttpClient(Client):
     """An HTTP API client."""
 
-    CONTEXT_HEADER_PREFIX = 'X-MESH-'
-
-    def __init__(self, url, specification, context=None, format=Json, formats=None):
+    def __init__(self, url, specification, context=None, format=Json, formats=None,
+        header_prefix='X-MESH-'):
 
         super(HttpClient, self).__init__(specification, context, format, formats)
         self.connection = Connection(url)
+        self.context = context
+        self.header_prefix = header_prefix
         self.paths = {}
         self.url = url
         self.initial_path = '/%s/%d.%d/' % (self.specification.name,
             self.specification.version[0], self.specification.version[1])
 
-        self.headers = {}
-        for name, value in self.context.iteritems():
-            self.headers[self.CONTEXT_HEADER_PREFIX + name] = value
+    def construct_headers(self):
+        headers = {}
+        for name, value in self.construct_context().iteritems():
+            headers[self.header_prefix + name] = value
+        return headers
 
     def execute(self, resource, request, subject=None, data=None, format=None):
         format = format or self.format
@@ -353,7 +356,7 @@ class HttpClient(Client):
         else:
             path = path % format.name
 
-        headers = self.headers.copy()
+        headers = self.construct_headers()
         if mimetype:
             headers['Content-Type'] = mimetype
 
