@@ -71,6 +71,8 @@ class Connection(object):
             url = '%s?%s' % (url, body)
             body = None
 
+        print 'HEADERS', headers
+
         connection = HTTPConnection(self.host)
         connection.request(method, self.path + url, body, headers or {})
 
@@ -181,12 +183,9 @@ class EndpointGroup(object):
         definition.process(self.controller, request, response)
 
 class WsgiServer(Server):
-    DEFAULT_HEADER_PREFIX = 'HTTP_X_MESH_'
-
-    def __init__(self, default_format=None, available_formats=None, header_prefix=None):
+    def __init__(self, default_format=None, available_formats=None, context_key=None):
         super(WsgiServer, self).__init__(default_format or Json, available_formats)
-        self.header_prefix = header_prefix or self.DEFAULT_HEADER_PREFIX
-        self.header_prefix_length = len(self.header_prefix)
+        self.context_key = context_key
 
     def __call__(self, environ, start_response):
         try:
@@ -198,8 +197,12 @@ class WsgiServer(Server):
             else:
                 data = environ['wsgi.input'].read()
 
-            path = environ['PATH_INFO']
-            response = self.dispatch(method, path, environ.get('CONTENT_TYPE'), environ, data)
+            context = {}
+            if self.context_key and self.context_key in environ:
+                context = environ[self.context_key]
+
+            response = self.dispatch(method, environ['PATH_INFO'], environ.get('CONTENT_TYPE'),
+                context, environ, data)
 
             start_response(response.status_line, response.headers.items())
             return response.content or ''
@@ -207,16 +210,6 @@ class WsgiServer(Server):
             import traceback; traceback.print_exc()
             start_response('500 Internal Server Error', [])
             return ''
-
-    def _pull_context(self, headers):
-        prefix = self.header_prefix
-        length = self.header_prefix_length
-
-        context = {}
-        for name, value in headers.iteritems():
-            if name[:length] == prefix:
-                context[name[length:].lower()] = value
-        return context
 
 class HttpServer(WsgiServer):
     """The HTTP API server."""
@@ -229,9 +222,9 @@ class HttpServer(WsgiServer):
     }
 
     def __init__(self, bundles, path_prefix=None, default_format=None, available_formats=None,
-            header_prefix=None):
+            context_key=None):
 
-        super(HttpServer, self).__init__(default_format, available_formats, header_prefix)
+        super(HttpServer, self).__init__(default_format, available_formats, context_key)
         if path_prefix:
             path_prefix = '/' + path_prefix.strip('/')
         else:
@@ -253,7 +246,7 @@ class HttpServer(WsgiServer):
                         if request.endpoint:
                             self._construct_endpoint(name, version, resource, controller, request)
 
-    def dispatch(self, method, path, mimetype, headers, data):
+    def dispatch(self, method, path, mimetype, context, headers, data):
         response = HttpResponse()
         if method == OPTIONS:
             for name, value in self.ACCESS_CONTROL_HEADERS.iteritems():
@@ -266,9 +259,7 @@ class HttpServer(WsgiServer):
         if mimetype not in self.formats:
             mimetype = URLENCODED
 
-        context = self._pull_context(headers)
         request = HttpRequest(method=method, mimetype=mimetype, headers=headers, context=context)
-
         try:
             request.path = path = Path(self, path)
         except Exception:
@@ -333,12 +324,12 @@ class HttpClient(Client):
     DEFAULT_HEADER_PREFIX = 'X-MESH-'
 
     def __init__(self, url, specification, context=None, format=Json, formats=None,
-            header_prefix=None):
+            context_header_prefix=None):
 
         super(HttpClient, self).__init__(specification, context, format, formats)
         self.connection = Connection(url)
         self.context = context
-        self.header_prefix = header_prefix or self.DEFAULT_HEADER_PREFIX
+        self.context_header_prefix = context_header_prefix or self.DEFAULT_HEADER_PREFIX
         self.paths = {}
         self.url = url
         self.initial_path = '/%s/%d.%d/' % (self.specification.name,
@@ -347,7 +338,7 @@ class HttpClient(Client):
     def construct_headers(self):
         headers = {}
         for name, value in self._construct_context().iteritems():
-            headers[self.header_prefix + name] = value
+            headers[self.context_header_prefix + name] = value
         return headers
 
     def execute(self, resource, request, subject=None, data=None, format=None):
@@ -405,16 +396,15 @@ class HttpClient(Client):
 
 class HttpProxy(WsgiServer):
     def __init__(self, url, context=None, default_format=None, available_formats=None,
-            header_prefix=None, client_header_prefix=None):
+            context_key=None, context_header_prefix=None):
 
-        super(HttpProxy, self).__init__(default_format, available_formats, header_prefix)
-        self.client_header_prefix = client_header_prefix or HttpClient.DEFAULT_HEADER_PREFIX
+        super(HttpProxy, self).__init__(default_format, available_formats, context_key)
+        self.context_header_prefix = context_header_prefix or HttpClient.DEFAULT_HEADER_PREFIX
         self.connection = Connection(url)
         self.context = context or {}
         self.url = url
 
-    def dispatch(self, method, path, mimetype, headers, data):
-        context = self._pull_context(headers)
+    def dispatch(self, method, path, mimetype, context, headers, data):
         if self.context:
             additional = self.context
             if callable(additional):
@@ -424,7 +414,7 @@ class HttpProxy(WsgiServer):
 
         headers = {}
         for name, value in context.iteritems():
-            headers[self.client_header_prefix + name] = value
+            headers[self.context_header_prefix + name] = value
         if mimetype:
             headers['Content-Type'] = mimetype
 
