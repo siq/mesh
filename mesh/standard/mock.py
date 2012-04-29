@@ -91,7 +91,7 @@ class MockStorage(object):
         if fresh:
             self.reset()
         else:
-            self.connection = sqlite3.connect(path)
+            self.connection = sqlite3.connect(path, check_same_thread=False)
 
     def delete(self, name, id):
         self._create_table(name)
