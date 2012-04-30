@@ -1,5 +1,5 @@
 mesh
-tests
+./tests
 setup.py
 requirements.txt
 examples
