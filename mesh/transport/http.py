@@ -54,7 +54,7 @@ PATH_EXPR = r"""(?x)^%s
     /(?P<bundle>\w+)
     /(?P<major>\d+)[.](?P<minor>\d+)
     /(?P<resource>\w+)
-    (?:/(?P<subject>\w+)(?P<tail>(?:/\w+)+)?)?
+    (?:/(?P<subject>[-\w]+)(?P<tail>(?:/\w+)+)?)?
     (?:[.](?P<format>\w+))?
     /?$"""
 
@@ -70,8 +70,6 @@ class Connection(object):
         if method == GET and body:
             url = '%s?%s' % (url, body)
             body = None
-
-        print 'HEADERS', headers
 
         connection = HTTPConnection(self.host)
         connection.request(method, self.path + url, body, headers or {})
