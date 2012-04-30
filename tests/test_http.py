@@ -28,7 +28,7 @@ def http(method, data=None, resource='example', mimetype=None, **params):
             mimetype = URLENCODED
         elif data:
             mimetype = JSON
-    return server.dispatch(method, path, mimetype, params, data)
+    return server.dispatch(method, path, mimetype, {}, params, data)
 
 class TestHttpServer(TestCase):
     def setUp(self):

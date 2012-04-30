@@ -10,7 +10,7 @@ from mesh.transport.base import *
 from scheme.fields import INCOMING, OUTGOING
 from scheme.formats import *
 
-__all__ = ('ForwardingHttpServer', 'HttpClient', 'HttpRequest', 'HttpResponse', 'HttpServer')
+__all__ = ('HttpClient', 'HttpProxy', 'HttpRequest', 'HttpResponse', 'HttpServer')
 
 STATUS_CODES = {
     OK: 200,
