@@ -38,8 +38,7 @@ def construct_controller_harness(expected_subject=None, subject=None, status=OK,
     callback=None):
 
     class Controller(object):
-        @classmethod
-        def acquire(cls, received_subject):
+        def acquire(self, received_subject):
             assert received_subject == expected_subject
             return subject
 

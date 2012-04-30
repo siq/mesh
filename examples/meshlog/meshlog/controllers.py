@@ -5,8 +5,7 @@ from storage import storage
 
 class MeshlogController(Controller):
 
-    @classmethod
-    def acquire(cls, subject):
+    def acquire(self, subject):
         try:
             return storage[int(subject)]
         except ValueError:

@@ -164,14 +164,13 @@ class MockStorage(object):
             self.tables.add(name)
 
 class MockController(StandardController):
-    @classmethod
-    def acquire(cls, subject):
+    def acquire(self, subject):
         try:
             subject = int(subject)
         except ValueError:
             return None
         else:
-            return cls.storage.get(cls.resource.name, subject)
+            return self.storage.get(self.resource.name, subject)
 
     def query(self, context, response, subject, data):
         data = data or {}

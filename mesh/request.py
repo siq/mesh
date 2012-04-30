@@ -210,10 +210,11 @@ class Request(object):
 
     def process(self, controller, request, response):
         context = Context(request)
+        instance = controller()
 
         subject = None
         if self.specific:
-            subject = controller.acquire(request.subject)
+            subject = instance.acquire(request.subject)
             if not subject:
                 log('info', 'request to %r specified unknown subject %r', str(self),
                     request.subject)
@@ -244,7 +245,6 @@ class Request(object):
             return response(BAD_REQUEST)
 
         if not response.status:
-            instance = controller()
             try:
                 instance.dispatch(self, context, response, subject, data)
                 if not response.status:

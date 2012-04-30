@@ -345,8 +345,7 @@ class Controller(object):
     resource = None
     version = None
 
-    @classmethod
-    def acquire(cls, subject):
+    def acquire(self, subject):
         """Acquires and returns the backend instance for the implemented resource identified
         by ``subject``. The framework treats both ``subject`` and the returned value as
         opaque."""
