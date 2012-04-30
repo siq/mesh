@@ -1,5 +1,3 @@
-import threading
-
 from mesh.bundle import Specification
 from mesh.constants import *
 from mesh.exceptions import *
@@ -64,37 +62,10 @@ class Server(object):
     def dispatch(self):
         raise NotImplementedError()
 
-class ClientManager(object):
-    def __init__(self):
-        self.clients = {}
-
-    def clear(self):
-        self.clients = {}
-
-    def get(self, specification):
-        if isinstance(specification, Specification):
-            id = specification.id
-        else:
-            id = specification
-        return self.clients.get(id)
-
-    def register(self, client):
-        self.clients[client.specification.id] = client
-
-    def unregister(self, client):
-        id = client.specification.id
-        if self.clients.get(id) is client:
-            del self.clients[id]
-
-class LocalClients(threading.local):
-    def __init__(self):
-        self.manager = ClientManager()
-
 class Client(object):
     """An API client."""
 
-    global_clients = ClientManager()
-    local_clients = LocalClients()
+    clients = {}
 
     def __init__(self, specification, context=None, format=None, formats=None):
         if not isinstance(specification, Specification):
@@ -108,31 +79,31 @@ class Client(object):
         for format in (formats or STANDARD_FORMATS):
             for key in (format, format.name, format.mimetype):
                 self.formats[key] = format
-        
+
     def execute(self, resource, request, subject=None, data=None, format=None):
         raise NotImplementedError()
 
     @classmethod
-    def get_client(cls, specification):
-        client = cls.local_clients.manager.get(specification)
-        if client:
-            return client
-        else:
-            return cls.global_clients.get(specification)
+    def get_client(cls, id):
+        if isinstance(id, Specification):
+            id = id.id
+        return cls.clients.get(id)
 
-    def register(self, local=True):
-        if local:
-            self.local_clients.manager.register(self)
-        else:
-            self.global_clients.register(self)
+    def register(self):
+        self.clients[self.specification.id] = self
         return self
 
-    def unregister(self, local=True):
-        if local:
-            self.local_clients.manager.unregister(self)
-        else:
-            self.global_clients.unregister(self)
+    def unregister(self):
+        id = self.specification.id
+        if self.clients.get(id) is self:
+            del self.clients[id]
         return self
+
+    def _construct_context(self):
+        context = self.context
+        if callable(context):
+            context = context()
+        return context or {}
 
 class Transport(object):
     """A mesh transport."""

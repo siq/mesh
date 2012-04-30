@@ -67,6 +67,12 @@ class Connection(object):
         if url[0] != '/':
             url = '/' + url
 
+        if method == GET and body:
+            url = '%s?%s' % (url, body)
+            body = None
+
+        print 'HEADERS', headers
+
         connection = HTTPConnection(self.host)
         connection.request(method, self.path + url, body, headers or {})
 
@@ -103,6 +109,13 @@ class HttpResponse(ServerResponse):
     @property
     def status_line(self):
         return STATUS_LINES[self.status]
+
+    def apply_standard_headers(self):
+        if self.content:
+            if 'Content-Type' not in self.headers:
+                self.headers['Content-Type'] = self.mimetype
+            if 'Content-Length' not in self.headers:
+                self.headers['Content-Length'] = str(len(self.content))
 
     def header(self, name, value):
         self.headers[name] = value
@@ -170,8 +183,9 @@ class EndpointGroup(object):
         definition.process(self.controller, request, response)
 
 class WsgiServer(Server):
-    HEADER_PREFIX = 'HTTP_X_MESH_'
-    HEADER_PREFIX_LENGTH = len(HEADER_PREFIX)
+    def __init__(self, default_format=None, available_formats=None, context_key=None):
+        super(WsgiServer, self).__init__(default_format or Json, available_formats)
+        self.context_key = context_key
 
     def __call__(self, environ, start_response):
         try:
@@ -183,8 +197,12 @@ class WsgiServer(Server):
             else:
                 data = environ['wsgi.input'].read()
 
-            path = environ['PATH_INFO']
-            response = self.dispatch(method, path, environ.get('CONTENT_TYPE'), environ, data)
+            context = {}
+            if self.context_key and self.context_key in environ:
+                context = environ[self.context_key]
+
+            response = self.dispatch(method, environ['PATH_INFO'], environ.get('CONTENT_TYPE'),
+                context, environ, data)
 
             start_response(response.status_line, response.headers.items())
             return response.content or ''
@@ -202,11 +220,11 @@ class HttpServer(WsgiServer):
         'Access-Control-Allow-Headers': 'Content-Type',
         'Access-Control-Max-Age': '2592000',
     }
-    CONTEXT_HEADER_PREFIX = 'HTTP_X_MESH_'
-    CONTEXT_HEADER_PREFIX_LENGTH = len(CONTEXT_HEADER_PREFIX)
 
-    def __init__(self, bundles, path_prefix=None, default_format=Json, available_formats=None):
-        super(HttpServer, self).__init__(default_format, available_formats)
+    def __init__(self, bundles, path_prefix=None, default_format=None, available_formats=None,
+            context_key=None):
+
+        super(HttpServer, self).__init__(default_format, available_formats, context_key)
         if path_prefix:
             path_prefix = '/' + path_prefix.strip('/')
         else:
@@ -228,7 +246,7 @@ class HttpServer(WsgiServer):
                         if request.endpoint:
                             self._construct_endpoint(name, version, resource, controller, request)
 
-    def dispatch(self, method, path, mimetype, headers, data):
+    def dispatch(self, method, path, mimetype, context, headers, data):
         response = HttpResponse()
         if method == OPTIONS:
             for name, value in self.ACCESS_CONTROL_HEADERS.iteritems():
@@ -240,14 +258,6 @@ class HttpServer(WsgiServer):
             mimetype, charset = mimetype.split(';', 1)
         if mimetype not in self.formats:
             mimetype = URLENCODED
-
-        prefix = self.CONTEXT_HEADER_PREFIX
-        prefix_len = self.CONTEXT_HEADER_PREFIX_LENGTH
-
-        context = {}
-        for name, value in headers.iteritems():
-            if name[:prefix_len] == prefix:
-                context[name[prefix_len:].lower()] = value
 
         request = HttpRequest(method=method, mimetype=mimetype, headers=headers, context=context)
         try:
@@ -289,9 +299,8 @@ class HttpServer(WsgiServer):
         if response.content:
             response.mimetype = format.mimetype
             response.content = format.serialize(response.content)
-            response.header('Content-Type', response.mimetype)
-            response.header('Content-Length', str(len(response.content)))
-
+            
+        response.apply_standard_headers()
         return response
 
     def _construct_endpoint(self, bundle, version, resource, controller, request):
@@ -312,20 +321,25 @@ class HttpServer(WsgiServer):
 class HttpClient(Client):
     """An HTTP API client."""
 
-    CONTEXT_HEADER_PREFIX = 'X-MESH-'
+    DEFAULT_HEADER_PREFIX = 'X-MESH-'
 
-    def __init__(self, url, specification, context=None, format=Json, formats=None):
+    def __init__(self, url, specification, context=None, format=Json, formats=None,
+            context_header_prefix=None):
 
         super(HttpClient, self).__init__(specification, context, format, formats)
         self.connection = Connection(url)
+        self.context = context
+        self.context_header_prefix = context_header_prefix or self.DEFAULT_HEADER_PREFIX
         self.paths = {}
         self.url = url
         self.initial_path = '/%s/%d.%d/' % (self.specification.name,
             self.specification.version[0], self.specification.version[1])
 
-        self.headers = {}
-        for name, value in self.context.iteritems():
-            self.headers[self.CONTEXT_HEADER_PREFIX + name] = value
+    def construct_headers(self):
+        headers = {}
+        for name, value in self._construct_context().iteritems():
+            headers[self.context_header_prefix + name] = value
+        return headers
 
     def execute(self, resource, request, subject=None, data=None, format=None):
         format = format or self.format
@@ -349,7 +363,7 @@ class HttpClient(Client):
         else:
             path = path % format.name
 
-        headers = self.headers.copy()
+        headers = self.construct_headers()
         if mimetype:
             headers['Content-Type'] = mimetype
 
@@ -380,34 +394,33 @@ class HttpClient(Client):
             self.paths[path] = template
             return template
 
-class ForwardingHttpServer(WsgiServer):
-    """An HTTP API server which forwards requests."""
+class HttpProxy(WsgiServer):
+    def __init__(self, url, context=None, default_format=None, available_formats=None,
+            context_key=None, context_header_prefix=None):
 
-    PATH_EXPR = r'^%s/(?P<bundle>\w+)/(?P<path>.*)$'
+        super(HttpProxy, self).__init__(default_format, available_formats, context_key)
+        self.context_header_prefix = context_header_prefix or HttpClient.DEFAULT_HEADER_PREFIX
+        self.connection = Connection(url)
+        self.context = context or {}
+        self.url = url
 
-    def __init__(self, bundles, path_prefix=None, default_format=Json, available_formats=None):
-        super(ForwardingHttpServer, self).__init__(default_format, available_formats)
-        if path_prefix:
-            path_prefix = '/' + path_prefix.strip('/')
-        else:
-            path_prefix = ''
-        self.path_expr = re.compile(self.PATH_EXPR % path_prefix)
+    def dispatch(self, method, path, mimetype, context, headers, data):
+        if self.context:
+            additional = self.context
+            if callable(additional):
+                additional = additional()
+            if additional:
+                context.update(additional)
 
-        self.connections = {}
-        for name, url in bundles.iteritems():
-            self.connections[name] = Connection(url)
+        headers = {}
+        for name, value in context.iteritems():
+            headers[self.context_header_prefix + name] = value
+        if mimetype:
+            headers['Content-Type'] = mimetype
 
-    def dispatch(self, method, path, mimetype, headers, data):
-        match = self.path_expr.match(path)
-        if not match:
-            return response(NOT_FOUND)
-
-        connection = self.connections.get(match.group('bundle'))
-        if not connection:
-            return response(NOT_FOUND)
-
-        fullpath = '%s/%s' % (match.group('bundle'), match.group('path'))
-        return connection.request(method, fullpath, data)
+        response = self.connection.request(method, path, data, headers)
+        response.apply_standard_headers()
+        return response
 
 class HttpTransport(Transport):
     name = 'http'

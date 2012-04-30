@@ -525,5 +525,13 @@ define([
         }
     });
 
+    fields.UUIDField = Field.extend({
+        _validateType: function(value) {
+            if (!isString(value)) {
+                throw InvalidTypeError();
+            }
+        }
+    });
+
     return fields;
 });
