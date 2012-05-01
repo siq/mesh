@@ -216,65 +216,62 @@ class MockController(StandardController):
         response({'id': subject['id']})
 
     def _filter_resource(self, resource, query):
-        for attr, filter in query.iteritems():
-            value = resource.get(attr)
-            if isinstance(filter, dict):
-                for operator, expected in filter.iteritems():
-                    if operator == '$eq':
-                        if value != expected:
-                            return False
-                    elif operator == '$ieq':
-                        if value.lower() != expected:
-                            return False
-                    elif operator == '$ne':
-                        if value == expected:
-                            return False
-                    elif operator == '$ine':
-                        if value.lower() == expected:
-                            return False
-                    elif operator == '$pre':
-                        if not value.startswith(expected):
-                            return False
-                    elif operator == '$ipre':
-                        if not value.lower().startswith(expected):
-                            return False
-                    elif operator == '$suf':
-                        if not value.endswith(expected):
-                            return False
-                    elif operator == '$isuf':
-                        if not value.lower().endswith(expected):
-                            return False
-                    elif operator == '$cnt':
-                        if expected not in value:
-                            return False
-                    elif operator == '$icnt':
-                        if expected not in value.lower():
-                            return False
-                    elif operator == '$gt':
-                        if value <= expected:
-                            return False
-                    elif operator == '$gte':
-                        if value < expected:
-                            return False
-                    elif operator == '$lt':
-                        if value >= expected:
-                            return False
-                    elif operator == '$lte':
-                        if value > expected:
-                            return False
-                    elif operator == '$nul':
-                        if (expected and value is not None) or (not expected and value is None):
-                            return False
-                    elif operator == '$len':
-                        if len(value) != expected:
-                            return False
-                    elif operator == '$in':
-                        if value not in expected:
-                            return False
-                    elif operator == '$nin':
-                        if value in expected:
-                            return False
-            elif value != filter:
+        for filter, expected in query.iteritems():
+            if '__' in filter:
+                attr, operator = filter.rsplit('__', 1)
+                value = resource.get(attr)
+                if operator == 'equal':
+                    if value != expected:
+                        return False
+                elif operator == 'iequal':
+                    if value.lower() != expected:
+                        return False
+                elif operator == 'not':
+                    if value == expected:
+                        return False
+                elif operator == 'inot':
+                    if value.lower() == expected:
+                        return False
+                elif operator == 'prefix':
+                    if not value.startswith(expected):
+                        return False
+                elif operator == 'iprefix':
+                    if not value.lower().startswith(expected):
+                        return False
+                elif operator == 'suffix':
+                    if not value.endswith(expected):
+                        return False
+                elif operator == 'isuffix':
+                    if not value.lower().endswith(expected):
+                        return False
+                elif operator == 'contains':
+                    if expected not in value:
+                        return False
+                elif operator == 'icontains':
+                    if expected not in value.lower():
+                        return False
+                elif operator == 'gt':
+                    if value <= expected:
+                        return False
+                elif operator == 'gte':
+                    if value < expected:
+                        return False
+                elif operator == 'lt':
+                    if value >= expected:
+                        return False
+                elif operator == 'lte':
+                    if value > expected:
+                        return False
+                elif operator == 'null':
+                    if (expected and value is not None) or (not expected and value is None):
+                        return False
+                elif operator == 'in':
+                    if value not in expected:
+                        return False
+                elif operator == 'notin':
+                    if value in expected:
+                        return False
+            elif resource.get(filter) != expected:
                 return False
         else:
             return True
