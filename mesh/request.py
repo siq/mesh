@@ -65,7 +65,7 @@ class Request(object):
 
     def __init__(self, resource=None, name=None, endpoint=None, filter=None, schema=None,
         responses=None, specific=False, description=None, title=None, auto_constructed=False,
-        batch=False, validators=None):
+        batch=False, subject_required=True, validators=None):
 
         self.auto_constructed = auto_constructed
         self.batch = batch
@@ -77,6 +77,7 @@ class Request(object):
         self.responses = responses or {}
         self.schema = schema
         self.specific = specific
+        self.subject_required = subject_required
         self.title = title
         self.validators = validators or []
 
@@ -148,6 +149,14 @@ class Request(object):
                         if not field.name:
                             field.name = name
                         structure[name] = field
+                    elif isinstance(field, basestring):
+                        field = resource.schema.get(field)
+                        if field:
+                            if field.name != name:
+                                field = field.clone(name=name)
+                            structure[name] = field
+                        else:
+                            raise SpecificationError()
                     elif field is None and name in structure:
                         del structure[name]
             else:
@@ -215,7 +224,7 @@ class Request(object):
         subject = None
         if self.specific:
             subject = instance.acquire(request.subject)
-            if not subject:
+            if not subject and self.subject_required:
                 log('info', 'request to %r specified unknown subject %r', str(self),
                     request.subject)
                 return response(GONE)

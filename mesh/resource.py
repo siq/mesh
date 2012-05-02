@@ -267,6 +267,16 @@ class ResourceMeta(type):
                 schema[name] = field
         return schema
 
+    def mirror_schema(resource, exclude=None):
+        if isinstance(exclude, basestring):
+            exclude = exclude.split(' ')
+
+        schema = {}
+        for name, field in resource.schema.iteritems():
+            if not exclude or name not in exclude:
+                schema[name] = field.clone()
+        return schema
+
 class Resource(object):
     """A resource definition.
     
