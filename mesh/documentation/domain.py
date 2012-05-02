@@ -94,6 +94,7 @@ class FieldDefinition(Directive):
         'pattern': directives.unchanged,
         'values': directives.unchanged,
         'required_keys': directives.unchanged,
+        'constant': directives.unchanged,
         'nonnull': directives.flag,
         'required': directives.flag,
         'readonly': directives.flag,
@@ -105,6 +106,7 @@ class FieldDefinition(Directive):
         'pattern': literal,
         'values': literal,
         'required_keys': literal,
+        'polymorphic_on': literal,
     }
 
     def run(self):
@@ -148,8 +150,12 @@ class FieldDefinition(Directive):
             signature += text(' ')
             signature += span
 
+        constant = self.options.get('constant')
+        if constant:
+            signature += literal(' constant=%s' % constant, 'field-default')
+
         default = self.options.get('default')
-        if default:
+        if default and not constant:
             signature += literal(' default=%s' % default, 'field-default')
 
         constraints = self.options.get('constraints')

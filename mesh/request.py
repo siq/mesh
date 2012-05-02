@@ -268,8 +268,10 @@ class Request(object):
             try:
                 response.content = definition.schema.process(response.content, OUTGOING, request.serialized)
             except StructuralError, exception:
+                response.content = None
                 error = exception.serialize()
                 log('error', 'response for %s failed schema validation', str(self))
+                print exception
                 return response(SERVER_ERROR)
         elif response.content:
             log('error', 'response for %s improperly specified content', str(self))

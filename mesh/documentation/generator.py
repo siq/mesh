@@ -165,7 +165,8 @@ class DocumentationGenerator(object):
             block.set('constraints', ', '.join(constraints))
 
     def _describe_enumeration(self, field, block, role):
-        block.set('values', repr(field['enumeration']))
+        if field.get('constant') is None:
+            block.set('values', repr(field['enumeration']))
 
     def _describe_float(self, field, block, role):
         constraints = []
@@ -210,8 +211,17 @@ class DocumentationGenerator(object):
     def _describe_structure(self, field, block, role):
         structure = field.get('structure')
         if structure:
-            for name, subfield in self._collate_fields(structure):
-                block.append(self._document_field(name, subfield, role))
+            polymorphic_on = field.get('polymorphic_on')
+            if polymorphic_on:
+                field_name = polymorphic_on['name']
+                for value, substructure in sorted(structure.iteritems()):
+                    subblock = directive('field', '%s = %r' % (field_name, value))
+                    for name, subfield in self._collate_fields(substructure):
+                        subblock.append(self._document_field(name, subfield, role))
+                    block.append(subblock)
+            else:
+                for name, subfield in self._collate_fields(structure):
+                    block.append(self._document_field(name, subfield, role))
 
     def _describe_text(self, field, block, role):
         constraints = []
@@ -263,6 +273,10 @@ class DocumentationGenerator(object):
             block.set('required', '')
         if field.get('deferred') and role != 'request':
             block.set('deferred', '')
+
+        constant = field.get('constant')
+        if constant is not None:
+            block.set('constant', repr(constant))
 
         default = field.get('default')
         if default is not None:
