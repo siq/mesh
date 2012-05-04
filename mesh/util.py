@@ -2,7 +2,15 @@ import logging
 import os
 import re
 import sys
+from inspect import getargspec
 from types import ClassType
+
+def call_with_supported_params(callable, *args, **params):
+    arguments = getargspec(callable)[0]
+    for key in params.keys():
+        if key not in arguments:
+            del params[key]
+    return callable(*args, **params)
 
 def construct_all_list(namespace, cls):
     all = []

@@ -1,3 +1,5 @@
+from types import ModuleType
+
 from mesh.bundle import Specification
 from mesh.constants import *
 from mesh.exceptions import *
@@ -184,6 +186,18 @@ class BindingGenerator(object):
 
         files['__init__'] = ('__init__.py', '')
         return files
+
+    def generate_dynamically(self, bundle, version):
+        description = bundle.describe(version)
+        source = ['from %s import *' % self.binding_module,
+            self._generate_specification(description)]
+
+        for name, model in description['resources'].iteritems():
+            source.append(self._generate_model(name, model))
+
+        module = ModuleType(bundle.name)
+        exec '\n'.join(source) in module.__dict__
+        return module
 
     def _generate_model(self, name, model):
         return self.MODEL_TMPL % {
