@@ -167,7 +167,7 @@ class MockController(StandardController):
     def acquire(self, subject):
         try:
             subject = int(subject)
-        except ValueError:
+        except (TypeError, ValueError):
             return None
         else:
             return self.storage.get(self.resource.name, subject)
@@ -204,6 +204,14 @@ class MockController(StandardController):
 
     def create(self, context, response, subject, data):
         id = self.storage.save(self.resource.name, data)
+        response({'id': id})
+
+    def put(self, context, response, subject, data):
+        if subject:
+            subject.update(data)
+            id = self.storage.save(self.resource.name, subject)
+        else:
+            id = self.storage.save(self.resource.name, data)
         response({'id': id})
 
     def update(self, context, response, subject, data):

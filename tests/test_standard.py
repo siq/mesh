@@ -33,6 +33,32 @@ class TestStandardResources(TestCase):
         self.assertIsInstance(resource, dict)
         self.assertEqual(resource['required_field'], 'text')
 
+    def test_resource_put(self):
+        response = server.dispatch(endpoint('put'), {}, None, {})
+        self.assertEqual(response.status, BAD_REQUEST)
+
+        id = 1
+
+        response = server.dispatch(endpoint('put'), {}, id, {})
+        self.assertEqual(response.status, INVALID)
+
+        response = server.dispatch(endpoint('put'), {}, id, {'required_field': 'text', 'readonly_field': 2})
+        self.assertEqual(response.status, INVALID)
+
+        response = server.dispatch(endpoint('put'), {}, id, {'required_field': 'text'})
+        self.assertEqual(response.status, OK)
+
+        resource = storage.get('example', id)
+        self.assertIsInstance(resource, dict)
+        self.assertEqual(resource['required_field'], 'text')
+
+        response = server.dispatch(endpoint('put'), {}, id, {'required_field': 'more'})
+        self.assertEqual(response.status, OK)
+
+        resource = storage.get('example', id)
+        self.assertIsInstance(resource, dict)
+        self.assertEqual(resource['required_field'], 'more')
+
     def test_resource_update(self):
         response = server.dispatch(endpoint('create'), {}, None, {'required_field': 'text', 'integer_field': 2})
         id = response.content['id']

@@ -223,6 +223,8 @@ class Request(object):
 
         subject = None
         if self.specific:
+            if request.subject is None:
+                return response(BAD_REQUEST)
             subject = instance.acquire(request.subject)
             if not subject and self.subject_required:
                 log('info', 'request to %r specified unknown subject %r', str(self),

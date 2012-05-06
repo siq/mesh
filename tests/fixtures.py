@@ -11,6 +11,7 @@ class HarnessController(MockController):
 class Example(Resource):
     name = 'example'
     version = 1
+    requests = 'create delete get put query update'
 
     class schema:
         required_field = Text(required=True, nonnull=True, sortable=True,

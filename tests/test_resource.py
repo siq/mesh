@@ -23,7 +23,7 @@ EXAMPLE_REQUESTS = {'test': construct_example_request}
 
 class TestResource(TestCase):
     def setUp(self):
-        self.configuration = Configuration(EXAMPLE_REQUESTS)
+        self.configuration = Configuration(EXAMPLE_REQUESTS, ['test'])
 
     def example_resource(self):
         class Example(Resource):

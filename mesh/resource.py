@@ -32,10 +32,11 @@ class Configuration(object):
         generated mock controllers under this configuration.
     """
 
-    def __init__(self, standard_requests=None, validated_requests=None, id_field=None,
-            default_controller=None):
+    def __init__(self, standard_requests=None, default_requests=None, validated_requests=None,
+            id_field=None, default_controller=None):
 
         self.default_controller = default_controller or Controller
+        self.default_requests = default_requests or []
         self.id_field = id_field or Integer(name='id', nonnull=True)
         self.standard_requests = standard_requests or {}
         self.validated_requests = validated_requests or []
@@ -85,7 +86,7 @@ class ResourceMeta(type):
         if isinstance(requested_requests, basestring):
             requested_requests = requested_requests.split(' ')
         if requested_requests is None:
-            requested_requests = configuration.standard_requests.keys()
+            requested_requests = configuration.default_requests
 
         declared_requests = {}
         removed_attrs = set()

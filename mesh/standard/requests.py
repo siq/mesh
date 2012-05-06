@@ -194,6 +194,30 @@ def construct_create_request(resource):
         }
     )
 
+def construct_put_request(resource):
+    resource_schema = resource.filter_schema(exclusive=False, readonly=False)
+    if resource.id_field.name in resource_schema:
+        del resource_schema[resource.id_field.name]
+
+    response_schema = {
+        resource.id_field.name: resource.id_field.clone(required=True),
+    }
+
+    return Request(
+        name = 'put',
+        endpoint = (PUT, resource.name + '/id'),
+        specific = True,
+        auto_constructed = True,
+        subject_required = False,
+        resource = resource,
+        title = 'Putting a specific %s' % resource.title.lower(),
+        schema = Structure(resource_schema),
+        responses = {
+            OK: Response(Structure(response_schema)),
+            INVALID: Response(Errors),
+        }
+    )
+
 def construct_update_request(resource):
     schema = {}
     for name, field in resource.filter_schema(exclusive=False, readonly=False).iteritems():
@@ -265,12 +289,14 @@ def construct_delete_request(resource):
         }
     )
 
+DEFAULT_REQUESTS = ['create', 'delete', 'get', 'query', 'update']
 STANDARD_REQUESTS = {
-    'query': construct_query_request(),
-    'get': construct_get_request(),
     'create': construct_create_request,
-    'update': construct_update_request,
-#    'create_update': construct_create_update_request,
+    'create_update': construct_create_update_request,
     'delete': construct_delete_request,
+    'get': construct_get_request(),
+    'put': construct_put_request,
+    'query': construct_query_request(),
+    'update': construct_update_request,
 }
-VALIDATED_REQUESTS = ['create', 'update']
+VALIDATED_REQUESTS = ['create', 'put', 'update']
