@@ -330,6 +330,8 @@ class ControllerMeta(type):
 
         versions[controller.version] = controller
         controller.version_string = '%d.%d' % controller.version
+
+        controller.__construct__()
         return controller
 
     def __repr__(controller):
@@ -355,6 +357,10 @@ class Controller(object):
 
     resource = None
     version = None
+
+    @classmethod
+    def __construct__(cls):
+        pass
 
     def acquire(self, subject):
         """Acquires and returns the backend instance for the implemented resource identified
