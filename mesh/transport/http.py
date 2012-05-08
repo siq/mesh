@@ -54,7 +54,7 @@ PATH_EXPR = r"""(?x)^%s
     /(?P<bundle>\w+)
     /(?P<major>\d+)[.](?P<minor>\d+)
     /(?P<resource>\w+)
-    (?:/(?P<subject>[-\w]+)(?P<tail>(?:/\w+)+)?)?
+    (?:/(?P<subject>[-.:\w]+)(?P<tail>(?:/\w+)+)?)?
     (?:[.](?P<format>\w+))?
     /?$"""
 
