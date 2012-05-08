@@ -55,7 +55,7 @@ PATH_EXPR = r"""(?x)^%s
     /(?P<major>\d+)[.](?P<minor>\d+)
     /(?P<resource>\w+)
     (?:/(?P<subject>[-.:\w]+)(?P<tail>(?:/\w+)+)?)?
-    (?:[.](?P<format>\w+))?
+    (?:[!](?P<format>\w+))?
     /?$"""
 
 class Connection(object):
@@ -388,7 +388,7 @@ class HttpClient(Client):
         try:
             return self.paths[path]
         except KeyError:
-            template = '%s%s.%%s' % (self.initial_path, re.sub(r'\/id(?=\/|$)', '/%s', path))
+            template = '%s%s!%%s' % (self.initial_path, re.sub(r'\/id(?=\/|$)', '/%s', path))
             self.paths[path] = template
             return template
 
