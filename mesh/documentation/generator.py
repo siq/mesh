@@ -292,8 +292,8 @@ class DocumentationGenerator(object):
         if request.get('title'):
             block.set('title', request['title'])
         if request.get('endpoint'):
-            block.set('endpoint', '%s %s%s' % (request['endpoint'][0],
-                path_prefix, request['path']))
+            block.set('endpoint', '%s %s' % (request['endpoint'][0],
+                request['path']))
 
         if request.get('description'):
             block.append(request['description'])

@@ -119,7 +119,11 @@ class construct_query_request(construct_model_request):
                 description='The sort order for this query.')
 
     def _construct_operator_fields(self, operators, field):
-        for operator in field.operators:
+        supported = field.operators
+        if isinstance(supported, basestring):
+            supported = supported.split(' ')
+
+        for operator in supported:
             description = self.operators.get(operator)
             if description:
                 constructor = getattr(self, '_construct_%s_operator' % operator, None)

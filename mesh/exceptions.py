@@ -1,5 +1,10 @@
+from scheme.exceptions import StructuralError
+
 from mesh.constants import *
 from mesh.util import construct_all_list
+
+class OperationError(StructuralError):
+    """An operational error."""
 
 class MeshError(Exception):
     """A mesh error."""
