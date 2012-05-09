@@ -61,7 +61,7 @@ class Request(object):
     :param schema: Optional, default is ``None``; the schema specifying the expected content.
     """
 
-    ATTRS = ('batch', 'description', 'endpoint', 'filter', 'specific', 'title')
+    ATTRS = ('batch', 'description', 'endpoint', 'filter', 'specific', 'subject_required', 'title')
 
     def __init__(self, resource=None, name=None, endpoint=None, filter=None, schema=None,
         responses=None, specific=False, description=None, title=None, auto_constructed=False,
