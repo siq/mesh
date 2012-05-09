@@ -100,6 +100,8 @@ class FieldDefinition(Directive):
         'readonly': directives.flag,
         'deferred': directives.flag,
         'sectional': directives.flag,
+        'unique': directives.flag,
+        'polymorphic': directives.flag,
     }
 
     aspects = {
@@ -163,7 +165,7 @@ class FieldDefinition(Directive):
             signature += literal(' %s' % constraints, 'field-constraints')
 
         flags = []
-        for flag in ('required', 'nonnull', 'readonly', 'deferred'):
+        for flag in ('required', 'nonnull', 'readonly', 'deferred', 'unique', 'polymorphic'):
             if flag in self.options:
                 flags.append(flag)
         if flags:

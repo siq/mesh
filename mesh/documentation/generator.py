@@ -198,6 +198,8 @@ class DocumentationGenerator(object):
 
     def _describe_sequence(self, field, block, role):
         constraints = []
+        if field.get('unique'):
+            block.set('unique', '')
         if field.get('min_length') is not None:
             constraints.append('min=%d' % field['min_length'])
         if field.get('max_length') is not None:
@@ -213,6 +215,7 @@ class DocumentationGenerator(object):
         if structure:
             polymorphic_on = field.get('polymorphic_on')
             if polymorphic_on:
+                block.set('polymorphic', '')
                 field_name = polymorphic_on['name']
                 for value, substructure in sorted(structure.iteritems()):
                     subblock = directive('field', '%s = %r' % (field_name, value))

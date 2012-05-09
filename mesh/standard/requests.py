@@ -108,6 +108,11 @@ class construct_query_request(construct_model_request):
             }
         )
 
+    def _clone_field(self, field, name=None, description=None):
+        return field.clone(name=name, description=description, nonnull=True, default=None,
+            required=False, notes=None, readonly=False, deferred=False, sortable=False,
+            operators=None)
+
     def _construct_sort_field(self, fields):
         tokens = []
         for name, field in fields.iteritems():
@@ -131,18 +136,18 @@ class construct_query_request(construct_model_request):
                     operator_field = constructor(field, description)
                 else:
                     name = '%s__%s' % (field.name, operator)
-                    operator_field = type(field)(name=name, description=description, nonnull=True)
+                    operator_field = self._clone_field(field, name, description)
                 operators[operator_field.name] = operator_field
 
     def _construct_equal_operator(self, field, description):
-        return type(field)(name=field.name, description=description, nonnull=True)
+        return self._clone_field(field, field.name, description)
 
     def _construct_in_operator(self, field, description):
-        return Sequence(type(field)(nonnull=True), name='%s__in' % field.name,
+        return Sequence(self._clone_field(field), name='%s__in' % field.name,
             description=description, nonnull=True)
 
     def _construct_notin_operator(self, field, description):
-        return Sequence(type(field)(nonnull=True), name='%s__notin' % field.name,
+        return Sequence(self._clone_field(field), name='%s__notin' % field.name,
             description=description, nonnull=True)
 
     def _construct_null_operator(self, field, description):
@@ -177,9 +182,13 @@ class construct_get_request(construct_model_request):
         )
 
 def construct_create_request(resource):
-    resource_schema = resource.filter_schema(exclusive=False, readonly=False)
-    if resource.id_field.name in resource_schema:
-        del resource_schema[resource.id_field.name]
+    resource_schema = {}
+    for name, field in resource.filter_schema(exclusive=False, readonly=False).iteritems():
+        if field.is_identifier:
+            if field.oncreate is True:
+                resource_schema[name] = field
+        elif field.oncreate is not False:
+            resource_schema[name] = field
 
     response_schema = {
         resource.id_field.name: resource.id_field.clone(required=True),
@@ -199,9 +208,10 @@ def construct_create_request(resource):
     )
 
 def construct_put_request(resource):
-    resource_schema = resource.filter_schema(exclusive=False, readonly=False)
-    if resource.id_field.name in resource_schema:
-        del resource_schema[resource.id_field.name]
+    resource_schema = {}
+    for name, field in resource.filter_schema(exclusive=False, readonly=False).iteritems():
+        if not field.is_identifier and field.onput is not False:
+            resource_schema[name] = field
 
     response_schema = {
         resource.id_field.name: resource.id_field.clone(required=True),
@@ -223,12 +233,12 @@ def construct_put_request(resource):
     )
 
 def construct_update_request(resource):
-    schema = {}
+    resource_schema = {}
     for name, field in resource.filter_schema(exclusive=False, readonly=False).iteritems():
-        if name != resource.id_field.name:
+        if not field.is_identifier and field.onupdate is not False:
             if field.required:
                 field = field.clone(required=False)
-            schema[name] = field
+            resource_schema[name] = field
 
     response_schema = {
         resource.id_field.name: resource.id_field.clone(required=True),
@@ -241,7 +251,7 @@ def construct_update_request(resource):
         auto_constructed = True,
         resource = resource,
         title = 'Updating a specific %s' % resource.title.lower(),
-        schema = Structure(schema),
+        schema = Structure(resource_schema),
         responses = {
             OK: Response(Structure(response_schema)),
             INVALID: Response(Errors),
