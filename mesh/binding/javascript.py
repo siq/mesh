@@ -108,8 +108,10 @@ class Generator(object):
         'structure': 'fields.StructureField',
         'text': 'fields.TextField',
         'time': 'fields.TimeField',
+        'token': 'fields.TokenField',
         'tuple': 'fields.TupleField',
         'union': 'fields.UnionField',
+        'uuid': 'fields.UUIDField'
     }
     IGNORED_ATTRS = ('description', 'notes', 'structural', '__type__')
     MODEL_TMPL = get_package_data('mesh.binding', 'templates/model.js.tmpl')
@@ -132,6 +134,8 @@ class Generator(object):
         specification = {'__type__': self.FIELDS[field['__type__']]}
         for name, value in field.iteritems():
             if name not in self.IGNORED_ATTRS:
+                if isinstance(value, dict) and '__type__' in value:
+                    value = self._construct_field(value)
                 specification[name] = value
 
         if field.get('structural'):

@@ -91,9 +91,12 @@ class Model(object):
 
     @classmethod
     def create(cls, **params):
-        request = cls._resource['requests']['create']
+        request = cls._resource['requests'].get('create')
+        if not request:
+            raise RuntimeError()
+
         instance = cls(**request['schema'].extract(params))
-        return instance.save(**params)
+        return instance.save(request, **params)
 
     def destroy(self, **params):
         if self.id is None:
@@ -114,22 +117,33 @@ class Model(object):
         self._update_model(response.content)
         return self
 
+    def put(self, **params):
+        request = self._resource['requests'].get('put')
+        if request:
+            return self.save(request, **params)
+        else:
+            raise RuntimeError()
+
     @classmethod
     def query(cls, **params):
         return cls.query_class(cls, **params)
 
-    def save(self, **params):
-        action = 'create'
-        if self.id is not None:
-            action = 'update'
+    def save(self, _request=None, **params):
+        request = _request
+        if not request:
+            action = 'create'
+            if self.id is not None:
+                action = 'update'
 
-        request = self._resource['requests'][action]
+            request = self._resource['requests'].get(action)
+            if not request:
+                raise RuntimeError()
+
         data = request['schema'].extract(self._data)
-
         if params:
             data.update(params)
 
-        response = self._execute_request(action, data)
+        response = self._execute_request(request['name'], data)
         self._update_model(response.content)
         return self
 

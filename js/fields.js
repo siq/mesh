@@ -346,7 +346,7 @@ define([
         structural: true,
 
         extract: function(subject) {
-            var structure = this.structure, extraction = {}, name, value, field;
+            var structure = this._get_structure(subject), extraction = {}, name, value, field;
             for (name in structure) {
                 field = structure[name];
                 if (field != null) {
@@ -366,12 +366,14 @@ define([
         },
 
         serialize: function(value, mimetype, outermost) {
-            var structure = this.structure, name, field;
+            var structure, name, field;
             if (value == null) {
                 return value;
             } else if (!isPlainObject(value)) {
                 throw InvalidTypeError();
             }
+
+            structure = this._get_structure(value);
             for (name in value) {
                 field = structure[name];
                 if (field == null) {
@@ -383,6 +385,7 @@ define([
                     value[name] = field.serialize(value[name], mimetype);
                 }
             }
+            
             if (mimetype === URLENCODED && !outermost) {
                 value = urlencodeMapping(value);
             }
@@ -390,16 +393,37 @@ define([
         },
 
         unserialize: function(value, mimetype) {
-            var structure = this.structure, name;
+            var structure, name;
             if (value == null) {
                 return value;
             } else if (!isPlainObject(value)) {
                 throw InvalidTypeError();
             }
+
+            structure = this._get_structure(value);
             for (name in value) {
                 value[name] = structure[name].unserialize(value[name], mimetype);
             }
             return value;
+        },
+
+        _get_structure: function(value) {
+            var identity, structure;
+            if (this.polymorphic_on != null) {
+                identity = value[this.polymorphic_on.name];
+                if (identity != null) {
+                    structure = this.structure[identity];
+                    if (structure != null) {
+                        return structure;
+                    } else {
+                        throw new Error('invalid polymorphic identity');
+                    }
+                } else {
+                    throw new Error('missing polymorphic identity');
+                }
+            } else {
+                return this.structure;
+            }
         }
     });
 
@@ -425,6 +449,14 @@ define([
 
         _validateType: function(value) {
             if (!(value instanceof datetime.Time)) {
+                throw InvalidTypeError();
+            }
+        }
+    });
+
+    fields.TokenField = Field.extend({
+        _validateType: function(value) {
+            if (!isString(value)) {
                 throw InvalidTypeError();
             }
         }

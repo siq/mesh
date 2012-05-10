@@ -275,6 +275,18 @@ require([
         });
     });
 
+    test('extraction', function() {
+        var field = fields.StructureField({structure: {
+            bool: fields.BooleanField(),
+            integer: fields.IntegerField()
+        }});
+        var subject = {bool: true, integer: 1, extra: 'extra'};
+        var extraction = field.extract(subject);
+
+        deepEqual(extraction, {bool: true, integer: 1});
+        notStrictEqual(extraction, subject);
+    });
+
     module('text fields');
 
     test('serialization', function() {
