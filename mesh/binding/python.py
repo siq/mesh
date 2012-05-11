@@ -99,10 +99,11 @@ class Model(object):
         return instance.save(request, **params)
 
     def destroy(self, **params):
+        request = self._get_request('delete')
         if self.id is None:
             return self
 
-        response = self._execute_request('delete', params or None)
+        response = self._execute_request(request, params or None)
         return response.content
 
     @classmethod
@@ -110,19 +111,17 @@ class Model(object):
         return cls(id=id).refresh(**params)
 
     def refresh(self, **params):
+        request = self._get_request('get')
         if self.id is None:
             return self
 
-        response = self._execute_request('get', params or None)
+        response = self._execute_request(request, params or None)
         self._update_model(response.content)
         return self
 
     def put(self, **params):
-        request = self._resource['requests'].get('put')
-        if request:
-            return self.save(request, **params)
-        else:
-            raise RuntimeError()
+        request = self._get_request('put')
+        return self.save(request, **params)
 
     @classmethod
     def query(cls, **params):
@@ -131,19 +130,16 @@ class Model(object):
     def save(self, _request=None, **params):
         request = _request
         if not request:
-            action = 'create'
             if self.id is not None:
-                action = 'update'
-
-            request = self._resource['requests'].get(action)
-            if not request:
-                raise RuntimeError()
+                request = self._get_request('update')
+            else:
+                request = self._get_request('create')
 
         data = request['schema'].extract(self._data)
         if params:
             data.update(params)
 
-        response = self._execute_request(request['name'], data)
+        response = self._execute_request(request, data)
         self._update_model(response.content)
         return self
 
@@ -152,11 +148,21 @@ class Model(object):
         return self.save(**params)
 
     def _execute_request(self, request, data=None):
-        return self._get_client().execute(self._name, request, self.id, data)
+        subject = self.id
+        if not request['specific']:
+            subject = None
+        return self._get_client().execute(self._name, request['name'], subject, data)
 
     @classmethod
     def _get_client(cls):
         return Client.get_client(cls._specification)
+
+    def _get_request(self, name):
+        request = self._resource['requests'].get(name)
+        if request:
+            return request
+        else:
+            raise ValueError(name)
 
     def _update_model(self, data):
         self._data.update(data)
