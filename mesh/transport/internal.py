@@ -9,8 +9,8 @@ __all__ = ('InternalClient', 'InternalServer', 'ServerRequest', 'ServerResponse'
 class InternalServer(Server):
     """An API server."""
 
-    def __init__(self, bundles, default_format=None, available_formats=None):
-        super(InternalServer, self).__init__(default_format, available_formats)
+    def __init__(self, bundles, default_format=None, available_formats=None, mediators=None):
+        super(InternalServer, self).__init__(default_format, available_formats, mediators)
 
         self.bundles = {}
         for bundle in bundles:
@@ -50,7 +50,7 @@ class InternalServer(Server):
                 request.serialized = True
 
         try:
-            definition.process(controller, request, response)
+            definition.process(controller, request, response, self.mediators)
         except Exception, exception:
             import traceback;traceback.print_exc()
             return response(SERVER_ERROR)

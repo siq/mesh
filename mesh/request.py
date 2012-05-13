@@ -10,7 +10,7 @@ from mesh.util import LogHelper, pull_class_dict
 from scheme.fields import INCOMING, OUTGOING, Field, Structure
 from scheme.exceptions import *
 
-__all__ = ('Context', 'Request', 'Response', 'validator')
+__all__ = ('Context', 'Mediator', 'Request', 'Response', 'validator')
 
 log = LogHelper(logging.getLogger(__name__))
 
@@ -217,8 +217,14 @@ class Request(object):
 
         return description
 
-    def process(self, controller, request, response):
+    def process(self, controller, request, response, mediators=None):
         context = Context(request)
+        if mediators:
+            for mediator in mediators:
+                mediator.before_validation(self, context, response)
+                if response.status:
+                    return response
+
         instance = controller()
 
         subject = None
@@ -265,7 +271,14 @@ class Request(object):
                 log('info', 'request to %s failed controller invocation', str(self))
                 response(INVALID, error)
 
-        definition = self.responses[response.status]
+        definition = self.responses.get(response.status)
+        if not definition:
+            if definition.status in ERROR_STATUS_CODES and not response.content:
+                return response
+            else:
+                log('error', 'response for %s has undeclared status code', str(self))
+                return response(SERVER_ERROR)
+
         if definition.schema:
             try:
                 response.content = definition.schema.process(response.content, OUTGOING, request.serialized)
@@ -273,7 +286,6 @@ class Request(object):
                 response.content = None
                 error = exception.serialize()
                 log('error', 'response for %s failed schema validation', str(self))
-                print exception
                 return response(SERVER_ERROR)
         elif response.content:
             log('error', 'response for %s improperly specified content', str(self))
@@ -310,6 +322,12 @@ class Request(object):
                     error.merge(exception)
         if error.substantive:
             raise error
+
+class Mediator(object):
+    """A request mediator."""
+
+    def before_validation(self, request, context, response):
+        pass
 
 def validator(attr=None, requests=None):
     """Marks the decorated method as a validator.

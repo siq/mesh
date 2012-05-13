@@ -53,8 +53,10 @@ class ServerResponse(object):
 class Server(object):
     """An API server."""
 
-    def __init__(self, default_format=None, available_formats=None):
+    def __init__(self, default_format=None, available_formats=None, mediators=None):
         self.default_format = default_format
+        self.mediators = mediators
+
         self.formats = {}
         for format in (available_formats or STANDARD_FORMATS):
             self.formats[format.name] = self.formats[format.mimetype] = format

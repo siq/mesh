@@ -153,10 +153,11 @@ class Path(object):
 class EndpointGroup(object):
     """An HTTP endpoint group."""
 
-    def __init__(self, signature, method, resource, controller):
+    def __init__(self, signature, method, resource, controller, mediators):
         self.controller = controller
         self.default_request = None
         self.filtered_requests = []
+        self.mediators = mediators
         self.method = method
         self.resource = resource
         self.signature = signature
@@ -178,11 +179,14 @@ class EndpointGroup(object):
 
         if not definition:
             return response(BAD_REQUEST)
-        definition.process(self.controller, request, response)
+
+        definition.process(self.controller, request, response, self.mediators)
 
 class WsgiServer(Server):
-    def __init__(self, default_format=None, available_formats=None, context_key=None):
-        super(WsgiServer, self).__init__(default_format or Json, available_formats)
+    def __init__(self, default_format=None, available_formats=None, mediators=None,
+            context_key=None):
+
+        super(WsgiServer, self).__init__(default_format or Json, available_formats, mediators)
         self.context_key = context_key
 
     def __call__(self, environ, start_response):
@@ -219,10 +223,12 @@ class HttpServer(WsgiServer):
         'Access-Control-Max-Age': '2592000',
     }
 
-    def __init__(self, bundles, path_prefix=None, default_format=None, available_formats=None,
-            context_key=None):
+    def __init__(self, bundles, path_prefix=None, default_format=None,
+            available_formats=None, mediators=None, context_key=None):
 
-        super(HttpServer, self).__init__(default_format, available_formats, context_key)
+        super(HttpServer, self).__init__(default_format, available_formats,
+            mediators,context_key)
+
         if path_prefix:
             path_prefix = '/' + path_prefix.strip('/')
         else:
@@ -313,7 +319,9 @@ class HttpServer(WsgiServer):
         try:
             group = groups[method]
         except KeyError:
-            group = groups[method] = EndpointGroup(signature, method, resource, controller)
+            group = groups[method] = EndpointGroup(signature, method, resource,
+                controller, self.mediators)
+
         group.attach(request)
 
 class HttpClient(Client):
@@ -394,9 +402,9 @@ class HttpClient(Client):
 
 class HttpProxy(WsgiServer):
     def __init__(self, url, context=None, default_format=None, available_formats=None,
-            context_key=None, context_header_prefix=None):
+            mediators=None, context_key=None, context_header_prefix=None):
 
-        super(HttpProxy, self).__init__(default_format, available_formats, context_key)
+        super(HttpProxy, self).__init__(default_format, available_formats, mediators, context_key)
         self.context_header_prefix = context_header_prefix or HttpClient.DEFAULT_HEADER_PREFIX
         self.connection = Connection(url)
         self.context = context or {}
