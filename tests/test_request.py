@@ -7,7 +7,8 @@ from mesh.transport.internal import *
 from scheme import *
 
 def construct_example_request(resource, name='test', specific=False, endpoint=(GET, 'resource'),
-    auto_constructed=True, schema=None, ok=None, filter=None, batch=False, validators=None):
+    auto_constructed=True, schema=None, ok=None, filter=None, batch=False, validators=None,
+    metadata=None):
 
     if schema is None:
         schema = Structure({'id': Integer()})
@@ -28,6 +29,7 @@ def construct_example_request(resource, name='test', specific=False, endpoint=(G
         filter = filter,
         schema = schema,
         validators = validators,
+        metadata = metadata,
         responses = {
             OK: ok,
             INVALID: Response(Errors),
@@ -78,6 +80,7 @@ class TestRequest(TestCase):
             title = 'operation'
             schema = {}
             responses = {}
+            metadata = {'name': 'value'}
 
         resource = object()
         request = Request.construct(resource, operation)
@@ -92,6 +95,7 @@ class TestRequest(TestCase):
         self.assertEqual(request.responses, {})
         self.assertIsInstance(request.schema, Structure)
         self.assertEqual(request.title, 'operation')
+        self.assertEqual(request.metadata, {'name': 'value'})
 
         class described:
             """description"""
@@ -108,6 +112,7 @@ class TestRequest(TestCase):
                 OK: Response({}, OK),
             }
             title = 'first'
+            metadata = {'alpha': 1, 'beta': 2}
 
         class second(first):
             schema = {'id': Integer()}
@@ -115,6 +120,7 @@ class TestRequest(TestCase):
                 PARTIAL: {}
             }
             title = 'second'
+            metadata = {'alpha': 0, 'gamma': 3}
 
         resource = object()
         request = Request.construct(resource, second)
@@ -129,6 +135,7 @@ class TestRequest(TestCase):
         self.assertIsInstance(request.schema, Structure)
         self.assertIsInstance(request.schema.structure['id'], Integer)
         self.assertEqual(request.title, 'second')
+        self.assertEqual(request.metadata, {'alpha': 0, 'beta': 2, 'gamma': 3})
 
     def test_auto_constructor_inheritance(self):
         class harness(object):

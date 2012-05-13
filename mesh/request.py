@@ -65,13 +65,14 @@ class Request(object):
 
     def __init__(self, resource=None, name=None, endpoint=None, filter=None, schema=None,
         responses=None, specific=False, description=None, title=None, auto_constructed=False,
-        batch=False, subject_required=True, validators=None):
+        batch=False, subject_required=True, validators=None, metadata=None):
 
         self.auto_constructed = auto_constructed
         self.batch = batch
         self.description = description
         self.endpoint = endpoint
         self.filter = filter
+        self.metadata = metadata or {}
         self.name = name
         self.resource = resource
         self.responses = responses or {}
@@ -126,7 +127,7 @@ class Request(object):
         params.update(pull_class_dict(declaration, cls.ATTRS))
         if 'responses' not in params:
             params['responses'] = {}
-        
+
         schema = getattr(declaration, 'schema', None)
         if schema is not None:
             if isinstance(schema, dict):
@@ -173,6 +174,13 @@ class Request(object):
         if not description and declaration.__doc__:
             params['description'] = dedent(declaration.__doc__)
 
+        metadata = getattr(declaration, 'metadata', None)
+        if metadata:
+            if 'metadata' in params:
+                params['metadata'].update(metadata)
+            else:
+                params['metadata'] = metadata
+
         return cls(resource=resource, name=declaration.__name__, **params)
 
     @classmethod
@@ -193,6 +201,11 @@ class Request(object):
         responses = getattr(request, 'responses', None)
         if responses:
             params['responses'] = deepcopy(responses)
+
+        metadata = getattr(request, 'metadata', None)
+        if metadata:
+            params['metadata'] = deepcopy(metadata)
+
         return params
 
     def describe(self, path_prefix=None):
