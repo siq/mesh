@@ -376,7 +376,7 @@ class HttpClient(Client):
         response = self.connection.request(method, path, data, headers)
         if response.status in request['responses']:
             schema = request['responses'][response.status]['schema']
-        else:
+        elif not (response.status in ERROR_STATUS_CODES and not response.content):
             exception = RequestError.construct(response.status)
             if exception:
                 raise exception

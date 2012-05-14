@@ -286,7 +286,7 @@ class Request(object):
 
         definition = self.responses.get(response.status)
         if not definition:
-            if definition.status in ERROR_STATUS_CODES and not response.content:
+            if response.status in ERROR_STATUS_CODES and not response.content:
                 return response
             else:
                 log('error', 'response for %s has undeclared status code', str(self))
