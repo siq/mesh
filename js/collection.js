@@ -1,8 +1,8 @@
 define([
-    'path!vendor:underscore',
-    'path!vendor:jquery',
-    'path!bedrock:class',
-    'path!bedrock:events'
+    'component!vendor:underscore',
+    'component!vendor:jquery',
+    'component!bedrock:class',
+    'component!bedrock:events'
 ], function(_, $, Class, Eventable) {
     var extend = $.extend, intersection = _.intersection, isArray = _.isArray,
         isString = _.isString, toArray = _.toArray;

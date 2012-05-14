@@ -1,8 +1,8 @@
 /*global test, asyncTest, ok, equal, deepEqual, start, module, strictEqual, notStrictEqual, raises*/
-require([
-    'path!vendor:underscore',
-    'path!mesh:datetime',
-    'path!mesh:fields'
+define([
+    'component!vendor:underscore',
+    './../datetime',
+    './../fields'
 ], function(_, datetime, fields) {
     var URLENCODED = 'application/x-www-form-urlencoded';
 

@@ -1,9 +1,9 @@
 /*global test, asyncTest, ok, equal, deepEqual, start, module, strictEqual */
-require([
-    'path!vendor:underscore',
-    'path!vendor:jquery',
-    'path!mesh:request',
-    'path!mesh:tests/example'
+define([
+    'component!vendor:underscore',
+    'component!vendor:jquery',
+    './../request',
+    './example'
 ], function(_, $, Request, Example) {
     var manager = Example.models, last_ajax_call;
 

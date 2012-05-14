@@ -1,7 +1,7 @@
 define([
-    'path!mesh:model',
-    'path!mesh:request',
-    'path!mesh:fields'
+    'component!mesh:model',
+    'component!mesh:request',
+    'component!mesh:fields'
 ], function(model, Request, fields) {
     return model.Model.extend({
         __name__: "example",

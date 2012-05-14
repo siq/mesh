@@ -1,7 +1,7 @@
-/*global test, asyncTest, ok, equal, deepEqual, start, module */
-require([
-    'path!vendor:underscore',
-    'path!mesh:tests/example'
+/*global test, asyncTest, ok, equal, deepEqual, start, module, strictEqual */
+define([
+    'component!vendor:underscore',
+    './example'
 ], function(_, Example) {
     asyncTest('requests: GET', function() {
         var request = Example.prototype.__requests__.query;

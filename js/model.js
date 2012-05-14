@@ -1,10 +1,10 @@
 define([
-    'path!vendor:underscore',
-    'path!vendor:jquery',
-    'path!bedrock:class',
-    'path!bedrock:events',
-    'path!mesh:fields',
-    'path!mesh:collection'
+    'component!vendor:underscore',
+    'component!vendor:jquery',
+    'component!bedrock:class',
+    'component!bedrock:events',
+    './fields',
+    './collection'
 ], function(_, $, Class, Eventable, fields, collection) {
     var isArray = _.isArray, isBoolean = _.isBoolean, isEmpty = _.isEmpty,
         isEqual = _.isEqual, isString = _.isString;

@@ -1,8 +1,8 @@
 /*global test, asyncTest, ok, equal, deepEqual, start, module, strictEqual, notStrictEqual, raises*/
-require([
-    'path!vendor:underscore',
-    'path!vendor:jquery',
-    'path!mesh:tests/example'
+define([
+    'component!vendor:underscore',
+    'component!vendor:jquery',
+    './example'
 ], function(_, $, Example) {
     module('queries');
 

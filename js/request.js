@@ -1,8 +1,8 @@
 define([
-    'path!vendor:underscore',
-    'path!vendor:jquery',
-    'path!bedrock:class',
-    'path!mesh:fields',
+    'component!vendor:underscore',
+    'component!vendor:jquery',
+    'component!bedrock:class',
+    './fields',
     'meshconf'
 ], function(_, $, Class, fields, meshconf) {
     var Deferred = $.Deferred, isEqual = _.isEqual, indexOf = _.indexOf, isString = _.isString;

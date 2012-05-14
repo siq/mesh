@@ -1,7 +1,7 @@
 define([
-    'path!vendor:underscore',
-    'path!bedrock:class',
-    'path!mesh:datetime'
+    'component!vendor:underscore',
+    'component!bedrock:class',
+    './datetime'
 ], function(_, Class, datetime) {
     var isArray = _.isArray, isNumber = _.isNumber, isString = _.isString,
         URLENCODED = 'application/x-www-form-urlencoded';
