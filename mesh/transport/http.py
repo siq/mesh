@@ -96,10 +96,6 @@ class HttpRequest(ServerRequest):
 class HttpResponse(ServerResponse):
     """An HTTP response."""
 
-    def __init__(self, status=None, content=None, mimetype=None):
-        super(HttpResponse, self).__init__(status, content, mimetype)
-        self.headers = {}
-
     @property
     def status_code(self):
         return STATUS_CODES[self.status]
@@ -109,14 +105,12 @@ class HttpResponse(ServerResponse):
         return STATUS_LINES[self.status]
 
     def apply_standard_headers(self):
-        if self.content:
-            if 'Content-Type' not in self.headers:
-                self.headers['Content-Type'] = self.mimetype
-            if 'Content-Length' not in self.headers:
-                self.headers['Content-Length'] = str(len(self.content))
-
-    def header(self, name, value):
-        self.headers[name] = value
+        if not self.content:
+            return
+        if 'Content-Type' not in self.headers:
+            self.headers['Content-Type'] = self.mimetype
+        if 'Content-Length' not in self.headers:
+            self.headers['Content-Length'] = str(len(self.content))
 
 class Path(object):
     """An HTTP request path."""

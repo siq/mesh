@@ -25,8 +25,9 @@ class ServerRequest(object):
 class ServerResponse(object):
     """An API response."""
 
-    def __init__(self, status=None, content=None, mimetype=None):
+    def __init__(self, status=None, content=None, mimetype=None, headers=None):
         self.content = content
+        self.headers = headers or {}
         self.mimetype = mimetype
         self.status = status
 
@@ -49,6 +50,9 @@ class ServerResponse(object):
         if content is not None:
             self.content = content
         return self
+
+    def header(self, name, value):
+        self.headers[name] = value
 
 class Server(object):
     """An API server."""
