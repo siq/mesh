@@ -76,11 +76,21 @@ class LogHelper(object):
 def minimize_string(value):
     return re.sub(r'\s+', ' ', value).strip(' ')
 
-def pull_class_dict(cls, attrs=None):
+def pull_class_dict(cls, attrs=None, superclasses=False):
+    subjects = [cls]
+    if superclasses:
+        queue = list(cls.__bases__)
+        while queue:
+            candidate = queue.pop(0)
+            subjects.insert(0, candidate)
+            queue.extend(candidate.__bases__)
+
     result = {}
-    for key, value in cls.__dict__.iteritems():
-        if (not attrs or key in attrs) and not key.startswith('__'):
-            result[key] = value
+    for subject in subjects:
+        for key, value in subject.__dict__.iteritems():
+            if (not attrs or key in attrs) and not key.startswith('__'):
+                result[key] = value
+
     return result
 
 PLURALIZATION_RULES = (
