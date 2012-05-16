@@ -86,7 +86,7 @@ class Client(object):
             for key in (format, format.name, format.mimetype):
                 self.formats[key] = format
 
-    def execute(self, resource, request, subject=None, data=None, format=None):
+    def execute(self, resource, request, subject=None, data=None, format=None, context=None):
         raise NotImplementedError()
 
     @classmethod
@@ -105,11 +105,18 @@ class Client(object):
             del self.clients[id]
         return self
 
-    def _construct_context(self):
+    def _construct_context(self, additional=None):
         context = self.context
         if callable(context):
             context = context()
-        return context or {}
+        if context is None:
+            context = {}
+
+        if additional:
+            context = context.copy()
+            context.update(additional)
+
+        return context
 
 class Transport(object):
     """A mesh transport."""

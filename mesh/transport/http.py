@@ -335,13 +335,13 @@ class HttpClient(Client):
         self.initial_path = '/%s/%d.%d/' % (self.specification.name,
             self.specification.version[0], self.specification.version[1])
 
-    def construct_headers(self):
+    def construct_headers(self, context=None):
         headers = {}
-        for name, value in self._construct_context().iteritems():
+        for name, value in self._construct_context(context).iteritems():
             headers[self.context_header_prefix + name] = value
         return headers
 
-    def execute(self, resource, request, subject=None, data=None, format=None):
+    def execute(self, resource, request, subject=None, data=None, format=None, context=None):
         format = format or self.format
         request = self.specification.resources[resource]['requests'][request]
 
@@ -363,7 +363,7 @@ class HttpClient(Client):
         else:
             path = path % format.name
 
-        headers = self.construct_headers()
+        headers = self.construct_headers(context)
         if mimetype:
             headers['Content-Type'] = mimetype
 

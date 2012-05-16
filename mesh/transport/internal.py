@@ -68,14 +68,16 @@ class InternalClient(Client):
         super(InternalClient, self).__init__(specification, context, format, formats)
         self.server = server
 
-    def execute(self, resource, request, subject=None, data=None, format=None):
+    def execute(self, resource, request, subject=None, data=None, format=None, context=None):
+        context = self._construct_context(context)
+
         format = format or self.format
         if not format:
-            return self._dispatch_request(resource, request, subject, data)
+            return self._dispatch_request(resource, request, subject, data, context)
 
-    def _dispatch_request(self, resource, request, subject, data):
+    def _dispatch_request(self, resource, request, subject, data, context):
         endpoint = (self.specification.name, self.specification.version, resource, request)
-        response = self.server.dispatch(endpoint, self.context, subject, data)
+        response = self.server.dispatch(endpoint, context, subject, data)
 
         if response.ok:
             return response
