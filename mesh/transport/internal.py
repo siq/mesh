@@ -90,7 +90,7 @@ class InternalTransport(Transport):
     client = InternalClient
 
     @classmethod
-    def construct_fixture(cls, bundle, specification, context=None):
-        server = InternalServer([bundle])
+    def construct_fixture(cls, bundle, specification, context=None, mediators=None):
+        server = InternalServer([bundle], mediators=mediators)
         client = InternalClient(server, specification, context)
         return server, client
