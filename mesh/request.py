@@ -234,9 +234,14 @@ class Request(object):
         context = Context(request)
         if mediators:
             for mediator in mediators:
-                mediator.before_validation(self, context, response)
-                if response.status:
-                    return response
+                try:
+                    mediator.before_validation(self, context, response)
+                    if response.status:
+                        return response
+                except StructuralError, exception:
+                    error = exception.serialize()
+                    log('info', 'request to %s failed during mediator', str(self))
+                    return response(INVALID, error)
 
         instance = controller()
 
@@ -286,7 +291,7 @@ class Request(object):
 
         definition = self.responses.get(response.status)
         if not definition:
-            if definition.status in ERROR_STATUS_CODES and not response.content:
+            if response.status in ERROR_STATUS_CODES and not response.content:
                 return response
             else:
                 log('error', 'response for %s has undeclared status code', str(self))

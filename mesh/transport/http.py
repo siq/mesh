@@ -96,10 +96,6 @@ class HttpRequest(ServerRequest):
 class HttpResponse(ServerResponse):
     """An HTTP response."""
 
-    def __init__(self, status=None, content=None, mimetype=None):
-        super(HttpResponse, self).__init__(status, content, mimetype)
-        self.headers = {}
-
     @property
     def status_code(self):
         return STATUS_CODES[self.status]
@@ -109,14 +105,12 @@ class HttpResponse(ServerResponse):
         return STATUS_LINES[self.status]
 
     def apply_standard_headers(self):
-        if self.content:
-            if 'Content-Type' not in self.headers:
-                self.headers['Content-Type'] = self.mimetype
-            if 'Content-Length' not in self.headers:
-                self.headers['Content-Length'] = str(len(self.content))
-
-    def header(self, name, value):
-        self.headers[name] = value
+        if not self.content:
+            return
+        if 'Content-Type' not in self.headers:
+            self.headers['Content-Type'] = self.mimetype
+        if 'Content-Length' not in self.headers:
+            self.headers['Content-Length'] = str(len(self.content))
 
 class Path(object):
     """An HTTP request path."""
@@ -341,13 +335,13 @@ class HttpClient(Client):
         self.initial_path = '/%s/%d.%d/' % (self.specification.name,
             self.specification.version[0], self.specification.version[1])
 
-    def construct_headers(self):
+    def construct_headers(self, context=None):
         headers = {}
-        for name, value in self._construct_context().iteritems():
+        for name, value in self._construct_context(context).iteritems():
             headers[self.context_header_prefix + name] = value
         return headers
 
-    def execute(self, resource, request, subject=None, data=None, format=None):
+    def execute(self, resource, request, subject=None, data=None, format=None, context=None):
         format = format or self.format
         request = self.specification.resources[resource]['requests'][request]
 
@@ -369,14 +363,14 @@ class HttpClient(Client):
         else:
             path = path % format.name
 
-        headers = self.construct_headers()
+        headers = self.construct_headers(context)
         if mimetype:
             headers['Content-Type'] = mimetype
 
         response = self.connection.request(method, path, data, headers)
         if response.status in request['responses']:
             schema = request['responses'][response.status]['schema']
-        else:
+        elif not (response.status in ERROR_STATUS_CODES and not response.content):
             exception = RequestError.construct(response.status)
             if exception:
                 raise exception
