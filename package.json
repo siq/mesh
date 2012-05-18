@@ -15,6 +15,7 @@
   "component": {
       "name": "mesh",
       "sourceDirectory": "js",
-      "testTemplate": "js/tests/testTemplate.html"
+      "testTemplate": "js/tests/testTemplate.html",
+      "testMiddleware": "js/tests/testMiddleware.js"
   }
 }
