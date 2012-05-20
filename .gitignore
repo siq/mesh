@@ -6,6 +6,8 @@ dist
 .coverage
 .svn
 docs/_build
+docs/_doctrees
+docs/html
 node_modules
 .test
 build
