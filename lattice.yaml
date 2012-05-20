@@ -1,0 +1,11 @@
+components:
+  - name: mesh
+    dependencies:
+      - python
+      - scheme
+    builds:
+      default:
+        script: |
+          python=$(find -L $BUILDROOT -type f -executable -name python)
+          $python setup.py install
+
