@@ -39,7 +39,7 @@ define([
             }
         },
         
-        initiate: function(id, data) {
+        initiate: function(id, data, headers) {
             var self = this, cache = this.cache, url = this.url,
                 signature, cached, params, deferred;
 
@@ -58,6 +58,7 @@ define([
             params = {
                 contentType: self.mimetype,
                 dataType: 'json',
+                headers: headers,
                 type: self.method,
                 url: url
             };

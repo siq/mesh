@@ -157,8 +157,9 @@ class Generator(object):
             responses[code] = {
                 'status': status,
                 'mimetype': self.mimetype,
-                'schema': self._construct_field(response['schema']),
             }
+            if response['schema']:
+                responses[code]['schema'] = self._construct_field(response['schema'])
 
         return {
             '__type__': 'Request',
