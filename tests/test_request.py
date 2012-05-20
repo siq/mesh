@@ -3,6 +3,7 @@ from unittest2 import TestCase
 from mesh.constants import *
 from mesh.exceptions import *
 from mesh.request import *
+from mesh.transport.base import ServerRequest
 from mesh.transport.internal import *
 from scheme import *
 
@@ -44,13 +45,13 @@ def construct_controller_harness(expected_subject=None, subject=None, status=OK,
             assert received_subject == expected_subject
             return subject
 
-        def dispatch(self, request, context, response, dispatched_subject, data):
-            assert isinstance(request, Request)
-            assert isinstance(context, Context)
+        def dispatch(self, definition, request, response, dispatched_subject, data):
+            assert isinstance(definition, Request)
+            assert isinstance(request, ServerRequest)
             assert isinstance(response, ServerResponse)
             assert dispatched_subject == subject
             if callback:
-                callback(request, context, response, dispatched_subject, data)
+                callback(definition, request, response, dispatched_subject, data)
             else:
                 response(status, content)
     return Controller

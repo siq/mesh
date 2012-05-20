@@ -368,24 +368,14 @@ class Controller(object):
         opaque."""
         raise NotImplementedError()
 
-    def dispatch(self, request, context, response, subject, data):
+    def dispatch(self, definition, request, response, subject, data):
         """Dispatches a request to this controller.
-
-        :param string request: The name of the :class:`mesh.request.Request` on the resource
-            for this controller.
-
-        :param context: The context for this request.
-        :type context: :class:`mesh.request.Context`
-
-        :param response: The pre-constructed response for this request.
-        :type response: :class:`mesh.server.ServerResponse`
-
         """
 
-        implementation = self.requests.get(request.name)
+        implementation = self.requests.get(definition.name)
         if not implementation:
             raise Exception()
 
-        content = implementation(self, context, response, subject, data)
+        content = implementation(self, request, response, subject, data)
         if content and content is not response:
             response(content)

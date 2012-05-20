@@ -10,16 +10,9 @@ from mesh.util import LogHelper, pull_class_dict
 from scheme.fields import INCOMING, OUTGOING, Field, Structure
 from scheme.exceptions import *
 
-__all__ = ('Context', 'Mediator', 'Request', 'Response', 'validator')
+__all__ = ('Mediator', 'Request', 'Response', 'validator')
 
 log = LogHelper(logging.getLogger(__name__))
-
-class Context(object):
-    """A request context."""
-
-    def __init__(self, request):
-        self.context = request.context
-        self.request = request
 
 class Response(object):
     """A response definition for a particular request."""
@@ -231,11 +224,10 @@ class Request(object):
         return description
 
     def process(self, controller, request, response, mediators=None):
-        context = Context(request)
         if mediators:
             for mediator in mediators:
                 try:
-                    mediator.before_validation(self, context, response)
+                    mediator.before_validation(self, request, response)
                     if response.status:
                         return response
                 except StructuralError, exception:
@@ -281,7 +273,7 @@ class Request(object):
 
         if not response.status:
             try:
-                instance.dispatch(self, context, response, subject, data)
+                instance.dispatch(self, request, response, subject, data)
                 if not response.status:
                     response.status = OK
             except StructuralError, exception:
@@ -344,7 +336,7 @@ class Request(object):
 class Mediator(object):
     """A request mediator."""
 
-    def before_validation(self, request, context, response):
+    def before_validation(self, request, response):
         pass
 
 def validator(attr=None, requests=None):

@@ -172,7 +172,7 @@ class MockController(StandardController):
         else:
             return self.storage.get(self.resource.name, subject)
 
-    def query(self, context, response, subject, data):
+    def query(self, request, response, subject, data):
         data = data or {}
         resources = self.storage.query(self.resource.name)
 
@@ -199,14 +199,14 @@ class MockController(StandardController):
         resources = [self._prepare_resource(item, data) for item in resources]
         return {'resources': resources, 'total': total}
 
-    def get(self, context, response, subject, data):
+    def get(self, request, response, subject, data):
         response(self._prepare_resource(subject, data or {}))
 
-    def create(self, context, response, subject, data):
+    def create(self, request, response, subject, data):
         id = self.storage.save(self.resource.name, data)
         response({'id': id})
 
-    def put(self, context, response, subject, data):
+    def put(self, request, response, subject, data):
         if subject:
             subject.update(data)
             id = self.storage.save(self.resource.name, subject)
@@ -214,12 +214,12 @@ class MockController(StandardController):
             id = self.storage.save(self.resource.name, data)
         response({'id': id})
 
-    def update(self, context, response, subject, data):
+    def update(self, request, response, subject, data):
         subject.update(data)
         self.storage.save(self.resource.name, subject)
         response({'id': subject['id']})
 
-    def delete(self, context, response, subject, data):
+    def delete(self, request, response, subject, data):
         self.storage.delete(self.resource.name, subject['id'])
         response({'id': subject['id']})
 
