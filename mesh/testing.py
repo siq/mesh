@@ -16,11 +16,11 @@ def versions(version=None, min_version=None, max_version=None):
         return method
     return decorator
 
-def _construct_test_method(function, bundle, generator, version, mediators):
+def _construct_test_method(function, bundle, generator, version, context, mediators):
     def test(self):
         specification = bundle.specify(version)
         server, client = InternalTransport.construct_fixture(bundle, specification,
-            mediators=mediators)
+            context=context, mediators=mediators)
 
         if generator:
             client.register()
@@ -38,8 +38,6 @@ def _construct_test_method(function, bundle, generator, version, mediators):
 
 def _generate_test_methods(testcase, function):
     bundle = testcase.bundle
-    mediators = testcase.mediators
-
     versions = bundle.slice(
         getattr(function, 'version', None),
         getattr(function, 'min_version', None),
@@ -47,7 +45,8 @@ def _generate_test_methods(testcase, function):
 
     generator = testcase.generator
     for version in versions:
-        method = _construct_test_method(function, bundle, generator, version, mediators)
+        method = _construct_test_method(function, bundle, generator, version,
+            testcase.context, testcase.mediators)
         setattr(testcase, method.__name__, method)
 
 class MeshTestCaseMeta(type):
@@ -67,5 +66,6 @@ class MeshTestCaseMeta(type):
 class MeshTestCase(TestCase):
     __metaclass__ = MeshTestCaseMeta
     bundle = None
+    context = None
     generator = None
     mediators = None
