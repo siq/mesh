@@ -336,7 +336,7 @@ class Request(object):
 class Mediator(object):
     """A request mediator."""
 
-    def before_validation(self, request, response):
+    def before_validation(self, definition, request, response):
         pass
 
 def validator(attr=None, requests=None):
