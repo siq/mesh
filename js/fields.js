@@ -92,7 +92,7 @@ define([
         },
 
         _validateType: function(value) {},
-        _validateValue: function(value) {},
+        _validateValue: function(value) {}
     });
 
     var fields = {
@@ -294,7 +294,7 @@ define([
                 value[name] = value_field.unserialize(value[name], mimetype);
             }
             return value;
-        },
+        }
     });
 
     fields.SequenceField = Field.extend({
