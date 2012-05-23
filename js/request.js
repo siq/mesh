@@ -94,7 +94,7 @@ define([
                 cache.splice(indexOf(cache, cached), 1);
 
                 response = self.responses[xhr.status];
-                if (response) {
+                if (response && response.schema) {
                     try {
                         data = response.schema.unserialize(data, response.mimetype);
                     } catch (error) {
