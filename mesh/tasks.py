@@ -34,7 +34,7 @@ class GenerateJavascriptBindings(Task):
 
         root = self['path']
         if not root.exists():
-            root.mkdir()
+            root.mkdir_p()
         if not root.isdir():
             raise TaskError('...')
 
