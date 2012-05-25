@@ -81,17 +81,20 @@ class StartWsgiServer(Task):
     parameters = {
         'bundle': ObjectReference(description='module path of bundle', required=True),
         'hostname': Text(description='hostname', required=True),
+        'detached': Boolean(default=False),
+        'pidfile': Text(),
+        'uid': Text(),
+        'gid': Text(),
     }
 
     def run(self, runtime):
-        from mesh.transport.wsgiserver import CherryPyWSGIServer
-        from mesh.transport.http import HttpServer
+        from mesh.transport.wsgiserver import WsgiServer, DaemonizedWsgiServer
+        if self['detached']:
+            server = DaemonizedWsgiServer(self['hostname'], self['bundle'])
+            runtime.info('serving at %s' % self['hostname'])
+            server.serve(self['pidfile'], self['uid'], self['gid'])
+        else:
+            server = WsgiServer(self['hostname'], self['bundle'])
+            runtime.info('serving at %s' % self['hostname'])
+            server.serve()
 
-        application = HttpServer([self['bundle']])
-        hostname, port = self['hostname'].split(':')
-
-        server = CherryPyWSGIServer((hostname, int(port)), application)
-        try:
-            server.start()
-        except (KeyboardInterrupt, SystemExit):
-            server.stop()

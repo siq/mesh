@@ -2329,3 +2329,158 @@ class WSGIPathInfoDispatcher(object):
                                          ('Content-Length', '0')])
         return ['']
 
+
+# ----- mesh additions -----
+
+import errno
+import grp
+import os
+import pwd
+import signal as signals
+
+class WsgiServer(CherryPyWSGIServer):
+    def __init__(self, address, bundles, numthreads=10, timeout=10):
+        if isinstance(address, basestring):
+            hostname, port = address.split(':')
+        else:
+            hostname, port = address
+        address = (hostname, int(port))
+
+        if not isinstance(bundles, list):
+            bundles = [bundles]
+
+        from mesh.transport.http import HttpServer
+        application = HttpServer(bundles)
+
+        super(WsgiServer, self).__init__(address, application, numthreads=numthreads,
+            timeout=timeout)
+
+    def serve(self):
+        try: 
+            self.start()
+        except (KeyboardInterrupt, SystemExit):
+            self.stop()
+
+class DaemonizedWsgiServer(WsgiServer):
+    def serve(self, pidfile, uid=None, gid=None):
+        user, uid = self._verify_uid(uid or os.getuid())
+        group, gid = self._verify_gid(gid or os.getgid())
+
+        self._detach_process()
+
+        openfile = open(pidfile, 'w')
+        try:
+            openfile.write(str(os.getpid()))
+        finally:
+            openfile.close()
+
+        self._switch_user(uid, gid)
+
+        def handler(*args):
+            self.stop()
+
+        signals.signal(signals.SIGTERM, handler)
+        self.start()
+
+    def _detach_process(self):
+        if os.fork():
+            os._exit(0)
+        os.setsid()
+        if os.fork():
+            os._exit(0)
+
+        null = os.open(os.devnull, os.O_RDWR)
+        try:
+            for i in range(3):
+                try:
+                    os.dup2(null, i)
+                except OSError, error:
+                    if error.errno != errno.EBADF:
+                        raise
+        finally:
+            os.close(null)
+
+    def _read_pidfile(self, pidfile):
+        try:
+            openfile = open(pidfile)
+            try:
+                return int(openfile.read().strip())
+            finally:
+                openfile.close()
+        except (ValueError, IOError):
+            return None
+
+    def _remove_pidfile(self, pidfile):
+        try:
+            os.unlink(pidfile)
+        except OSError:
+            openfile = open(pidfile, 'w')
+            try:
+                openfile.write('')
+            finally:
+                openfile.close()
+
+    def _switch_user(self, uid, gid):
+        user = (pwd.getpwuid(uid) if uid else None)
+        if gid is None and user:
+            gid = user.pw_gid
+        if gid is not None and gid != os.getgid():
+            os.setgid(gid)
+        if uid is None or uid == os.getuid():
+            return
+
+        groups = [gid]
+        maxgroups = os.sysconf('SC_NGROUPS_MAX')
+        for group, password, lgid, users in grp.getgrall():
+            if user.pw_name in users:
+                groups.append(lgid)
+                if len(groups) >= maxgroups:
+                    break
+
+        unset = True
+        while unset:
+            try:
+                os.setgroups(groups)
+            except ValueError:
+                if len(groups) > 1:
+                    del groups[-1]
+                else:
+                    raise RuntimeError('failed to set group access list')
+            except OSError, exception:
+                if exception.args[0] == errno.EINVAL and len(groups) > 1:
+                    del groups[-1]
+                else:
+                    raise RuntimeError('failed to set group access list')
+            else:
+                unset = False
+        else:
+            os.setuid(uid)
+
+    def _verify_gid(self, gid):
+        try:
+            gid = int(gid)
+        except ValueError:
+            function = grp.getgrnam
+        else:
+            function = grp.getgrgid
+        try:
+            group = function(gid)
+        except KeyError:
+            raise RuntimeError()
+        else:
+            return group.gr_name, group.gr_gid
+
+    def _verify_uid(self, uid):
+        try:
+            uid = int(uid)
+        except ValueError:
+            function = pwd.getpwnam
+        else:
+            function = pwd.getpwuid
+        try:
+            user = function(uid)
+        except KeyError:
+            raise RuntimeError()
+        else:
+            return user.pw_name, user.pw_uid
+
