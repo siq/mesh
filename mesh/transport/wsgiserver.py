@@ -2421,7 +2421,9 @@ class DaemonizedWsgiServer(WsgiServer):
                 openfile.close()
 
     def _switch_user(self, uid, gid):
-        user = (pwd.getpwuid(uid) if uid else None)
+        user = None
+        if uid:
+            user = pwd.getpwuid(uid)
         if gid is None and user:
             gid = user.pw_gid
         if gid is not None and gid != os.getgid():
