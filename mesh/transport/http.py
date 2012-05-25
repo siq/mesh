@@ -75,10 +75,11 @@ class Connection(object):
         connection.request(method, self.path + url, body, headers or {})
 
         response = connection.getresponse()
+        headers = dict(response.getheaders())
         content = response.read() or None
 
         mimetype = response.getheader('Content-Type', None)
-        return HttpResponse(STATUS_CODES[response.status], content, mimetype)
+        return HttpResponse(STATUS_CODES[response.status], content, mimetype, headers)
 
 class HttpRequest(ServerRequest):
     """An HTTP API request."""
