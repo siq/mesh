@@ -221,7 +221,7 @@ class HttpServer(WsgiServer):
             available_formats=None, mediators=None, context_key=None):
 
         super(HttpServer, self).__init__(default_format, available_formats,
-            mediators,context_key)
+            mediators, context_key)
 
         if path_prefix:
             path_prefix = '/' + path_prefix.strip('/')
@@ -249,6 +249,10 @@ class HttpServer(WsgiServer):
         if method == OPTIONS:
             for name, value in self.ACCESS_CONTROL_HEADERS.iteritems():
                 response.header(name, value)
+            return response(OK)
+
+        striped_path = path.strip('/')
+        if striped_path in self.bundles:
             return response(OK)
 
         mimetype = mimetype or URLENCODED
