@@ -331,6 +331,9 @@ class HttpClient(Client):
     def __init__(self, url, specification, context=None, format=Json, formats=None,
             context_header_prefix=None):
 
+        if '//' not in url:
+            url = 'http://' + url
+
         super(HttpClient, self).__init__(specification, context, format, formats)
         self.connection = Connection(url)
         self.context = context

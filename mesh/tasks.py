@@ -1,6 +1,36 @@
 from bake import *
+from bake.util import execute_python_shell
 from scheme import *
 from scheme.supplemental import ObjectReference
+
+class ClientShell(Task):
+    name = 'mesh.shell'
+    description = 'the mesh client shell'
+    parameters = {
+        'bundle': Text(description='module path to bundle', required=True),
+        'url': Text(description='url of server', required=True),
+        'version': Tuple((Integer(), Integer()), default=(1, 0)),
+    }
+
+    source = """
+        from bake.util import import_object
+        from mesh.transport.http import HttpClient
+        from mesh.binding.python import BindingGenerator
+
+        bundle = import_object('%(bundle)s')
+        specification = bundle.specify(%(version)r)
+
+        client = HttpClient('%(url)s', specification)
+        client.register()
+
+        generator = BindingGenerator(binding_module='mesh.standard.python')
+        api = generator.generate_dynamically(bundle, %(version)r)
+
+        print '[api for %%s ready]' %% specification.id
+    """
+
+    def run(self, runtime):
+        execute_python_shell(self.source % self)
 
 class GenerateDocs(Task):
     name = 'mesh.docs'
