@@ -98,3 +98,26 @@ class StartWsgiServer(Task):
             runtime.info('serving at %s' % self['hostname'])
             server.serve()
 
+class StartMockServer(Task):
+    name = 'mesh.mock'
+    description = 'runs a wsgi test server for a mocked mesh bundle'
+    parameters = {
+        'bundle': ObjectReference(description='module path of bundle', required=True),
+        'fixtures': Path(description='path to fixtures'),
+        'hostname': Text(description='hostname', default='127.0.0.1:8080'),
+        'storage': Text(description='path to storage db', default=':memory:'),
+    }
+
+    def run(self, runtime):
+        from mesh.standard.mock import MockStorage, mock_bundle
+        from mesh.transport.wsgiserver import WsgiServer
+
+        storage = MockStorage(self['storage'])
+        if self['fixtures']:
+            storage.load(self['fixtures'].bytes(), True)
+
+        bundle = mock_bundle(self['bundle'], storage)
+        server = WsgiServer(self['hostname'], bundle)
+
+        runtime.info('serving at %s' % self['hostname'])
+        server.serve()

@@ -172,6 +172,17 @@ class MockController(StandardController):
         else:
             return self.storage.get(self.resource.name, subject)
 
+    @classmethod
+    def construct(cls, resource, storage, name=None):
+        if not name:
+            name = '%sController' % resource.title
+
+        return type(name, (MockController,), {
+            'resource': resource,
+            'storage': storage,
+            'version': (resource.version, 0),
+        })
+
     def query(self, request, response, subject, data):
         data = data or {}
         resources = self.storage.query(self.resource.name)
@@ -317,3 +328,10 @@ class MockController(StandardController):
             return 0
 
         return sorted(resources, cmp=compare)
+
+def mock_bundle(bundle, storage):
+    def mock_mount(mount):
+        mount.controller = MockController.construct(mount.resource, storage)
+        return mount
+
+    return bundle.clone(callback=mock_mount)

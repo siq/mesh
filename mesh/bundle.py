@@ -14,6 +14,9 @@ class mount(object):
         self.min_version = min_version
         self.resource = resource
 
+    def clone(self):
+        return mount(self.resource, self.controller, self.min_version, self.max_version)
+
     def construct(self, bundle):
         """Constructs this mount for ``bundle``."""
 
@@ -88,6 +91,18 @@ class Bundle(object):
                 self.mounts.append(mount)
         if self.mounts:
             self._collate_mounts()
+
+    def clone(self, name=None, callback=None):
+        mounts = []
+        for mount in self.mounts:
+            mount = mount.clone()
+            if callback:
+                mount = callback(mount)
+                if mount:
+                    mounts.append(mount)
+
+        name = name or self.name
+        return Bundle(name, *mounts)
 
     def describe(self, version=None):
         description = {'name': self.name, 'description': self.description}
