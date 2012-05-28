@@ -86,20 +86,22 @@ class MockStorage(object):
     def __init__(self, path=':memory:', fresh=False, id_type=int):
         self.path = path
         self.tables = set()
-        assert id_type in [str, int]
-        self.id_type = id_type
         if fresh:
             self.reset()
         else:
             self.connection = sqlite3.connect(path, check_same_thread=False)
 
     def delete(self, name, id):
-        self._create_table(name)
+        if name not in self.tables:
+            return
+
         self.connection.execute(self.DELETE % name, (id,))
         self.connection.commit()
 
     def get(self, name, id):
-        self._create_table(name)
+        if name not in self.tables:
+            return None
+
         cursor = self.connection.execute(self.GET % name, (id,))
         try:
             return self._create_resource(cursor.next())
@@ -114,14 +116,16 @@ class MockStorage(object):
         try:
             for fixture in fixtures:
                 name = fixture.pop('resource')
-                self._create_table(name)
+                self._create_table(name, fixture['id'])
                 cursor.execute(self.LOAD % name, (fixture['id'], json.encode(fixture)))
             self.connection.commit()
         finally:
             cursor.close()
 
     def query(self, name):
-        self._create_table(name)
+        if name not in self.tables:
+            return []
+
         resources = []
         for row in self.connection.execute(self.QUERY % name):
             resources.append(self._create_resource(row))
@@ -138,7 +142,7 @@ class MockStorage(object):
         id = data.get('id', None)
         data = json.encode(data)
 
-        self._create_table(name)
+        self._create_table(name, id)
         if id:
             self.connection.execute(self.UPDATE % name, (data, id))
             self.connection.commit()
@@ -157,10 +161,13 @@ class MockStorage(object):
         resource['id'] = row[0]
         return resource
 
-    def _create_table(self, name):
+    def _create_table(self, name, id):
         if name not in self.tables:
-            dispatch = {int: self.DDL, str: self.DDL_STR}
-            self.connection.execute(dispatch[self.id_type] % name)
+            ddl = self.DDL
+            if isinstance(id, basestring):
+                ddl = self.DDL_STR
+
+            self.connection.execute(ddl % name)
             self.tables.add(name)
 
 class MockController(StandardController):
@@ -168,9 +175,8 @@ class MockController(StandardController):
         try:
             subject = int(subject)
         except (TypeError, ValueError):
-            return None
-        else:
-            return self.storage.get(self.resource.name, subject)
+            pass
+        return self.storage.get(self.resource.name, subject)
 
     @classmethod
     def construct(cls, resource, storage, name=None):
