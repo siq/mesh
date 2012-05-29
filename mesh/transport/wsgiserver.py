@@ -2332,11 +2332,14 @@ class WSGIPathInfoDispatcher(object):
 
 # ----- mesh additions -----
 
-import errno
-import grp
-import os
-import pwd
-import signal as signals
+try:
+    import errno
+    import grp
+    import os
+    import pwd
+    import signal as signals
+except ImportError:
+    pass
 
 class WsgiServer(CherryPyWSGIServer):
     def __init__(self, address, bundles, numthreads=10, timeout=10):
@@ -2485,4 +2488,3 @@ class DaemonizedWsgiServer(WsgiServer):
             raise RuntimeError()
         else:
             return user.pw_name, user.pw_uid
-
