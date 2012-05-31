@@ -12,7 +12,7 @@ from scheme.exceptions import *
 
 __all__ = ('Mediator', 'Request', 'Response', 'validator')
 
-log = LogHelper(logging.getLogger(__name__))
+log = LogHelper(__name__)
 
 class Response(object):
     """A response definition for a particular request."""
@@ -224,6 +224,9 @@ class Request(object):
         return description
 
     def process(self, controller, request, response, mediators=None):
+        log('debug', 'beginning to process %r', request)
+
+
         if mediators:
             for mediator in mediators:
                 try:
@@ -294,8 +297,8 @@ class Request(object):
                 response.content = definition.schema.process(response.content, OUTGOING, request.serialized)
             except StructuralError, exception:
                 response.content = None
-                error = exception.serialize()
-                log('error', 'response for %s failed schema validation', str(self))
+                log('error', 'response for %s failed schema validation\n%s',
+                    str(self), exception.format_errors())
                 return response(SERVER_ERROR)
         elif response.content:
             log('error', 'response for %s improperly specified content', str(self))

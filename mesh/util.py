@@ -68,6 +68,8 @@ class LogHelper(object):
     }
 
     def __init__(self, logger):
+        if isinstance(logger, basestring):
+            logger = logging.getLogger(logger)
         self.logger = logger
 
     def __call__(self, level, message, *args):
