@@ -238,6 +238,7 @@ class ResourceMeta(type):
             version = (resource.version, 0)
 
         description = {
+            'classname': resource.__name__,
             'controller': identify_class(controller),
             'name': resource.name,
             'title': resource.title,

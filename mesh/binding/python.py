@@ -221,7 +221,7 @@ class BindingGenerator(object):
 
     def _generate_model(self, name, model):
         return self.MODEL_TMPL % {
-            'class_name': model['title'],
+            'class_name': model['classname'],
             'resource_name': name,
             'specification_var': self.specification_var,
         }
