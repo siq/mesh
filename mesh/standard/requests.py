@@ -159,7 +159,7 @@ class construct_query_request(construct_model_request):
         return Boolean(name='%s__null' % field.name, description=description, nonnull=True)
 
 class construct_get_request(construct_model_request):
-    def __call__(self, resource):
+    def __call__(self, resource, declaration=None):
         fields = filter_schema_for_response(resource)
         schema = {}
 
@@ -186,7 +186,7 @@ class construct_get_request(construct_model_request):
             }
         )
 
-def construct_create_request(resource):
+def construct_create_request(resource, declaration=None):
     resource_schema = {}
     for name, field in resource.filter_schema(exclusive=False, readonly=False).iteritems():
         if field.is_identifier:
@@ -212,7 +212,7 @@ def construct_create_request(resource):
         }
     )
 
-def construct_put_request(resource):
+def construct_put_request(resource, declaration=None):
     resource_schema = {}
     for name, field in resource.filter_schema(exclusive=False, readonly=False).iteritems():
         if not field.is_identifier and field.onput is not False:
@@ -237,7 +237,7 @@ def construct_put_request(resource):
         }
     )
 
-def construct_update_request(resource):
+def construct_update_request(resource, declaration=None):
     resource_schema = {}
     for name, field in resource.filter_schema(exclusive=False, readonly=False).iteritems():
         if not field.is_identifier and field.onupdate is not False:
@@ -263,7 +263,7 @@ def construct_update_request(resource):
         }
     )
 
-def construct_create_update_request(resource):
+def construct_create_update_request(resource, declaration=None):
     schema = {}
     for name, field in resource.filter_schema(exclusive=False, readonly=False).iteritems():
         if field.required:
@@ -289,7 +289,7 @@ def construct_create_update_request(resource):
         }
     )
 
-def construct_delete_request(resource):
+def construct_delete_request(resource, declaration=None):
     id_field = resource.id_field
     response_schema = Structure({
         id_field.name: id_field.clone(required=True)
