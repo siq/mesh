@@ -58,7 +58,7 @@ def construct_controller_harness(expected_subject=None, subject=None, status=OK,
 
 class RequestHarness(object):
     @classmethod
-    def get_request(cls, resource):
+    def get_request(cls, resource, declaration):
         return cls
 
 class TestResponse(TestCase):
@@ -141,7 +141,7 @@ class TestRequest(TestCase):
     def test_auto_constructor_inheritance(self):
         class harness(object):
             @staticmethod
-            def get_request(resource):
+            def get_request(resource, declaration):
                 return construct_example_request(resource)
 
         class second(harness):
@@ -167,7 +167,7 @@ class TestRequest(TestCase):
     def test_field_injection(self):
         class harness(object):
             @staticmethod
-            def get_request(resource):
+            def get_request(resource, declaration):
                 return construct_example_request(resource, schema={'id': Integer(), 'name': Text()})
 
         class second(harness):

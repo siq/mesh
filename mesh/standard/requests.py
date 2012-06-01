@@ -57,7 +57,7 @@ class construct_query_request(construct_model_request):
         'notin': 'Not in given values.',
     }
 
-    def __call__(self, resource):
+    def __call__(self, resource, declaration=None):
         fields = filter_schema_for_response(resource)
         schema = {
             'offset': Integer(minimum=0, default=0,
@@ -95,6 +95,14 @@ class construct_query_request(construct_model_request):
             'resources': Sequence(Structure(fields), nonnull=True),
         })
 
+        valid_responses = [OK]
+        if declaration:
+            valid_responses = getattr(declaration, 'valid_responses', valid_responses)
+
+        responses = {INVALID: Response(Errors)}
+        for response_code in valid_responses:
+            responses[response_code] = Response(response_schema)
+
         return Request(
             name = 'query',
             endpoint = (GET, resource.name),
@@ -102,10 +110,7 @@ class construct_query_request(construct_model_request):
             resource = resource,
             title = 'Querying %s' % pluralize(resource.title.lower()),
             schema = Structure(schema),
-            responses = {
-                OK: Response(response_schema),
-                INVALID: Response(Errors),
-            }
+            responses = responses,
         )
 
     def _clone_field(self, field, name=None, description=None):

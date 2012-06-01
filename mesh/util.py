@@ -50,7 +50,7 @@ def get_package_path(module, path):
 def identify_class(cls):
     return '%s.%s' % (cls.__module__, cls.__name__)
 
-def import_object(path, ignore_errors=False):
+def import_object(path, ignore_errors=False, report_errors=False):
     try:
         module, attr = path.rsplit('.', 1)
         return getattr(__import__(module, None, None, (attr,)), attr)

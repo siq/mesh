@@ -113,7 +113,7 @@ class Request(object):
     def construct(cls, resource, declaration):
         bases = declaration.__bases__
         if isinstance(declaration, (type, ClassType)) and bases:
-            params = cls._pull_request(resource, bases[0])
+            params = cls._pull_request(resource, bases[0], declaration)
         else:
             params = {}
 
@@ -177,13 +177,13 @@ class Request(object):
         return cls(resource=resource, name=declaration.__name__, **params)
 
     @classmethod
-    def _pull_request(cls, resource, request):
+    def _pull_request(cls, resource, request, declaration=None):
         try:
             get_request = request.get_request
         except AttributeError:
             pass
         else:
-            request = get_request(resource)
+            request = get_request(resource, declaration)
 
         params = pull_class_dict(request, cls.ATTRS)
 

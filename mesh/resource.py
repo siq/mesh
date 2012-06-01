@@ -188,7 +188,7 @@ class ResourceMeta(type):
 
         target = requests.get(name)
         if target:
-            get_request = lambda _: target
+            get_request = lambda a, b: target
         else:
             get_request = resource.configuration.standard_requests.get(name)
             if not get_request:
