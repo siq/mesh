@@ -17,6 +17,6 @@
       "name": "mesh",
       "sourceDirectory": "js",
       "testTemplate": "js/tests/testTemplate.html",
-      "testMiddleware": "js/tests/testMiddleware.js"
+      "testMiddleware": "js/tests/middleware.js"
   }
 }

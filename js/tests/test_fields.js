@@ -1,6 +1,6 @@
 /*global test, asyncTest, ok, equal, deepEqual, start, module, strictEqual, notStrictEqual, raises*/
 define([
-    'component!vendor:underscore',
+    'vendor/underscore',
     './../datetime',
     './../fields'
 ], function(_, datetime, fields) {

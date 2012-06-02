@@ -1,7 +1,7 @@
 define([
-    'component!mesh:model',
-    'component!mesh:request',
-    'component!mesh:fields'
+    './../model',
+    './../request',
+    './../fields'
 ], function(model, Request, fields) {
     return model.Model.extend({
         __name__: "example",

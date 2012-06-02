@@ -1,6 +1,6 @@
 define([
-    'component!vendor:underscore',
-    'component!bedrock:class',
+    'vendor/underscore',
+    'bedrock/class',
     './datetime'
 ], function(_, Class, datetime) {
     var isArray = _.isArray, isNumber = _.isNumber, isString = _.isString,

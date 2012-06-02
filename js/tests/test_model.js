@@ -1,7 +1,7 @@
 /*global test, asyncTest, ok, equal, deepEqual, start, module, strictEqual */
 define([
-    'component!vendor:underscore',
-    'component!vendor:jquery',
+    'vendor/underscore',
+    'vendor/jquery',
     './../request',
     './example'
 ], function(_, $, Request, Example) {
@@ -15,8 +15,24 @@ define([
     module('models', {
         setup: function() {
             Request.prototype.ajax = function(params) {
+                var dfd = $.Deferred();
                 last_ajax_call = params;
-                return $.ajax(params);
+                setTimeout(function() {
+                    var ret;
+                    if (params.type !== 'POST' && params.type !== 'DELETE') {
+                        if (/2$/.test(params.url)) {
+                            ret = {"default_field": 1, "required_field": "test", "id": 2};
+                        } else {
+                            ret = {"total": 1, "resources": [{"default_field": 1, "required_field": "test", "id": 1}]};
+                        }
+                    } else {
+                        ret = {"id": 2};
+                    }
+                    dfd.resolve(ret);
+                    params.success(ret, 200, {});
+                }, 0);
+                // return $.ajax(params);
+                return dfd;
             };
         },
         teardown: function() {
@@ -117,8 +133,29 @@ define([
         }, ajax_failed);
     });
 
+    module('failing to get resource', {
+        setup: function() {
+            Request.prototype.ajax = function(params) {
+                var dfd = $.Deferred();
+                last_ajax_call = params;
+                setTimeout(function() {
+                    dfd.fail();
+                    params.error({
+                        getResponseHeader: function() {
+                            return 'foobar';
+                        }
+                    });
+                }, 0);
+                return dfd;
+            };
+        },
+        teardown: function() {
+            Request.ajax = $.ajax;
+        }
+    });
+
     asyncTest('unknown resource', function() {
-        var model = Example.models.get(2);
+        var model = Example.models.get(17);
         model.refresh().then(ajax_failed, function(error, xhr) {
             ok(!model._loaded);
             start();

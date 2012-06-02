@@ -1,8 +1,8 @@
 define([
-    'component!vendor:underscore',
-    'component!vendor:jquery',
-    'component!bedrock:class',
-    'component!bedrock:events',
+    'vendor/underscore',
+    'vendor/jquery',
+    'bedrock/class',
+    'bedrock/events',
     './fields',
     './collection'
 ], function(_, $, Class, Eventable, fields, collection) {

@@ -1,7 +1,7 @@
 define([
-    'component!vendor:underscore',
-    'component!vendor:jquery',
-    'component!bedrock:class',
+    'vendor/underscore',
+    'vendor/jquery',
+    'bedrock/class',
     './fields',
     'meshconf'
 ], function(_, $, Class, fields, meshconf) {

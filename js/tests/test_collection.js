@@ -1,15 +1,29 @@
 /*global test, asyncTest, ok, equal, deepEqual, start, module, strictEqual, notStrictEqual, raises*/
 define([
-    'component!vendor:underscore',
-    'component!vendor:jquery',
+    'vendor/underscore',
+    'vendor/jquery',
+    './../Request',
     './example'
-], function(_, $, Example) {
-    module('queries');
-
-    var ajax_failed = function() {
-        ok(false, 'ajax request failed');
-        start();
-    };
+], function(_, $, Request, Example) {
+    var ajax = $.ajax,
+        swapAjax = function(request) {
+            request.ajax = function(params) {
+                var dfd = $.Deferred();
+                setTimeout(function() {
+                    var ret = {total: 0, resources: []};
+                    dfd.resolve(ret, {status: 200});
+                    params.success(ret, 200, {status: 200});
+                }, 0);
+                return dfd;
+            };
+        },
+        unswapAjax = function(request) {
+            request.ajax = ajax;
+        },
+        ajax_failed = function() {
+            ok(false, 'ajax request failed');
+            start();
+        };
 
     test('construction', function() {
         var query = Example.query(), retval;
@@ -43,25 +57,29 @@ define([
         deepEqual(query.params.sort, ['alpha', '-beta']);
 
         retval = query.reset();
-        strictEqual(retval, query);
+        strictEqual(retval, query);  
         deepEqual(query.params, {});
     });
 
     asyncTest('count-only request', function() {
         var query = Example.query();
+        swapAjax(query.request);
         query.count().then(function(total) {
             strictEqual(total, 0);
+            unswapAjax(query.request);
             start();
         }, ajax_failed);
     });
 
     asyncTest('empty result', function() {
         var query = Example.query();
+        swapAjax(query.request);
         query.execute().then(function(data) {
             ok(data.complete);
             strictEqual(data.status, 'ok');
             strictEqual(data.total, 0);
             deepEqual(data.resources, []);
+            unswapAjax(query.request);
             start();
         }, ajax_failed);
     });

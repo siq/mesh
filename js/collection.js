@@ -1,8 +1,8 @@
 define([
-    'component!vendor:underscore',
-    'component!vendor:jquery',
-    'component!bedrock:class',
-    'component!bedrock:events'
+    'vendor/underscore',
+    'vendor/jquery',
+    'bedrock/class',
+    'bedrock/events'
 ], function(_, $, Class, Eventable) {
     var extend = $.extend, intersection = _.intersection, isArray = _.isArray,
         isString = _.isString, toArray = _.toArray;
@@ -49,7 +49,8 @@ define([
         },
 
         execute: function(params) {
-            var self = this, params = params || {}, manager = this.manager;
+            var self = this, manager = this.manager;
+            params = params || {};
             return self.request.initiate(null, self.params).pipe(function(data, xhr) {
                 if (!params.plain) {
                     for (var i = 0, l = data.resources.length; i < l; i++) {
