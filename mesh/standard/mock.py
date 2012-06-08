@@ -15,6 +15,7 @@ except ImportError:
 
 from mesh.standard import *
 from mesh.standard.controllers import StandardController
+from mesh.util import uniqid
 from scheme.timezone import LOCAL, UTC
 
 class json(object):
@@ -79,6 +80,7 @@ class MockStorage(object):
     DELETE = 'delete from %s where id = ?'
     GET = 'select id, data from %s where id = ?'
     INSERT = 'insert into %s (data) values (?)'
+    INSERT_WITH_ID = 'insert into %s values (?, ?)'
     LOAD = 'insert into %s values (?, ?)'
     QUERY = 'select id, data from %s order by id'
     UPDATE = 'update %s set data = ? where id = ?'
@@ -138,37 +140,46 @@ class MockStorage(object):
             os.unlink(self.path)
         self.connection = sqlite3.connect(self.path)
 
-    def save(self, name, data):
+    def save(self, resource, data, creating=False):
         id = data.get('id', None)
         data = json.encode(data)
 
-        self._create_table(name, id)
-        if id:
-            self.connection.execute(self.UPDATE % name, (data, id))
+        self._create_table(resource.name, id, resource.id_field.type)
+        if id and not creating:
+            self.connection.execute(self.UPDATE % resource.name, (data, id))
             self.connection.commit()
             return id
-        else:
-            cursor = self.connection.cursor()
-            try:
-                cursor.execute(self.INSERT % name, (data,))
-                self.connection.commit()
-                return cursor.lastrowid
-            finally:
-                cursor.close()
+
+        cursor = self.connection.cursor()
+        try:
+            if id:
+                cursor.execute(self.INSERT_WITH_ID % resource.name, (id, data))
+            elif resource.id_field.type == 'uuid':
+                id = uniqid()
+                cursor.execute(self.INSERT_WITH_ID % resource.name, (id, data))
+            else:
+                cursor.execute(self.INSERT % resource.name, (data,))
+                id = cursor.lastrowid
+            self.connection.commit()
+            return id
+        finally:
+            cursor.close()
 
     def _create_resource(self, row):
         resource = json.decode(row[1])
         resource['id'] = row[0]
         return resource
 
-    def _create_table(self, name, id):
-        if name not in self.tables:
-            ddl = self.DDL
-            if isinstance(id, basestring):
-                ddl = self.DDL_STR
+    def _create_table(self, name, id=None, id_type=None):
+        if name in self.tables:
+            return
 
-            self.connection.execute(ddl % name)
-            self.tables.add(name)
+        ddl = self.DDL
+        if isinstance(id, basestring) or id_type in ('uuid', 'str'):
+            ddl = self.DDL_STR
+
+        self.connection.execute(ddl % name)
+        self.tables.add(name)
 
 class MockController(StandardController):
     def acquire(self, subject):
@@ -220,20 +231,20 @@ class MockController(StandardController):
         response(self._prepare_resource(subject, data or {}))
 
     def create(self, request, response, subject, data):
-        id = self.storage.save(self.resource.name, data)
+        id = self.storage.save(self.resource, data, creating=True)
         response({'id': id})
 
     def put(self, request, response, subject, data):
         if subject:
             subject.update(data)
-            id = self.storage.save(self.resource.name, subject)
+            id = self.storage.save(self.resource, subject)
         else:
-            id = self.storage.save(self.resource.name, data)
+            id = self.storage.save(self.resource, data)
         response({'id': id})
 
     def update(self, request, response, subject, data):
         subject.update(data)
-        self.storage.save(self.resource.name, subject)
+        self.storage.save(self.resource, subject)
         response({'id': subject['id']})
 
     def delete(self, request, response, subject, data):

@@ -4,6 +4,7 @@ import re
 import sys
 from inspect import getargspec
 from types import ClassType
+from uuid import uuid4
 
 def call_with_supported_params(callable, *args, **params):
     arguments = getargspec(callable)[0]
@@ -207,6 +208,9 @@ def subclass_registry(collection, *attrs):
 
             return implementation
     return registry
+
+def uniqid():
+    return str(uuid4())
 
 def write_file(path, content):
     openfile = open(path, 'w+')

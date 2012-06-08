@@ -9,6 +9,7 @@ from mesh.exceptions import *
 from mesh.util import LogHelper, pull_class_dict
 from scheme.fields import INCOMING, OUTGOING, Field, Structure
 from scheme.exceptions import *
+from scheme.util import format_structure
 
 __all__ = ('Mediator', 'Request', 'Response', 'validator')
 
@@ -296,9 +297,9 @@ class Request(object):
             try:
                 response.content = definition.schema.process(response.content, OUTGOING, request.serialized)
             except StructuralError, exception:
+                log('error', 'response for %s failed schema validation\n%s\n%s',
+                    str(self), exception.format_errors(), format_structure(response.content))
                 response.content = None
-                log('error', 'response for %s failed schema validation\n%s',
-                    str(self), exception.format_errors())
                 return response(SERVER_ERROR)
         elif response.content:
             log('error', 'response for %s improperly specified content', str(self))
