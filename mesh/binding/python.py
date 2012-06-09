@@ -171,8 +171,8 @@ class BindingGenerator(object):
     MODEL_TMPL = get_package_data('mesh.binding', 'templates/model.py.tmpl')
     MODULE_TMPL = get_package_data('mesh.binding', 'templates/module.py.tmpl')
 
-    def __init__(self, module_path=None, separate_models=False,
-        binding_module='mesh.binding.python', specification_var='specification'):
+    def __init__(self, module_path=None, generate_package=False,
+        binding_module='mesh.standard.python', specification_var='specification'):
 
         if module_path:
             module_path = module_path.strip('.') + '.'
@@ -180,11 +180,14 @@ class BindingGenerator(object):
             module_path = ''
 
         self.binding_module = binding_module
+        self.generate_package = generate_package
         self.module_path = module_path
-        self.separate_models = separate_models
         self.specification_var = specification_var
 
     def generate(self, bundle, version):
+        if not self.generate_package:
+            return self._generate_single_module(bundle, version)
+
         module_path = '%s%s.' % (self.module_path, bundle.name)
         description = bundle.describe(version)
 
@@ -206,6 +209,18 @@ class BindingGenerator(object):
 
         files['__init__'] = ('__init__.py', '')
         return files
+
+    def _generate_single_module(self, bundle, version):
+        description = bundle.describe(version)
+
+        source = ['from %s import *' % self.binding_module]
+        source.append(self._generate_specification(description))
+
+        for name, model in sorted(description['resources'].iteritems()):
+            source.append(self._generate_model(name, model))
+
+        filename = '%s.py' % bundle.name
+        return {bundle.name: (filename, '\n\n'.join(source))}
 
     def generate_dynamically(self, bundle, version):
         description = bundle.describe(version)

@@ -75,17 +75,17 @@ class GeneratePythonBindings(Task):
     name = 'mesh.python'
     description = 'generate python bindings for a mesh bundle'
     parameters = {
-        'binding': Text(description='binding module'),
+        'binding': Text(description='binding module', default='mesh.standard.python'),
         'bundle': ObjectReference(description='module path of bundle', required=True),
-        'package': Text(description='package prefix for generated modules'),
+        'package': Boolean(description='generate full package', default=False),
         'path': Path(description='path to target directory', required=True),
-        'separate': Boolean(description='separate models into individual modules', default=False),
-        'version': Tuple((Integer(), Integer()), description='version to build', required=True),
+        'prefix': Text(description='package prefix for generated modules'),
+        'version': Tuple((Integer(), Integer()), description='version to build', default=(1, 0)),
     }
 
     def run(self, runtime):
         from mesh.binding.python import BindingGenerator
-        generator = BindingGenerator(module_path=self['package'], separate_models=self['separate'],
+        generator = BindingGenerator(module_path=self['prefix'], generate_package=self['package'],
             binding_module=self['binding'])
         files = generator.generate(self['bundle'], self['version'])
 
@@ -95,15 +95,18 @@ class GeneratePythonBindings(Task):
         if not root.isdir():
             raise TaskError('...')
 
-        bundle = self['bundle']
-        if root.basename() != bundle.name:
-            root /= bundle.name
-            root.mkdir_p()
+        init = root / '__init__.py'
+        if not init.exists():
+            init.touch()
+
+        if self['package']:
+            bundle = self['bundle']
+            if root.basename() != bundle.name:
+                root /= bundle.name
+                root.mkdir_p()
 
         for token, (filename, content) in files.iteritems():
-            filepath = root / filename
-            if token in ('__init__', '__spec__') or not filepath.exists():
-                filepath.write_bytes(content)
+            (root / filename).write_bytes(content)
 
 class StartWsgiServer(Task):
     name = 'mesh.wsgi'
