@@ -87,7 +87,10 @@ class LogHelper(object):
         self.logger = logger
 
     def __call__(self, level, message, *args):
-        self.logger.log(self.LEVELS[level], message, *args)
+        if level == 'exception':
+            self.logger.exception(message, *args)
+        else:
+            self.logger.log(self.LEVELS[level], message, *args)
 
 def minimize_string(value):
     return re.sub(r'\s+', ' ', value).strip(' ')

@@ -220,7 +220,7 @@ class WsgiServer(Server):
             start_response(response.status_line, response.headers.items())
             return response.content or ''
         except Exception, exception:
-            log('error', 'exception raised during wsgi dispatch')
+            log('exception', 'exception raised during wsgi dispatch')
             start_response('500 Internal Server Error', [])
             return ''
 
@@ -299,13 +299,13 @@ class HttpServer(WsgiServer):
             try:
                 request.data = self.formats[mimetype].unserialize(data)
             except Exception:
-                log('error', 'failed to parse data for %r', request)
+                log('exception', 'failed to parse data for %r', request)
                 return response(BAD_REQUEST)
 
         try:
             group.dispatch(request, response)
         except Exception:
-            log('error', 'exception raised during dispatch of %r', request)
+            log('exception', 'exception raised during dispatch of %r', request)
             return response(SERVER_ERROR)
 
         format = self.default_format
