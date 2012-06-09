@@ -97,6 +97,16 @@ class HttpRequest(ServerRequest):
         self.mimetype = mimetype
         self.path = path
 
+    def __repr__(self):
+        aspects = ['%s:%s' % (self.method, self.path)]
+        if self.mimetype:
+            aspects.append('(%s)' % self.mimetype)
+        if self.context:
+            aspects.append('context=%r' % self.context)
+        if self.data:
+            aspects.append('data=%r' % self.data)
+        return 'HttpRequest(%s)' % ' '.join(aspects)
+
 class HttpResponse(ServerResponse):
     """An HTTP response."""
 
@@ -201,7 +211,10 @@ class WsgiServer(Server):
             if self.context_key and self.context_key in environ:
                 context = environ[self.context_key]
 
-            response = self.dispatch(method, environ['PATH_INFO'], environ.get('CONTENT_TYPE'),
+            path_info = environ['PATH_INFO']
+            log('debug', 'dispatching wsgi request %s:%s' % (method, path_info))
+
+            response = self.dispatch(method, path_info, environ.get('CONTENT_TYPE'),
                 context, environ, data)
 
             start_response(response.status_line, response.headers.items())
@@ -286,13 +299,13 @@ class HttpServer(WsgiServer):
             try:
                 request.data = self.formats[mimetype].unserialize(data)
             except Exception:
-                import traceback;traceback.print_exc()
+                log('error', 'failed to parse data for %r', request)
                 return response(BAD_REQUEST)
 
         try:
             group.dispatch(request, response)
         except Exception:
-            from traceback import print_exc;print_exc()
+            log('error', 'exception raised during dispatch of %r', request)
             return response(SERVER_ERROR)
 
         format = self.default_format
