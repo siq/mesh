@@ -1,4 +1,10 @@
+import os
 from distutils.core import setup
+
+packages = []
+for root, dirs, files in os.walk('mesh'):
+    if '__init__.py' in files:
+        packages.append(root.replace('/', '.'))
 
 setup(
     name='mesh',
@@ -8,13 +14,7 @@ setup(
     author_email='mccoy.jordan@gmail.com',
     license='BSD',
     url='http://github.com/siq/mesh',
-    packages=[
-        'mesh',
-        'mesh.binding',
-        'mesh.documentation',
-        'mesh.standard',
-        'mesh.transport',
-    ],
+    packages=packages,
     package_data={
         'mesh.binding': ['templates/*'],
         'mesh.documentation': ['templates/*'],

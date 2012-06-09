@@ -1,9 +1,11 @@
 from mesh.exceptions import *
 from mesh.resource import Controller
-from mesh.util import import_object
+from mesh.util import LogHelper, import_object
 from scheme.fields import Field
 
 __all__ = ('Bundle', 'Specification', 'mount')
+
+log = LogHelper(__name__)
 
 class mount(object):
     """A resource mount."""
@@ -29,6 +31,8 @@ class mount(object):
         controller = self.controller
         if isinstance(controller, basestring):
             controller = import_object(controller, True)
+            if not controller:
+                log('warning', 'failed to import %r for %r', controller, bundle.name)
         if not controller:
             controller = resource.configuration.create_controller(resource)
 
