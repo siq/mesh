@@ -158,6 +158,9 @@ class Path(object):
         self.version = (int(match.group('major')), int(match.group('minor')))
         self.resource_path = '/'.join(resource_path)
 
+    def __str__(self):
+        return self.path
+
 class EndpointGroup(object):
     """An HTTP endpoint group."""
 

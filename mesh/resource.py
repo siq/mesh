@@ -375,7 +375,7 @@ class Controller(object):
 
         implementation = self.requests.get(definition.name)
         if not implementation:
-            raise Exception()
+            raise ValueError('no implementation available for %s' % definition.name)
 
         content = implementation(self, request, response, subject, data)
         if content and content is not response:
