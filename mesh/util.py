@@ -5,7 +5,11 @@ import sys
 from datetime import datetime
 from inspect import getargspec
 from types import ClassType
-from uuid import uuid4
+
+try:
+    from uuid import uuid4
+except ImportError:
+    pass
 
 def call_with_supported_params(callable, *args, **params):
     arguments = getargspec(callable)[0]
