@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import sys
+from datetime import datetime
 from inspect import getargspec
 from types import ClassType
 from uuid import uuid4
@@ -58,6 +59,14 @@ def import_object(path, ignore_errors=False, report_errors=False):
     except Exception:
         if not ignore_errors:
             raise
+
+class LogFormatter(logging.Formatter):
+    def __init__(self, format='%(timestamp)s %(name)s %(levelname)s %(message)s'):
+        logging.Formatter.__init__(self, format)
+
+    def format(self, record):
+        record.timestamp = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+        return logging.Formatter.format(self, record)
 
 class LogHelper(object):
     LEVELS = {

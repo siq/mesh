@@ -7,10 +7,13 @@ from mesh.bundle import Specification
 from mesh.constants import *
 from mesh.exceptions import *
 from mesh.transport.base import *
+from mesh.util import LogHelper
 from scheme.fields import INCOMING, OUTGOING
 from scheme.formats import *
 
 __all__ = ('HttpClient', 'HttpProxy', 'HttpRequest', 'HttpResponse', 'HttpServer')
+
+log = LogHelper(__name__)
 
 STATUS_CODES = {
     OK: 200,
@@ -204,7 +207,7 @@ class WsgiServer(Server):
             start_response(response.status_line, response.headers.items())
             return response.content or ''
         except Exception, exception:
-            import traceback; traceback.print_exc()
+            log('error', 'exception raised during wsgi dispatch')
             start_response('500 Internal Server Error', [])
             return ''
 
