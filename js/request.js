@@ -7,7 +7,7 @@ define([
 ], function(_, $, Class, fields, meshconf) {
     var Deferred = $.Deferred, isEqual = _.isEqual, indexOf = _.indexOf, isString = _.isString;
 
-    return Class.extend({
+    var Request = Class.extend({
         ajax: $.ajax,
         path_expr: /\/id(?=\/|$)/,
 
@@ -124,4 +124,19 @@ define([
             return deferred;
         }
     });
+
+    // used for mocking ajax requests
+    Request.ajax = function(newAjax) {
+        var oldAjax = Request.constructor.prototype.ajax;
+
+        if (newAjax == null) {
+            return oldAjax;
+        }
+
+        Request.constructor.prototype.ajax = newAjax;
+
+        return oldAjax;
+    };
+
+    return Request;
 });
