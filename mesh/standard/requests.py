@@ -17,6 +17,14 @@ def filter_schema_for_response(resource):
             schema[name] = field
     return schema
 
+def is_returned(field, request):
+    returned = field.returned
+    if not returned:
+        return False
+    if isinstance(returned, basestring):
+        returned = returned.split(' ')
+    return (request in returned)
+
 class construct_model_request(object):
     def _construct_exclude_field(self, id_field, fields):
         tokens = []
@@ -198,6 +206,10 @@ def construct_create_request(resource, declaration=None):
     response_schema = {
         resource.id_field.name: resource.id_field.clone(required=True),
     }
+
+    for name, field in resource.schema.iteritems():
+        if is_returned(field, 'create'):
+            response_schema[name] = field.clone(required=True)
     
     return Request(
         name = 'create',
@@ -221,6 +233,10 @@ def construct_put_request(resource, declaration=None):
     response_schema = {
         resource.id_field.name: resource.id_field.clone(required=True),
     }
+
+    for name, field in resource.schema.iteritems():
+        if is_returned(field, 'put'):
+            response_schema[name] = field.clone(required=True)
 
     return Request(
         name = 'put',
@@ -248,6 +264,10 @@ def construct_update_request(resource, declaration=None):
     response_schema = {
         resource.id_field.name: resource.id_field.clone(required=True),
     }
+
+    for name, field in resource.schema.iteritems():
+        if is_returned(field, 'update'):
+            response_schema[name] = field.clone(required=True)
 
     return Request(
         name = 'update',
