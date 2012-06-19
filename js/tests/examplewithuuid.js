@@ -5,14 +5,14 @@ define([
     './../collection'
 ], function(Request, fields, model, collection) {
     return model.Model.extend({
-        __name__: "example",
+        __name__: "examplewithuuid",
         __requests__: {
             create: Request({
                 bundle: "primary-1.0",
                 method: "POST",
                 mimetype: "application/json",
                 name: "create",
-                path: "/primary/1.0/example",
+                path: "/primary/1.0/examplewithuuid",
                 responses: {
                     200: {
                         mimetype: "application/json",
@@ -23,9 +23,10 @@ define([
                             required: false,
                             strict: true,
                             structure: {
-                                id: fields.IntegerField({
+                                id: fields.UUIDField({
                                     name: "id",
                                     nonnull: true,
+                                    operators: "equal",
                                     required: true
                                 })
                             }
@@ -109,6 +110,12 @@ define([
                             name: "float_field",
                             nonnull: false,
                             required: false
+                        }),
+                        id: fields.UUIDField({
+                            name: "id",
+                            nonnull: true,
+                            operators: "equal",
+                            required: true
                         }),
                         integer_field: fields.IntegerField({
                             name: "integer_field",
@@ -204,51 +211,12 @@ define([
                     }
                 })
             }),
-            custom: Request({
-                bundle: "primary-1.0",
-                method: "POST",
-                mimetype: "application/json",
-                name: "custom",
-                path: "/primary/1.0/example/id/custom",
-                responses: {
-                    200: {
-                        mimetype: "application/json",
-                        status: "OK",
-                        schema: fields.StructureField({
-                            name: "response",
-                            nonnull: false,
-                            required: false,
-                            strict: true,
-                            structure: {
-                                id: fields.IntegerField({
-                                    name: "id",
-                                    nonnull: true,
-                                    required: true
-                                })
-                            }
-                        })
-                    }
-                },
-                schema: fields.StructureField({
-                    name: "request",
-                    nonnull: false,
-                    required: false,
-                    strict: true,
-                    structure: {
-                        optional_field: fields.TextField({
-                            name: "optional_field",
-                            nonnull: false,
-                            required: false
-                        })
-                    }
-                })
-            }),
             "delete": Request({
                 bundle: "primary-1.0",
                 method: "DELETE",
                 mimetype: "application/json",
                 name: "delete",
-                path: "/primary/1.0/example/id",
+                path: "/primary/1.0/examplewithuuid/id",
                 schema: null,
                 responses: {
                     200: {
@@ -260,9 +228,10 @@ define([
                             required: false,
                             strict: true,
                             structure: {
-                                id: fields.IntegerField({
+                                id: fields.UUIDField({
                                     name: "id",
                                     nonnull: true,
+                                    operators: "equal",
                                     required: true
                                 })
                             }
@@ -270,52 +239,12 @@ define([
                     }
                 }
             }),
-            filtered_update: Request({
-                bundle: "primary-1.0",
-                method: "POST",
-                mimetype: "application/json",
-                name: "filtered_update",
-                path: "/primary/1.0/example/id",
-                responses: {
-                    200: {
-                        mimetype: "application/json",
-                        status: "OK",
-                        schema: fields.StructureField({
-                            name: "response",
-                            nonnull: false,
-                            required: false,
-                            strict: true,
-                            structure: {
-                                id: fields.IntegerField({
-                                    name: "id",
-                                    nonnull: true,
-                                    required: true
-                                })
-                            }
-                        })
-                    }
-                },
-                schema: fields.StructureField({
-                    name: "request",
-                    nonnull: false,
-                    required: false,
-                    strict: true,
-                    structure: {
-                        operation: fields.TextField({
-                            constant: "filter",
-                            name: "operation",
-                            nonnull: false,
-                            required: true
-                        })
-                    }
-                })
-            }),
             get: Request({
                 bundle: "primary-1.0",
                 method: "GET",
                 mimetype: "application/x-www-form-urlencoded",
                 name: "get",
-                path: "/primary/1.0/example/id",
+                path: "/primary/1.0/examplewithuuid/id",
                 responses: {
                     200: {
                         mimetype: "application/json",
@@ -371,9 +300,10 @@ define([
                                     nonnull: false,
                                     required: false
                                 }),
-                                id: fields.IntegerField({
+                                id: fields.UUIDField({
                                     name: "id",
                                     nonnull: true,
+                                    operators: "equal",
                                     required: true
                                 }),
                                 integer_field: fields.IntegerField({
@@ -558,7 +488,7 @@ define([
                 method: "PUT",
                 mimetype: "application/json",
                 name: "put",
-                path: "/primary/1.0/example/id",
+                path: "/primary/1.0/examplewithuuid/id",
                 responses: {
                     200: {
                         mimetype: "application/json",
@@ -569,9 +499,10 @@ define([
                             required: false,
                             strict: true,
                             structure: {
-                                id: fields.IntegerField({
+                                id: fields.UUIDField({
                                     name: "id",
                                     nonnull: true,
+                                    operators: "equal",
                                     required: true
                                 })
                             }
@@ -755,7 +686,7 @@ define([
                 method: "GET",
                 mimetype: "application/x-www-form-urlencoded",
                 name: "query",
-                path: "/primary/1.0/example",
+                path: "/primary/1.0/examplewithuuid",
                 responses: {
                     200: {
                         mimetype: "application/json",
@@ -821,9 +752,10 @@ define([
                                                 nonnull: false,
                                                 required: false
                                             }),
-                                            id: fields.IntegerField({
+                                            id: fields.UUIDField({
                                                 name: "id",
                                                 nonnull: true,
+                                                operators: "equal",
                                                 required: true
                                             }),
                                             integer_field: fields.IntegerField({
@@ -1028,6 +960,14 @@ define([
                             required: false,
                             strict: true,
                             structure: {
+                                id: fields.UUIDField({
+                                    deferred: false,
+                                    name: "id",
+                                    nonnull: true,
+                                    readonly: false,
+                                    required: false,
+                                    sortable: false
+                                }),
                                 integer_field__gt: fields.IntegerField({
                                     deferred: false,
                                     name: "integer_field__gt",
@@ -1107,7 +1047,7 @@ define([
                 method: "POST",
                 mimetype: "application/json",
                 name: "update",
-                path: "/primary/1.0/example/id",
+                path: "/primary/1.0/examplewithuuid/id",
                 responses: {
                     200: {
                         mimetype: "application/json",
@@ -1118,9 +1058,10 @@ define([
                             required: false,
                             strict: true,
                             structure: {
-                                id: fields.IntegerField({
+                                id: fields.UUIDField({
                                     name: "id",
                                     nonnull: true,
+                                    operators: "equal",
                                     required: true
                                 })
                             }
@@ -1346,10 +1287,11 @@ define([
                 nonnull: false,
                 required: false
             }),
-            id: fields.IntegerField({
+            id: fields.UUIDField({
                 name: "id",
                 nonnull: true,
-                required: false
+                operators: "equal",
+                required: true
             }),
             integer_field: fields.IntegerField({
                 name: "integer_field",
