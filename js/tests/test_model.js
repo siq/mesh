@@ -164,6 +164,7 @@ define([
             oldAjax = Request.ajax(function(params) {
                 self.ajaxFired = true;
                 equal(JSON.parse(params.data).id, generatedId);
+                ok(this === model._getRequest('create'));
                 params.success(params.data, 200, {});
             }),
             model = ExampleWithUuid({
@@ -177,6 +178,46 @@ define([
             start();
         }).fail(function() {
             ok(false, 'save failed');
+            Request.ajax(oldAjax);
+            start();
+        });
+    });
+
+    asyncTest('save on existing model makes update request', function() {
+        var generatedId, self = this,
+            oldAjax = Request.ajax(function(params) {
+                self.firstAjaxFired = true;
+                setTimeout(function() {
+                    params.success({
+                        resources: [
+                            {id: uuid(), required_field: 'required field 1'},
+                            {id: uuid(), required_field: 'required field 2'}
+                        ],
+                        total: 2
+                    }, 200, {});
+                }, 100);
+            });
+
+        ExampleWithUuid.collection().load().done(function(models) {
+            ok(true);
+            equal(self.firstAjaxFired, true);
+            Request.ajax(function(params) {
+                ok(this === models[0]._getRequest('update'));
+                self.secondAjaxFired = true;
+                params.success(params.data, 200, {});
+            });
+
+            models[0].set('required_field', 'new value').save().done(function() {
+                equal(self.secondAjaxFired, true);
+                Request.ajax(oldAjax);
+                start();
+            }).fail(function() {
+                ok(false, 'failed saving model');
+                Request.ajax(oldAjax);
+                start();
+            });
+        }).fail(function() {
+            ok(false, 'failed loading collection');
             Request.ajax(oldAjax);
             start();
         });
