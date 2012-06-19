@@ -375,14 +375,24 @@ define([
 
             structure = this._get_structure(value);
             for (name in value) {
-                field = structure[name];
-                if (field == null) {
-                    throw new Error("attempt to serialize unknown field '" + name + "'");
+                if (value.hasOwnProperty(name)) {
+                    field = structure[name];
+                    if (field == null) {
+                        throw new fields.ValidationError('attempt to serialize unknown field "' + name + '"');
+                    }
+                    if (field.structural && value[name] == null) {
+                        delete value[name];
+                    } else {
+                        value[name] = field.serialize(value[name], mimetype);
+                    }
                 }
-                if (field.structural && value[name] == null) {
-                    delete value[name];
-                } else {
-                    value[name] = field.serialize(value[name], mimetype);
+            }
+
+            for (name in structure) {
+                if (structure.hasOwnProperty(name)) {
+                    if (structure[name].required && typeof value[name] === 'undefined') {
+                        throw new fields.ValidationError('missing required field "' + name + '"');
+                    }
                 }
             }
             
