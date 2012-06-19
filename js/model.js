@@ -193,7 +193,8 @@ define([
         },
 
         save: function(params, include_all_attrs) {
-            var self = this, creating = (this.id == null), changes = this._changes,
+            // var self = this, creating = (this.id == null), changes = this._changes,
+            var self = this, creating = !this._loaded, changes = this._changes,
                 request, subject, data;
             request = self._getRequest(creating ? 'create' : 'update');
 
