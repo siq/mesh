@@ -2365,7 +2365,7 @@ class WsgiServer(CherryPyWSGIServer):
             self.stop()
 
 class DaemonizedWsgiServer(WsgiServer):
-    def serve(self, pidfile, uid=None, gid=None):
+    def daemonize(self, pidfile, uid=None, gid=None):
         user, uid = self._verify_uid(uid or os.getuid())
         group, gid = self._verify_gid(gid or os.getgid())
 
@@ -2383,6 +2383,9 @@ class DaemonizedWsgiServer(WsgiServer):
             self.stop()
 
         signals.signal(signals.SIGTERM, handler)
+
+    def serve(self, pidfile, uid=None, gid=None):
+        self.daemonize(pidfile, uid, gid)
         self.start()
 
     def _detach_process(self):
