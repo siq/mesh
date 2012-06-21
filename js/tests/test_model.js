@@ -251,5 +251,54 @@ define([
         });
     });
 
+    module('poll');
+
+    asyncTest('polling works', function() {
+        var self = this,
+
+            count = 0,
+
+            requests = 0,
+
+            // this just mocks up the ajax request, so everything goes through
+            // the typical Model/Request infrastructure, and then appears to
+            // make an ajax request that takes 100 ms.
+            //
+            // this will allow 3 ajax requests and then set the
+            // 'required_field' property to 'complete'
+            oldAjax = Request.ajax(function(params) {
+                requests++;
+                setTimeout(function() {
+                    if (count++ >= 3) {
+                        params.data.required_field = 'complete';
+                    }
+                    params.success(params.data, 200, {});
+                }, 100);
+            }),
+
+            model = Example({id: 1, required_field: 'waiting'});
+
+        model.poll({
+            until: function() {
+                return model.get('required_field') === 'complete';
+            }
+        }).done(function() {
+
+            // make sure that exactly three requests were sent
+            equal(requests, 3);
+
+            // make sure that the model was correctly updated
+            equal(model.get('required_field'), 'complete');
+
+            Request.ajax(oldAjax);
+            start();
+        }).fail(function() {
+            ok(false, 'model.poll deferred failed to resolve');
+
+            Request.ajax(oldAjax);
+            start();
+        });
+    });
+
     start();
 });
