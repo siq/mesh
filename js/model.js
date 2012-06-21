@@ -191,6 +191,22 @@ define([
                 return self;
             });
         },
+        
+        poll: function(interval, condition) {
+            var self=this;
+            deferred = $.Deferred();
+            self.refresh().then(function(result, xhr) {
+                // Check to verify if the condition is true or not.
+                if(condition['while'] !== undefined) {
+                    condition['while'](result) ? _.delay(self.refresh(), interval) : deferred.resolve(result, xhr);
+                } else if(condition['until'] !== undefined) {
+                    condition['until'](result) ? deferred.resolve(result, xhr) : _.delay(self.refresh(), interval);
+                }
+            }, function(error, xhr) {
+                deferred.reject(error, xhr);
+            });
+            return deferred;
+        },
 
         save: function(params, include_all_attrs) {
             // var self = this, creating = (this.id == null), changes = this._changes,
