@@ -1,6 +1,14 @@
 import os
 from distutils.core import setup
 
+version = '1.0.0'
+try:
+    revision = os.environ['REVISION']
+except Exception:
+    pass
+else:
+    version = revision
+
 packages = []
 for root, dirs, files in os.walk('mesh'):
     if '__init__.py' in files:
@@ -8,7 +16,7 @@ for root, dirs, files in os.walk('mesh'):
 
 setup(
     name='mesh',
-    version='1.0.0a1',
+    version=version,
     description='A declarative RESTful API framework.',
     author='Jordan McCoy',
     author_email='mccoy.jordan@gmail.com',
