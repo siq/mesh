@@ -6,7 +6,7 @@
     "Elias Ponvert",
     "Aaron Stacy <astacy@storediq.com>"
   ],
-  "version": "0.0.4",
+  "version": "0.0.5",
   "dependencies": {
     "js-yaml": "0.3.x",
     "siq-vendor-js": "0.0.x",
