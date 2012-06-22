@@ -60,7 +60,7 @@ class JavascriptConstructor(object):
             constructor = obj.pop(self.constructor_attr)
 
         for key, value in sorted(obj.iteritems()):
-            if key in self.RESERVED_WORDS:
+            if key in self.RESERVED_WORDS or ':' in key:
                 key = '"%s"' % key
             description = self._construct_value(value, indent + 1)
             if isinstance(description, list):
