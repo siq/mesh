@@ -194,10 +194,9 @@ define([
         
         poll: function(params) {
             var self = this,
-                interval = params['interval'] !== undefined ? params['interval'] : 1000,
+                interval = params.interval !== undefined ? params.interval : 1000,
                 deferred = $.Deferred();
             self._poller(params, interval, deferred);            
-            
             return deferred;
         },
 
@@ -206,10 +205,18 @@ define([
             
             self.refresh().then(function(result, xhr) {
                 // Check to verify if the condition is true or not.
-                if(params['while'] !== undefined) {
-                    params['while'](result) ? _.delay(_.bind(self._poller, self), interval, params, interval, deferred) : deferred.resolve(result, xhr);
-                } else if(params['until'] !== undefined) {
-                    params['until'](result) ? deferred.resolve(result, xhr) : _.delay(_.bind(self._poller, self), interval, params, interval, deferred);
+                if (typeof params['while'] !== 'undefined') {
+                    if (params['while'](result)) {
+                        _.delay(_.bind(self._poller, self), interval, params, interval, deferred);
+                    } else {
+                        deferred.resolve(result, xhr);
+                    }
+                } else if (typeof params['until'] !== 'undefined') {
+                    if (params['until'](result)) {
+                        deferred.resolve(result, xhr);
+                    } else {
+                        _.delay(_.bind(self._poller, self), interval, params, interval, deferred);
+                    }
                 }
             }, function(error, xhr) {
                 deferred.reject(error, xhr);
