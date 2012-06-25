@@ -126,7 +126,11 @@ define([
         __requests__: null,
         __schema__: null,
 
-        init: function(attrs, manager, loaded) {
+        defaults: {
+            pollInterval: 1000
+        },
+
+        init: function(attrs, manager, loaded, options) {
             this.cid = null;
             this.id = null;
             this._changes = {};
@@ -138,6 +142,7 @@ define([
             if (this.id == null) {
                 this.cid = _.uniqueId('_');
             }
+            this._options = $.extend(true, options, this.defaults);
             this._manager.associate(this);
         },
 
@@ -194,7 +199,7 @@ define([
         
         poll: function(params) {
             var self = this,
-                interval = params.interval !== undefined ? params.interval : 1000,
+                interval = params.interval != null? params.interval : this._options.pollInterval,
                 deferred = $.Deferred();
             self._poller(params, interval, deferred);            
             return deferred;
