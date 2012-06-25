@@ -269,7 +269,8 @@ define([
             oldAjax = Request.ajax(function(params) {
                 requests++;
                 setTimeout(function() {
-                    if (count++ >= 3) {
+                    params.data = {id: 1, required_field: 'waiting'};
+                    if (++count >= 3) {
                         params.data.required_field = 'complete';
                     }
                     params.success(params.data, 200, {});
@@ -280,7 +281,7 @@ define([
 
         model.poll({
             until: function() {
-                return model.get('required_field') === 'complete';
+                return model.required_field === 'complete';
             }
         }).done(function() {
 
@@ -288,7 +289,7 @@ define([
             equal(requests, 3);
 
             // make sure that the model was correctly updated
-            equal(model.get('required_field'), 'complete');
+            equal(model.required_field, 'complete');
 
             Request.ajax(oldAjax);
             start();
