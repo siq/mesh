@@ -1,8 +1,9 @@
 define([
+    'vendor/jquery',
     'vendor/underscore',
     'bedrock/class',
     './datetime'
-], function(_, Class, datetime) {
+], function($, _, Class, datetime) {
     var isArray = _.isArray, isNumber = _.isNumber, isString = _.isString,
         URLENCODED = 'application/x-www-form-urlencoded';
 
@@ -23,12 +24,19 @@ define([
     };
 
     var ValidationError = Class.extend({
-        init: function(message) {
+        token: 'validationerror',
+        init: function(message, params) {
             this.message = message;
+            $.extend(true, this, params);
         }
     });
 
-    var InvalidTypeError = ValidationError.extend({});
+    var InvalidTypeError = ValidationError.extend({token: 'invalidtypeerror'});
+
+    // on the client side we seem to use myField.required to denote required
+    // fiedls, but scheme seems to use 'nonnull' -- try to match the backend
+    // here
+    var NonNullError = ValidationError.extend({token: 'nonnull'});
 
     var Field = Class.extend({
         structural: false,
@@ -98,7 +106,8 @@ define([
     var fields = {
         Field: Field,
         InvalidTypeError: InvalidTypeError,
-        ValidationError: ValidationError
+        ValidationError: ValidationError,
+        NonNullError: NonNullError
     };
 
     fields.BooleanField = Field.extend({
@@ -366,7 +375,7 @@ define([
         },
 
         serialize: function(value, mimetype, outermost) {
-            var structure, name, field;
+            var structure, name, field, errors;
             if (value == null) {
                 return value;
             } else if (!isPlainObject(value)) {
@@ -383,7 +392,11 @@ define([
                     if (field.structural && value[name] == null) {
                         delete value[name];
                     } else {
-                        value[name] = field.serialize(value[name], mimetype);
+                        try {
+                            value[name] = field.serialize(value[name], mimetype);
+                        } catch (e) {
+                            (errors = errors || {})[name] = [e];
+                        }
                     }
                 }
             }
@@ -391,9 +404,16 @@ define([
             for (name in structure) {
                 if (structure.hasOwnProperty(name)) {
                     if (structure[name].required && typeof value[name] === 'undefined') {
-                        throw new fields.ValidationError('missing required field "' + name + '"');
+                        (errors = errors || {})[name] =
+                            [NonNullError('missing required field "' + name + '"')];
                     }
                 }
+            }
+
+            if (errors) {
+                throw ValidationError('there were errors in validation', {
+                    errors: errors
+                });
             }
             
             if (mimetype === URLENCODED && !outermost) {
@@ -412,7 +432,9 @@ define([
 
             structure = this._get_structure(value);
             for (name in value) {
-                value[name] = structure[name].unserialize(value[name], mimetype);
+                if (value.hasOwnProperty(name)) {
+                    value[name] = structure[name].unserialize(value[name], mimetype);
+                }
             }
             return value;
         },

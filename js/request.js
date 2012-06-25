@@ -73,7 +73,7 @@ define([
                             data = self.schema.serialize(data, self.mimetype, true);
                         } catch (error) {
                             if (error instanceof fields.ValidationError) {
-                                return deferred.reject();
+                                return deferred.reject([null, error.errors]);
                             } else {
                                 throw error;
                             }
@@ -99,7 +99,7 @@ define([
                         data = response.schema.unserialize(data, response.mimetype);
                     } catch (error) {
                         if (error instanceof fields.ValidationError) {
-                            deferred.reject();
+                            deferred.reject(error);
                         } else {
                             throw error;
                         }
