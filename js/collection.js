@@ -128,8 +128,8 @@ define([
         },
 
         add: function(models, idx) {
-            var self = this, model;
-            if (isArray(models)) {
+            var self = this, model, newModels = [];
+            if (!isArray(models)) {
                 models = [models];
             }
 
@@ -142,7 +142,7 @@ define([
             }
 
             for (var i = 0, l = models.length; i < l; i++) {
-                model = models[i];
+                newModels.push(model = models[i]);
                 this.models.splice(idx + 1, 0, model);
                 if (model.id) {
                     this.ids[model.id] = model;
@@ -151,7 +151,7 @@ define([
                 }
             }
 
-            this.trigger('update', this);
+            this.trigger('update', this, newModels);
             return this;
         },
 
@@ -219,7 +219,7 @@ define([
                 } else {
                     results = self.models.slice(offset);
                 }
-                self.trigger('update', self);
+                self.trigger('update', self, results);
                 return $.Deferred().resolve(results, data);
             });
         },
@@ -248,7 +248,7 @@ define([
                 }
             }
 
-            this.trigger('update', this);
+            this.trigger('update', this, this.models);
             return this;
         },
 
