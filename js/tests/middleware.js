@@ -37,7 +37,7 @@ var fs = require('fs'),
         });
     },
     log = function(req, resp, statusCode, dest) {
-        testServer.log(req, resp, statusCode, req.url + ' =PROXY=> ' + dest);
+        testServer.log(req, resp, statusCode, req.url + ' =PROXY=> ' + dest, 'blue');
     },
     proxy = function(req, resp, pathPrefix, info) {
         var u = url.parse(info.url),
