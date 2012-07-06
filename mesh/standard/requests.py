@@ -203,9 +203,9 @@ def construct_create_request(resource, declaration=None):
         elif field.oncreate is not False:
             resource_schema[name] = field
 
-    response_schema = {
-        resource.id_field.name: resource.id_field.clone(required=True),
-    }
+    response_schema = {}
+    if resource.id_field:
+        response_schema[resource.id_field.name] = resource.id_field.clone(required=True)
 
     for name, field in resource.schema.iteritems():
         if is_returned(field, 'create'):

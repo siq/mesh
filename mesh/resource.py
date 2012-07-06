@@ -127,9 +127,9 @@ class ResourceMeta(type):
         id_field = configuration.id_field
         if id_field.name in resource.schema:
             resource.schema[id_field.name].is_identifier = True
-        else:
+        elif id_field.name not in removed_fields:
             resource.schema[id_field.name] = id_field.clone(is_identifier=True)
-        resource.id_field = resource.schema[id_field.name]
+        resource.id_field = resource.schema.get(id_field.name)
 
         for name, request in declared_requests.iteritems():
             resource.requests[name] = Request.construct(resource, request)
