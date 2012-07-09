@@ -127,7 +127,8 @@ define([
         __schema__: null,
 
         defaults: {
-            pollInterval: 1000
+            pollInterval: 1000,
+            pollerTimeout: 60000
         },
 
         init: function(attrs, manager, loaded, options) {
@@ -200,19 +201,30 @@ define([
         poll: function(params) {
             var self = this,
                 interval = params.interval != null? params.interval : this._options.pollInterval,
-                deferred = $.Deferred();
-            self._poller(params, interval, deferred);            
+                deferred = $.Deferred(),
+                startTime = new Date();
+            
+            if (!params.timeout) {
+                params.timeout = self._options.pollerTimeout;
+            }
+            self._poller(params, interval, deferred, startTime);            
             return deferred;
         },
 
-        _poller: function(params, interval, deferred) {
+        _poller: function(params, interval, deferred, startTime) {
             var self = this;
-            
+            // check of request timeout
+            if (new Date() - startTime > params.timeout) {
+                // TODO: need to pass some error code or something in the reject call 
+                // to indicate request timeout  
+                deferred.reject();
+                return;
+            }
             self.refresh().then(function(result, xhr) {
                 // Check to verify if the condition is true or not.
                 if (typeof params['while'] !== 'undefined') {
                     if (params['while'](result)) {
-                        _.delay(_.bind(self._poller, self), interval, params, interval, deferred);
+                        _.delay(_.bind(self._poller, self), interval, params, interval, deferred, startTime);
                     } else {
                         deferred.resolve(result, xhr);
                     }
@@ -220,7 +232,7 @@ define([
                     if (params['until'](result)) {
                         deferred.resolve(result, xhr);
                     } else {
-                        _.delay(_.bind(self._poller, self), interval, params, interval, deferred);
+                        _.delay(_.bind(self._poller, self), interval, params, interval, deferred, startTime);
                     }
                 }
             }, function(error, xhr) {
