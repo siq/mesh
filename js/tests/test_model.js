@@ -301,5 +301,39 @@ define([
         });
     });
 
+    asyncTest('polling timeout works', function() {
+        var self = this,
+            requests = 0,
+
+            // this just mocks up the ajax request, so everything goes through
+            // the typical Model/Request infrastructure, and then appears to
+            // make an ajax request that takes 100 ms.
+            //
+            // this will always return waiting status
+            oldAjax = Request.ajax(function(params) {
+                requests++;
+                setTimeout(function() {
+                    params.data = {id: 2, required_field: 'waiting'};
+                    params.success(params.data, 200, {});
+                }, 100);
+            }),
+
+            model = Example({id: 2, required_field: 'waiting'});
+
+        model.poll({
+            timeout: 5000,
+            until: function() {
+                return model.required_field === 'complete';
+            }
+        }).fail(function() {
+            ok(true, 'Timeout worked for model.poll');
+            // make sure that exactly 10 requests were sent
+            equal(requests, 5);
+
+            Request.ajax(oldAjax);
+            start();
+        });
+    });
+
     start();
 });
