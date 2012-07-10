@@ -14,7 +14,6 @@ define([
         init: function(params) {
             var url;
             this.bundle = params.bundle;
-            this.cache = [];
             this.method = params.method;
             this.mimetype = params.mimetype;
             this.name = params.name;
@@ -40,19 +39,10 @@ define([
         },
         
         initiate: function(id, data, headers) {
-            var self = this, cache = this.cache, url = this.url,
-                signature, cached, params, deferred;
+            var self = this, url = this.url, signature, params, deferred;
 
             if (id != null) {
                 url = url.replace(self.path_expr, '/' + id);
-            }
-
-            signature = [url, data];
-            for (var i = 0, l = cache.length; i < l; i++) {
-                cached = cache[i];
-                if (isEqual(cached[0], signature)) {
-                    return cached[1];
-                }
             }
 
             params = {
@@ -64,7 +54,6 @@ define([
             };
 
             deferred = Deferred();
-            cached = [signature, deferred];
 
             if (data) {
                 if (!isString(data)) {
@@ -91,7 +80,6 @@ define([
 
             params.success = function(data, status, xhr) {
                 var response;
-                cache.splice(indexOf(cache, cached), 1);
 
                 response = self.responses[xhr.status];
                 if (response && response.schema) {
@@ -110,7 +98,6 @@ define([
 
             params.error = function(xhr) {
                 var error = null, mimetype;
-                cache.splice(indexOf(cache, cached), 1);
 
                 mimetype = xhr.getResponseHeader('content-type');
                 if (mimetype && mimetype.substr(0, 16) === 'application/json') {
@@ -119,7 +106,6 @@ define([
                 deferred.reject(error, xhr);
             };
 
-            cache.push(cached);
             self.ajax(params);
             return deferred;
         }
