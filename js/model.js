@@ -11,7 +11,6 @@ define([
 
     var Manager = Class.extend({
         init: function(model) {
-            this.cache = [];
             this.model = model;
             this.models = {};
         },
@@ -32,27 +31,12 @@ define([
         },
 
         clear: function() {
-            this.cache = [];
             this.models = {};
             return this;
         },
 
         collection: function(query, independent) {
-            var cache = this.cache, instance, cached;
-            if (independent || !query) {
-                return collection.Collection(this, query);
-            }
-
-            for (var i = 0, l = cache.length; i < l; i++) {
-                cached = cache[i];
-                if (isEqual(cached.query, query)) {
-                    return cached;
-                }
-            }
-
-            instance = collection.Collection(this, query);
-            cache.push(instance);
-            return instance;
+            return collection.Collection(this, query);
         },
 
         dissociate: function(model) {
