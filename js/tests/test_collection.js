@@ -186,9 +186,8 @@ define([
         setTimeout(function() {
             var split, ret = _.reduce(_.range(num), function(memo, i) {
                 memo.resources.push({name: 'item ' + i});
-                if (params.data.set) {
-                    split = params.data.set.split(':');
-                    _.last(memo.resources)[split[0]] = split[1];
+                if (num < 10) {
+                    _.last(memo.resources).foo = 'bar';
                 }
                 return memo;
             }, {total: num, resources: []});
@@ -223,20 +222,17 @@ define([
         });
     });
 
-    // siq/mesh issue #10 corner case 3
-    asyncTest('call load then change query before load finishes', function() {
+    // siq/mesh issue #10 corner case 3 test 1
+    asyncTest('call load then change query via "reset" before load finishes', function() {
         var collection = Example.collection(), cancelledDfd, newDfd, donezo = false;
         collection.query.request.ajax = dummyAjax;
-        console.log('creating cancelledDfd');
         (cancelledDfd = collection.load()).then(function() {
-            console.log('cancelledDfd resolved');
             ok(false, 'cancelledDfd should never resolve');
             if (!donezo) {
                 donezo = true;
                 start();
             }
         }, function() {
-            console.log('cancelledDfd failed');
             ok(false, 'cancelledDfd should never fail');
             if (!donezo) {
                 donezo = true;
@@ -244,20 +240,15 @@ define([
             }
         });
 
-        console.log('creating newDfd');
-        collection.reset({limit: 5, set: 'foo:bar'});
+        collection.reset({limit: 5});
         newDfd = collection.load();
 
-        console.log('newDfd is not equal to cancelledDfd:',newDfd !== cancelledDfd);
         ok(newDfd !== cancelledDfd, 'second load call should return a differentd dfd');
         
         newDfd.then(function(results) {
-            console.log('newDfd resolve');
             ok(true, 'successfully loaded after cancelled');
             equal(results.length, 5);
-            _.each(results, function(model) {
-                equal(model.foo, 'bar');
-            });
+            _.each(results, function(model) {equal(model.foo, 'bar');});
             if (!donezo) {
                 donezo = true;
                 start();
@@ -270,6 +261,147 @@ define([
             }
         });
     });
+
+    // siq/mesh issue #10 corner case 3 test 2
+    asyncTest('call load then change query before load finishes', function() {
+        var cancelledDfd, newDfd,
+            collection = Example.collection({limit: 5}),
+            donezo = false;
+        collection.query.request.ajax = dummyAjax;
+        (cancelledDfd = collection.load()).then(function() {
+            ok(false, 'cancelledDfd should never resolve');
+            if (!donezo) {
+                donezo = true;
+                start();
+            }
+        }, function() {
+            ok(false, 'cancelledDfd should never fail');
+            if (!donezo) {
+                donezo = true;
+                start();
+            }
+        });
+
+        newDfd = collection.load({limit: null});
+
+        ok(newDfd !== cancelledDfd, 'second load call should return a differentd dfd');
+        
+        newDfd.then(function(results) {
+            ok(true, 'successfully loaded after cancelled');
+            equal(results.length, 10);
+            _.each(results, function(model) {ok(model.foo == null);});
+            if (!donezo) {
+                donezo = true;
+                start();
+            }
+        }, function() {
+            ok(false, 'second deferred should not be cancelled');
+            if (!donezo) {
+                donezo = true;
+                start();
+            }
+        });
+    });
+
+    var secondCallHasResolved = false,
+        outOfOrderAjaxCount = 0,
+        outOfOrderDfds = [$.Deferred(), $.Deferred()],
+        outOfOrderAjax = function(params) {
+            var num = params.data.limit? params.data.limit : 10,
+                localCount = outOfOrderAjaxCount;
+
+            setTimeout(function() {
+                var split, ret = _.reduce(_.range(num), function(memo, i) {
+                    memo.resources.push({name: 'item ' + i});
+                    if (num < 10) {
+                        _.last(memo.resources).foo = 'bar';
+                    }
+                    return memo;
+                }, {total: num, resources: []});
+
+                if (localCount === 0) {
+                    equal(secondCallHasResolved, true, 'first call occurred after second');
+                } else {
+                    equal(secondCallHasResolved, false, 'second call occurred before first');
+                    secondCallHasResolved = true;
+                }
+
+                params.success(ret, 200, {});
+                if (outOfOrderDfds[localCount]) {
+                    console.log('resolving dfd',localCount);
+                    outOfOrderDfds[localCount].resolve();
+                }
+            }, outOfOrderAjaxCount > 0? 0 : 100);
+
+            outOfOrderAjaxCount++;
+        };
+
+    // siq/mesh issue #10 corner case 3 test 3
+    asyncTest('first load call returns AFTER second', function() {
+        var collection = Example.collection(), cancelledDfd, newDfd, donezo = false;
+        collection.query.request.ajax = outOfOrderAjax;
+        (cancelledDfd = collection.load()).then(function() {
+            ok(false, 'cancelledDfd should never resolve');
+            if (!donezo) {
+                donezo = true;
+                start();
+            }
+        }, function() {
+            ok(false, 'cancelledDfd should never fail');
+            if (!donezo) {
+                donezo = true;
+                start();
+            }
+        });
+
+        collection.reset({limit: 5});
+        newDfd = collection.load();
+
+        ok(newDfd !== cancelledDfd, 'second load call should return a differentd dfd');
+        
+        newDfd.then(function(results) {
+            ok(true, 'successfully loaded after cancelled');
+            equal(results.length, 5);
+            _.each(results, function(model) {equal(model.foo, 'bar');});
+            if (!donezo) {
+                donezo = true;
+                $.when.apply($, outOfOrderDfds).done(start);
+            }
+        }, function() {
+            ok(false, 'second deferred should not be cancelled');
+            if (!donezo) {
+                donezo = true;
+                start();
+            }
+        });
+    });
+
+    // siq/mesh issue #10 corner case 4 (actually more of a common case)
+    asyncTest('calling load twice w/o query change returns the same deferred', function() {
+        var collection = Example.collection(), dfd1, dfd2;
+
+        collection.query.request.ajax = dummyAjax;
+
+        dfd1 = collection.load();
+
+        dfd1.done(function() {
+            ok(true, 'first load call succeeded and resolved');
+            equal(collection.models.length, 10);
+
+            collection.reset({limit: 5});
+            dfd2 = collection.load();
+
+            ok(dfd1 !== dfd2, 'a new deferred was returned');
+
+            dfd2.done(function() {
+                ok(true, 'second load call succeeded and resolved');
+                equal(collection.models.length, 5);
+                start();
+            });
+        });
+    });
+
+
 
     start();
 });

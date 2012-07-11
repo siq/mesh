@@ -187,7 +187,7 @@ define([
 
             query.params.offset = offset = params.offset || 0;
 
-            if (params.limit != null) {
+            if (typeof params.limit !== 'undefined') {
                 query.limit(params.limit);
             }
             if (!query.params.limit && !params.reload && self.total > 0) {
