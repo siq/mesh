@@ -280,12 +280,15 @@ define([
         reset: function(query) {
             this.models = [];
             this.total = null;
-            if (query != null) {
-                if (!(query instanceof Query)) {
-                    query = Query(this.manager, query);
-                }
-                this.query = query;
+
+            // always reset the query -- this informs .load() that the previous
+            // load call is no longer fresh
+            query = query == null? {} : query;
+
+            if (!(query instanceof Query)) {
+                query = Query(this.manager, query);
             }
+            this.query = query;
             this.trigger('update', this);
             return this;
         }
