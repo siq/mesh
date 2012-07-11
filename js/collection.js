@@ -172,10 +172,21 @@ define([
         },
 
         load: function(params) {
-            var self = this, params = params || {}, query = this.query.clone(),
-                offset, limit, models;
+            var self = this, query = this.query.clone(),
+                offset, limit, models, dfd;
+
+            params = params || {};
+
+            // siq/mesh issue #10 corner case 1 and 2
+            if (!params.reload) {
+                if (self._lastLoad && self._lastLoad.query === self.query &&
+                        _.isEqual(self._lastLoad.params, params)) {
+                    return self._lastLoad.dfd;
+                }
+            }
 
             query.params.offset = offset = params.offset || 0;
+
             if (params.limit != null) {
                 query.limit(params.limit);
             }
@@ -206,8 +217,20 @@ define([
                 delete query.params.offset;
             }
 
-            return query.execute().pipe(function(data) {
+            self._lastLoad = {
+                dfd: dfd = $.Deferred(),
+                params: params,
+                query: self.query
+            };
+
+            query.execute().done(function(data) {
                 var queryOffset = query.params.offset || 0, instance, results;
+
+                // siq/mesh issue #10 corner case 3
+                if (dfd !== self._lastLoad.dfd) {
+                    return;
+                }
+
                 self.total = data.total;
                 for (var i = 0, l = data.resources.length; i < l; i++) {
                     instance = data.resources[i];
@@ -219,9 +242,11 @@ define([
                 } else {
                     results = self.models.slice(offset);
                 }
+                dfd.resolve(results);
                 self.trigger('update', self, results);
-                return $.Deferred().resolve(results, data);
             });
+
+            return dfd;
         },
 
         notify: function(event, manager, model) {
@@ -253,7 +278,6 @@ define([
         },
 
         reset: function(query) {
-            this.cache = {};
             this.models = [];
             this.total = null;
             if (query != null) {

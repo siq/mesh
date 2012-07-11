@@ -21,8 +21,9 @@ define([
             request.ajax = ajax;
         },
         ajax_failed = function() {
-            ok(false, 'ajax request failed');
-            start();
+            throw Error('ajax request failed');
+            // ok(false, 'ajax request failed');
+            // start();
         };
 
     test('construction', function() {
@@ -93,16 +94,18 @@ define([
     };
 
     asyncTest('model change triggers collection change event', function() {
-        var donezo = false, collection = Example.collection();
+        var donezo = false, collection = Example.collection(), done = false;
 
         collection.query.request.ajax = function(params) {
             params.success(data, 200, {});
         };
 
         collection.on('change', function(eventName, collection, model) {
-            ok(donezo = true); // assert that this worked
-            equal(model, collection.models[0]);
-            start();
+            if (!donezo) {
+                ok(donezo = true); // assert that this worked
+                equal(model, collection.models[0]);
+                start();
+            }
         }).load().done(function() {
             setTimeout(function() {
                 if (!donezo) {
@@ -125,14 +128,16 @@ define([
             };
 
         collection2.on('change', function() {
-            donezo = true;
-            ok(true);
-            start();
+            if (!donezo) {
+                ok(donezo = true);
+                start();
+            }
         });
         
         $.when(collection1.load(), collection2.load()).done(function() {
             setTimeout(function() {
                 if (!donezo) {
+                    donezo = true;
                     ok(false, 'no change event was triggered on the collection');
                     start();
                 }
@@ -170,6 +175,99 @@ define([
             }, 100);
             collection.add(Example({type: 'extra'}));
             collection.models[0].set('name', 'pop');
+        });
+    });
+
+    module('load behavior');
+
+    var dummyAjax = function(params) {
+        var num = params.data.limit? params.data.limit : 10;
+
+        setTimeout(function() {
+            var split, ret = _.reduce(_.range(num), function(memo, i) {
+                memo.resources.push({name: 'item ' + i});
+                if (params.data.set) {
+                    split = params.data.set.split(':');
+                    _.last(memo.resources)[split[0]] = split[1];
+                }
+                return memo;
+            }, {total: num, resources: []});
+            params.success(ret, 200, {});
+        }, 50);
+    };
+
+    // siq/mesh issue #10 corner case 1
+    asyncTest('calling load twice w/o query change returns the same deferred', function() {
+        var collection = Example.collection(), dfd1, dfd2;
+
+        collection.query.request.ajax = dummyAjax;
+
+        dfd1 = collection.load();
+        dfd2 = collection.load();
+
+        ok(dfd1 === dfd2, 'two consecutive calls should return the same deferred');
+        $.when(dfd1, dfd2).done(start);
+    });
+
+    // siq/mesh issue #10 corner case 2
+    asyncTest('calling load again after first load w/o query changes returns the same deferred', function() {
+        var collection = Example.collection(), dfd1;
+
+        collection.query.request.ajax = dummyAjax;
+        dfd1 = collection.load();
+
+        dfd1.done(function() {
+            var dfd2 = collection.load();
+            ok(dfd1 === dfd2, 'two calls of same query should return the same deferred');
+            dfd2.done(start); // just to be safe...
+        });
+    });
+
+    // siq/mesh issue #10 corner case 3
+    asyncTest('call load then change query before load finishes', function() {
+        var collection = Example.collection(), cancelledDfd, newDfd, donezo = false;
+        collection.query.request.ajax = dummyAjax;
+        console.log('creating cancelledDfd');
+        (cancelledDfd = collection.load()).then(function() {
+            console.log('cancelledDfd resolved');
+            ok(false, 'cancelledDfd should never resolve');
+            if (!donezo) {
+                donezo = true;
+                start();
+            }
+        }, function() {
+            console.log('cancelledDfd failed');
+            ok(false, 'cancelledDfd should never fail');
+            if (!donezo) {
+                donezo = true;
+                start();
+            }
+        });
+
+        console.log('creating newDfd');
+        collection.reset({limit: 5, set: 'foo:bar'});
+        newDfd = collection.load();
+
+        console.log('newDfd is not equal to cancelledDfd:',newDfd !== cancelledDfd);
+        ok(newDfd !== cancelledDfd, 'second load call should return a differentd dfd');
+        
+        newDfd.then(function(results) {
+            console.log('newDfd resolve');
+            ok(true, 'successfully loaded after cancelled');
+            equal(results.length, 5);
+            _.each(results, function(model) {
+                equal(model.foo, 'bar');
+            });
+            if (!donezo) {
+                donezo = true;
+                start();
+            }
+        }, function() {
+            ok(false, 'second deferred should not be cancelled');
+            if (!donezo) {
+                donezo = true;
+                start();
+            }
         });
     });
 
