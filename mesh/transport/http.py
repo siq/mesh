@@ -54,7 +54,7 @@ STATUS_LINES = {
 }
 
 PATH_EXPR = r"""(?x)^%s
-    /(?P<bundle>\w+)
+    /(?P<bundle>[\w.]+)
     /(?P<major>\d+)[.](?P<minor>\d+)
     /(?P<resource>\w+)
     (?:/(?P<subject>[-.:\w]+)(?P<tail>(?:/\w+)+)?)?
@@ -285,6 +285,7 @@ class HttpServer(WsgiServer):
         try:
             request.path = path = Path(self, path)
         except Exception:
+            log('info', 'no path found for %s', path)
             return response(NOT_FOUND)
 
         signature = (path.bundle, path.version, path.resource_path)
