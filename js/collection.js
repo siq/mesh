@@ -333,7 +333,8 @@ define([
     //         model.set('_selected', false);
     //     });
     _.each(['each', 'forEach', 'map', 'reduce', 'foldl', 'inject',
-            'reduceRight', 'foldr', 'find', 'detect', 'filter', 'select'],
+            'reduceRight', 'foldr', 'find', 'detect', 'filter', 'select',
+            'pluck'],
             function(method) {
                 Collection.constructor.prototype[method] = function() {
                     var args = Array.prototype.slice.call(arguments);
