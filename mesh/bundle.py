@@ -109,6 +109,9 @@ class Bundle(object):
         return Bundle(name, *mounts)
 
     def describe(self, version=None):
+        if isinstance(version, basestring):
+            version = self._parse_version(version)
+
         description = {'name': self.name, 'description': self.description}
         if version is not None:
             description.update(id='%s-%d.%d' % (self.name, version[0], version[1]),
@@ -175,6 +178,10 @@ class Bundle(object):
                         self.versions[version][resource.name] = (resource, controller)
                     else:
                         raise SpecificationError()
+
+    def _parse_version(self, version):
+        major, minor = version.split('.')
+        return int(major), int(minor)
 
 class Specification(object):
     """A bundle specification for a particular version."""

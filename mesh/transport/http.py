@@ -119,6 +119,7 @@ class HttpResponse(ServerResponse):
         return STATUS_LINES[self.status]
 
     def apply_standard_headers(self):
+        self.headers['Cache-Control'] = 'must-revalidate, no-cache'
         if not self.content:
             return
         if 'Content-Type' not in self.headers:
@@ -318,7 +319,6 @@ class HttpServer(WsgiServer):
         elif mimetype and mimetype != URLENCODED:
             format = self.formats.get(mimetype)
 
-        response.header('Access-Control-Allow-Origin', '*')
         if response.content:
             response.mimetype = format.mimetype
             response.content = format.serialize(response.content)
@@ -359,17 +359,48 @@ class HttpClient(Client):
         self.context = context
         self.context_header_prefix = context_header_prefix or self.DEFAULT_HEADER_PREFIX
         self.paths = {}
-        self.url = url
+        self.url = url.rstrip('/')
         self.initial_path = '/%s/%d.%d/' % (self.specification.name,
             self.specification.version[0], self.specification.version[1])
 
     def construct_headers(self, context=None):
         headers = {}
-        for name, value in self._construct_context(context).iteritems():
-            headers[self.context_header_prefix + name] = value
+        if context is not False:
+            for name, value in self._construct_context(context).iteritems():
+                headers[self.context_header_prefix + name] = value
         return headers
 
     def execute(self, resource, request, subject=None, data=None, format=None, context=None):
+        request, method, path, mimetype, data, headers = self._prepare_request(resource, request,
+            subject, data, format, context)
+
+        response = self.connection.request(method, path, data, headers)
+        if response.status in request['responses']:
+            schema = request['responses'][response.status]['schema']
+        elif not (response.status in ERROR_STATUS_CODES and not response.content):
+            exception = RequestError.construct(response.status)
+            if exception:
+                raise exception
+            else:
+                raise Exception('unknown status')
+
+        if response.content:
+            format = self.formats[response.mimetype]
+            response.content = schema.process(format.unserialize(response.content), INCOMING, True)
+
+        if response.ok:
+            return response
+        else:
+            raise RequestError.construct(response.status, response.content)
+
+    def prepare(self, resource, request, subject=None, data=None, format=None, context=None):
+        request, method, path, mimetype, data, headers = self._prepare_request(resource, request,
+            subject, data, format, context)
+
+        return {'method': method, 'url': self.url + path, 'mimetype': mimetype,
+            'data': data, 'headers': headers}
+
+    def _prepare_request(self, resource, request, subject=None, data=None, format=None, context=None):
         format = format or self.format
         request = self.specification.resources[resource]['requests'][request]
 
@@ -395,24 +426,7 @@ class HttpClient(Client):
         if mimetype:
             headers['Content-Type'] = mimetype
 
-        response = self.connection.request(method, path, data, headers)
-        if response.status in request['responses']:
-            schema = request['responses'][response.status]['schema']
-        elif not (response.status in ERROR_STATUS_CODES and not response.content):
-            exception = RequestError.construct(response.status)
-            if exception:
-                raise exception
-            else:
-                raise Exception('unknown status')
-
-        if response.content:
-            format = self.formats[response.mimetype]
-            response.content = schema.process(format.unserialize(response.content), INCOMING, True)
-
-        if response.ok:
-            return response
-        else:
-            raise RequestError.construct(response.status, response.content)
+        return request, method, path, mimetype, data, headers
 
     def _get_path(self, path):
         try:
