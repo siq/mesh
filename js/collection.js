@@ -291,8 +291,56 @@ define([
             this.query = query;
             this.trigger('update', this);
             return this;
+        },
+
+        // short-hand for Collection.find (see below).  allows you do do stuff
+        // like:
+        //
+        //     // get model w/ id === 1
+        //     myCollection.where('id', '1')
+        //
+        //     // get the model where 'foo' === 'foo' and age === 36
+        //     myCollection.where({name: 'foo', age: 36});  
+        //
+        //     // get the model where name matches /[Ff]oo/
+        //     myCollection.where('name', /[Ff]oo/);
+        where: function(key, value) {
+            var attrs = {};
+            if (_.isString(key)) {
+                attrs[key] = value;
+            } else {
+                _.extend(attrs, key);
+            }
+            return this.find(function(model) {
+                return _.every(_.map(attrs, function(value, key) {
+                    if (_.isRegExp(value)) {
+                        return value.test(model[key]);
+                    } else {
+                        return model[key] === value;
+                    }
+                }), _.identity);
+            });
         }
     }, {mixins: [Eventable]});
+
+    // underscore methods
+    //
+    // like Backbone collections, we just mixin a bunch of underscore.js
+    // methods that can be called against myCollection.models, so you can do
+    // handy stuff like this:
+    //
+    //     myCollection.each(function(model) {
+    //         model.set('_selected', false);
+    //     });
+    _.each(['each', 'forEach', 'map', 'reduce', 'foldl', 'inject',
+            'reduceRight', 'foldr', 'find', 'detect', 'filter', 'select'],
+            function(method) {
+                Collection.constructor.prototype[method] = function() {
+                    var args = Array.prototype.slice.call(arguments);
+                    args.unshift(this.models);
+                    return _[method].apply(this, args);
+                };
+            });
 
     return {
         Collection: Collection,
