@@ -7,10 +7,10 @@ var fs = require('fs'),
     testServer = require('csi'),
     getProxiesFromConfig = function(config) {
         var ret = {}, prop, match;
-        if (!config || !config.spire || !config.spire.configuration) {
+        if (!config || !config.configuration) {
             return;
         }
-        config = config.spire.configuration;
+        config = config.configuration;
         for (prop in config) {
             if (config.hasOwnProperty(prop)) {
                 match = prop.match(/^(mesh-proxy:)(.*)/);
