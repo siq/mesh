@@ -269,6 +269,14 @@ def construct_update_request(resource, declaration=None):
         if is_returned(field, 'update'):
             response_schema[name] = field.clone(required=True)
 
+    valid_responses = [OK]
+    if declaration:
+        valid_responses = getattr(declaration, 'valid_responses', valid_responses)
+
+    responses = {INVALID: Response(Errors)}
+    for response_code in valid_responses:
+        responses[response_code] = Response(Structure(response_schema))
+
     return Request(
         name = 'update',
         endpoint = (POST, resource.name + '/id'),
@@ -277,10 +285,7 @@ def construct_update_request(resource, declaration=None):
         resource = resource,
         title = 'Updating a specific %s' % resource.title.lower(),
         schema = Structure(resource_schema),
-        responses = {
-            OK: Response(Structure(response_schema)),
-            INVALID: Response(Errors),
-        }
+        responses = responses,
     )
 
 def construct_create_update_request(resource, declaration=None):
