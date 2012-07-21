@@ -2343,8 +2343,6 @@ try:
 except ImportError:
     pass
 
-import logging
-
 class WsgiServer(CherryPyWSGIServer):
     def __init__(self, address, bundles, numthreads=10, timeout=10):
         if isinstance(address, basestring):
@@ -2359,8 +2357,33 @@ class WsgiServer(CherryPyWSGIServer):
         from mesh.transport.http import HttpServer
         application = HttpServer(bundles)
 
+        try:
+            signals.signal(signals.SIGQUIT, self.dump_threads)
+        except Exception:
+            pass
+
         super(WsgiServer, self).__init__(address, application, numthreads=numthreads,
             timeout=timeout)
+
+    def dump_threads(self, *args):
+        try:
+            from sys import _current_frames as frames
+        except ImportError:
+            from threadframe import dict as frames
+
+        lines = []
+        for id, stack in frames().items():
+            lines.append('Thread: %s' % id)
+            for filename, lineno, name, line in extract_stack(stack):
+                lines.append('  File "%s", line %d, in %s' % (filename, lineno, name))
+                if line:
+                    lines.append('    %s' % line.strip())
+
+        openfile = open('/tmp/mesh-thread-dump', 'w')
+        try:
+            openfile.write('\n'.join(lines))
+        finally:
+            openfile.close()
 
     def serve(self):
         try: 
@@ -2369,24 +2392,6 @@ class WsgiServer(CherryPyWSGIServer):
             self.stop()
 
 class DaemonizedWsgiServer(WsgiServer):
-    @property
-    def thread_dump_logger(self):
-        try:
-            return self._thread_dump_logger
-        except AttributeError:
-            pass
-
-        logger = logging.getLogger('threaddump')
-        logger.propagate = False
-        logger.setLevel(logging.DEBUG)
-
-        handler = logging.FileHandler('/tmp/mesh-thread-dump.log')
-        handler.setFormatter(logging.Formatter())
-        logger.addHandler(handler)
-
-        self._thread_dump_logger = logger
-        return logger
-
     def daemonize(self, pidfile, uid=None, gid=None):
         user, uid = self._verify_uid(uid or os.getuid())
         group, gid = self._verify_gid(gid or os.getgid())
@@ -2405,23 +2410,6 @@ class DaemonizedWsgiServer(WsgiServer):
             self.stop()
 
         signals.signal(signals.SIGTERM, handler)
-        signals.signal(signals.SIGQUIT, self.dump_threads)
-
-    def dump_threads(self, *args):
-        lines = ['*** begin thread dump']
-        names = dict((t.ident, t.name) for t in threading.enumerate())
-        for id, stack in sys._current_frames().items():
-            line = 'Thread: %s' % id
-            if id in names:
-                line += ' "%s"' % names[id]
-            lines.append(line)
-            for filename, lineno, name, line in extract_stack(stack):
-                lines.append('  File "%s", line %d, in %s' % (filename, lineno, name))
-                if line:
-                    lines.append('    %s' % line.strip())
-
-        lines.append('*** end thread dump')
-        self.thread_dump_logger.debug('\n'.join(lines))
 
     def serve(self, pidfile, uid=None, gid=None):
         self.daemonize(pidfile, uid, gid)
