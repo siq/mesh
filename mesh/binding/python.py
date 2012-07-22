@@ -4,7 +4,7 @@ from mesh.bundle import Specification
 from mesh.constants import *
 from mesh.exceptions import *
 from mesh.transport.base import Client
-from mesh.util import StructureFormatter, get_package_data
+from mesh.util import StructureFormatter, get_package_data, import_object
 
 class ReadOnlyError(Exception):
     """..."""
@@ -223,6 +223,9 @@ class BindingGenerator(object):
         return {bundle.name: (filename, '\n\n'.join(source))}
 
     def generate_dynamically(self, bundle, version):
+        if isinstance(bundle, basestring):
+            bundle = import_object(bundle)
+
         description = bundle.describe(version)
         source = ['from %s import *' % self.binding_module,
             self._generate_specification(description)]

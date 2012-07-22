@@ -19,3 +19,8 @@ class Resource(Resource):
     configuration = STANDARD_CONFIGURATION
 
 Controller = StandardController
+
+def generate_dynamic_binding(bundle, version, binding_module='mesh.standard.python'):
+    from mesh.binding.python import BindingGenerator
+    generator = BindingGenerator(binding_module=binding_module)
+    return generator.generate_dynamically(bundle, version)
