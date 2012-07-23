@@ -13,7 +13,7 @@
     "siq-vendor-js": "git+ssh://git@github.com:siq/siq-vendor-js.git",
     "bedrockjs": "git+ssh://git@github.com:siq/bedrockjs.git"
   },
-  "component": {
+  "csi": {
     "name": "mesh",
     "sourceDirectory": "js",
     "testTemplate": "js/tests/testTemplate.html",
