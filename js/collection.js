@@ -242,8 +242,8 @@ define([
                 } else {
                     results = self.models.slice(offset);
                 }
-                self.trigger('update', self, results);
                 dfd.resolve(results);
+                self.trigger('update', self, results);
             });
 
             return dfd;
