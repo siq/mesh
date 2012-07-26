@@ -274,10 +274,12 @@ define([
                         params.data.required_field = 'complete';
                     }
                     params.success(params.data, 200, {});
-                }, 100);
+                }, 10);
             }),
 
-            model = Example({id: 1, required_field: 'waiting'});
+            model = Example({id: 1, required_field: 'waiting'}, null, null, {
+                pollInterval: 50
+            });
 
         model.poll({
             until: function() {
@@ -315,13 +317,14 @@ define([
                 setTimeout(function() {
                     params.data = {id: 2, required_field: 'waiting'};
                     params.success(params.data, 200, {});
-                }, 100);
+                }, 0);
             }),
 
             model = Example({id: 2, required_field: 'waiting'});
 
         model.poll({
-            timeout: 5000,
+            timeout: 1000,
+            interval: 1000 / 5,
             until: function() {
                 return model.required_field === 'complete';
             }

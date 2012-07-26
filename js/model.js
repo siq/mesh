@@ -112,7 +112,7 @@ define([
 
         defaults: {
             pollInterval: 1000,
-            pollerTimeout: 60000
+            pollTimeout: 60000
         },
 
         init: function(attrs, manager, loaded, options) {
@@ -127,7 +127,7 @@ define([
             if (this.id == null) {
                 this.cid = _.uniqueId('_');
             }
-            this._options = $.extend(true, options, this.defaults);
+            this._options = $.extend(true, this.defaults, options);
             this._manager.associate(this);
         },
 
@@ -189,7 +189,7 @@ define([
                 startTime = new Date();
             
             if (!params.timeout) {
-                params.timeout = self._options.pollerTimeout;
+                params.timeout = self._options.pollTimeout;
             }
             self._poller(params, interval, deferred, startTime);            
             return deferred;
