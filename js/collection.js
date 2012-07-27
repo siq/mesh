@@ -334,7 +334,7 @@ define([
     //     });
     _.each(['each', 'forEach', 'map', 'reduce', 'foldl', 'inject',
             'reduceRight', 'foldr', 'find', 'detect', 'filter', 'select',
-            'pluck'],
+            'pluck', 'first', 'last'],
             function(method) {
                 Collection.constructor.prototype[method] = function() {
                     var args = Array.prototype.slice.call(arguments);
