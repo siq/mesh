@@ -143,14 +143,19 @@ class Model(object):
         self._update_model(response.content)
         return self
 
+    def set(self, **params):
+        for attr, value in params.iteritems():
+            setattr(self, attr, value)
+        return self
+
     def update(self, attrs, **params):
         self._update_model(attrs)
         return self.save(**params)
 
     def _execute_request(self, request, data=None):
-        subject = self.id
-        if not request['specific']:
-            subject = None
+        subject = None
+        if request['specific']:
+            subject = self.id
         return self._get_client().execute(self._name, request['name'], subject, data)
 
     @classmethod
@@ -165,7 +170,8 @@ class Model(object):
             raise ValueError(name)
 
     def _update_model(self, data):
-        self._data.update(data)
+        if data:
+            self._data.update(data)
 
 class BindingGenerator(object):
     MODEL_TMPL = get_package_data('mesh.binding', 'templates/model.py.tmpl')
