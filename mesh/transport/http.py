@@ -67,7 +67,7 @@ class Connection(object):
         self.path = self.path.rstrip('/')
 
     def request(self, method, url, body=None, headers=None):
-        if url[0] != '/':
+        if url and url[0] != '/':
             url = '/' + url
 
         if method == GET and body:
@@ -392,6 +392,13 @@ class HttpClient(Client):
             return response
         else:
             raise RequestError.construct(response.status, response.content)
+
+    def ping(self):
+        try:
+            response = self.connection.request('GET', self.specification.name)
+            return response.ok
+        except RequestError:
+            return False
 
     def prepare(self, resource, request, subject=None, data=None, format=None, context=None):
         request, method, path, mimetype, data, headers = self._prepare_request(resource, request,

@@ -320,6 +320,14 @@ def construct_delete_request(resource, declaration=None):
         id_field.name: id_field.clone(required=True)
     })
 
+    valid_responses = [OK]
+    if declaration:
+        valid_responses = getattr(declaration, 'valid_responses', valid_responses)
+
+    responses = {}
+    for response_code in valid_responses:
+        responses[response_code] = Response(response_schema)
+
     return Request(
         name = 'delete',
         endpoint = (DELETE, resource.name + '/id'),
@@ -328,9 +336,7 @@ def construct_delete_request(resource, declaration=None):
         resource = resource,
         title = 'Deleting a specific %s' % resource.title.lower(),
         schema = None,
-        responses = {
-            OK: Response(response_schema),
-        }
+        responses = responses,
     )
 
 DEFAULT_REQUESTS = ['create', 'delete', 'get', 'query', 'update']
