@@ -397,7 +397,7 @@ class HttpClient(Client):
         try:
             response = self.connection.request('GET', self.specification.name)
             return response.ok
-        except RequestError:
+        except (RequestError, IOError):
             return False
 
     def prepare(self, resource, request, subject=None, data=None, format=None, context=None):
