@@ -107,6 +107,10 @@ class Model(object):
         return response.content
 
     @classmethod
+    def execute(cls, request, data, subject=None):
+        return cls._get_client().execute(cls._name, request, subject, data)
+
+    @classmethod
     def get(cls, id, **params):
         return cls(id=id).refresh(**params)
 
