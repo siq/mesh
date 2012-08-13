@@ -45,7 +45,7 @@ var fs = require('fs'),
             proxyReq = http.request({
                 host: u.hostname,
                 port: u.port || 80,
-                path: req.url,
+                path: u.path + req.url,
                 method: req.method
             }, function(proxyResp) {
                 proxyResp.on('data', function(chunk) {
