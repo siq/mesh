@@ -97,7 +97,8 @@ define([
             ok(saved_model === model);
             ok(model.id);
             ok(model._loaded);
-            ok(manager.models[model.id] === model);
+            ok(manager.models[model.id] === model,
+                'manager is correctly tracking model');
             deepEqual(model._changes, {});
 
             manager.clear();
