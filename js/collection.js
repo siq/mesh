@@ -219,7 +219,8 @@ define([
 
             self._lastLoad = {
                 dfd: dfd = $.Deferred(),
-                params: params,
+                // siq/mesh issue #11 corner case 1
+                params: $.extend(true, {}, params),
                 query: self.query
             };
 

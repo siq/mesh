@@ -401,7 +401,96 @@ define([
         });
     });
 
+    asyncTest("calling load w/ limit out of range doesn't break further queries", function() {
+        var collection = Example.collection(),
+            query1 = {limit: 4, offset: 8},
+            query2 = {limit: 4, offset: 5},
+            dfd1, dfd2, dfd3;
 
+        collection.query.request.ajax =
+            function(params) {
+                var limit = params.data.limit,
+                    offset = params.data.offset,
+                    newData = $.extend(true, {}, data);
+                if(limit) {
+                    newData.resources = data.resources.slice(offset, offset + limit)
+                }
+                params.success(newData, 200, {});
+            };
+
+        dfd1 = collection.load();
+        dfd1.done(function(models) {
+            ok(collection.total, 10);
+            ok(models.length, 10);
+
+            dfd2 = collection.load(query1);
+            ok(dfd1 !== dfd2, 'new deferred');
+
+            dfd2.done(function(models) {
+                // length = (total - offset) = 2 because (total - offset) < limit
+                equal(models.length, 2);
+
+                dfd3 = collection.load(query2);
+                ok(dfd2 !== dfd3, 'new deferred');
+
+                dfd3.done(function(models) {
+                    // length = 4
+                    equal(models.length, 4);
+
+                    start();
+                });
+            });
+        });
+    });
+
+    // siq/mesh issue #11 corner case 1
+    asyncTest("calling load w/ changed query params in place doesn't break further queries", function() {
+        var collection = Example.collection(),
+            query1, query2,
+            dfd1, dfd2, dfd3;
+
+        query1 = query2 = {limit: 4, offset: 8}
+        equal(query1, query2, 'query1 is equal to query2');
+
+        collection.query.request.ajax =
+            function(params) {
+                var limit = params.data.limit,
+                    offset = params.data.offset,
+                    newData = $.extend(true, {}, data);
+                if(limit) {
+                    newData.resources = data.resources.slice(offset, offset + limit)
+                }
+                params.success(newData, 200, {});
+            };
+
+        dfd1 = collection.load();
+        dfd1.done(function(models) {
+            ok(collection.total, 10);
+            ok(models.length, 10);
+
+            dfd2 = collection.load(query1);
+            ok(dfd1 !== dfd2, 'new deferred');
+
+            dfd2.done(function(models) {
+                // length = (total - offset) = 2 because (total - offset) < limit
+                equal(models.length, 2);
+
+                query2.limit = 4;
+                query2.offset = 5;
+                equal(query1, query2, 'query1 is equal to query2');
+
+                dfd3 = collection.load(query2);
+                ok(dfd2 !== dfd3, 'new deferred');
+
+                dfd3.done(function(models) {
+                    // length = 4
+                    equal(models.length, 4);
+
+                    start();
+                });
+            });
+        });
+    });
 
     start();
 });
