@@ -3,9 +3,10 @@ define([
     'vendor/jquery',
     'bedrock/class',
     'bedrock/events',
+    'bedrock/settable',
     './fields',
     './collection'
-], function(_, $, Class, Eventable, fields, collection) {
+], function(_, $, Class, Eventable, Settable, fields, collection) {
     var isArray = _.isArray, isBoolean = _.isBoolean, isEmpty = _.isEmpty,
         isEqual = _.isEqual, isString = _.isString;
 
@@ -122,7 +123,7 @@ define([
             this._loaded = loaded;
             this._manager = manager || this.__models__;
             if (attrs != null) {
-                this.set(attrs, true, true);
+                this.set(attrs, {silent: true, unchanged: true});
             }
             if (this.id == null) {
                 this.cid = _.uniqueId('_');
@@ -177,7 +178,7 @@ define([
             return self._initiateRequest('get', params).pipe(function(data) {
                 self._changes = {};
                 self._loaded = true;
-                self.set(data, false, true);
+                self.set(data, {unchanged: true});
                 return self;
             });
         },
@@ -253,57 +254,22 @@ define([
                     self._manager.associate(self, data.id);
                 }
                 self._changes = {};
-                self.set(data, false, true);
+                self.set(data, {unchanged: true});
                 self._loaded = true;
                 return self;
             });
         },
 
-        set: function(attr, value, silent, unchanged) {
-            var attrs, changing, changed, name, currentValue;
-            if (attr != null) {
-                if (isString(attr)) {
-                    attrs = {};
-                    attrs[attr] = value;
-                } else {
-                    unchanged = silent;
-                    silent = value;
-                    attrs = attr;
-                }
-            } else {
-                return this;
+        _settableOnChange: function(changed, opts) {
+            if (!opts.unchanged) {
+                _.extend(this._changes, changed);
             }
-
-            changing = this._currentlyChanging;
-            this._currentlyChanging = true;
-
-            changed = {};
-            for (name in attrs) {
-                if (attrs.hasOwnProperty(name)) {
-                    currentValue = this[name];
-                    value = attrs[name];
-                    if (!isEqual(value, currentValue)) {
-                        this[name] = value;
-                        changed[name] = true;
-                        if (!unchanged) {
-                            this._changes[name] = true;
-                        }
-                    }
-                }
-            }
-
-            if (!changing) {
-                if (!isEmpty(changed)) {
-                    this.construct();
-                    if (!silent) {
-                        this.trigger('change', this, changed);
-                        this._manager.notify(this, 'change');
-                    }
-                }
-                this._currentlyChanging = false;
-            }
-            return this;
+            this.construct({silent: true});
+            this._manager.notify(this, 'change');
+            this.trigger('change', this, changed);
         },
+
+        _settableProperty: null,
 
         _getRequest: function(name) {
             return this.__requests__[name];
@@ -312,7 +278,7 @@ define([
         _initiateRequest: function(name, params) {
             return this._getRequest(name).initiate(this.id, params);
         }
-    }, {mixins: [Eventable]});
+    }, {mixins: [Eventable, Settable]});
 
     return {
         Manager: Manager,
