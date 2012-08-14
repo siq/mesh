@@ -124,6 +124,8 @@ define([
             this.models = [];
             this.query = query;
             this.total = null;
+            this._offset = 0;
+            this._limit = null;
             this.manager.on('change', this.notify, this);
         },
 
@@ -171,6 +173,20 @@ define([
             return this.ids[id] || null;
         },
 
+        currentPage: function() {
+            var self = this,
+                offset, limit, results;
+
+            offset = (self._offset) ? self._offset : 0;
+            limit = (self._limit > 0) ? self._limit : null;
+            if (limit) {
+                results = self.models.slice(offset, offset + limit);
+            } else {
+                results = self.models.slice(offset);
+            }
+            return results;
+        },
+
         load: function(params) {
             var self = this, query = this.query.clone(),
                 offset, limit, models, dfd;
@@ -194,6 +210,8 @@ define([
                 query.limit(self.total - offset);
             }
             limit = query.params.limit;
+            self._limit = limit;
+            self._offset = offset;
 
             if (params.offset == null && !params.reload && self.total != null) {
                 return $.Deferred().resolve(self.models);

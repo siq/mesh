@@ -401,27 +401,31 @@ define([
         });
     });
 
+    module('pageing');
+
+    var pageingAjax = function(params) {
+        var limit = params.data.limit,
+            offset = params.data.offset,
+            newData = $.extend(true, {}, data);
+        if(limit) {
+            newData.resources = data.resources.slice(offset, offset + limit)
+        }
+        params.success(newData, 200, {});
+    };
+
     asyncTest("calling load w/ limit out of range doesn't break further queries", function() {
         var collection = Example.collection(),
             query1 = {limit: 4, offset: 8},
             query2 = {limit: 4, offset: 5},
             dfd1, dfd2, dfd3;
 
-        collection.query.request.ajax =
-            function(params) {
-                var limit = params.data.limit,
-                    offset = params.data.offset,
-                    newData = $.extend(true, {}, data);
-                if(limit) {
-                    newData.resources = data.resources.slice(offset, offset + limit)
-                }
-                params.success(newData, 200, {});
-            };
+        collection.query.request.ajax = pageingAjax;
+
 
         dfd1 = collection.load();
         dfd1.done(function(models) {
-            ok(collection.total, 10);
-            ok(models.length, 10);
+            equal(collection.total, 10);
+            equal(models.length, 10);
 
             dfd2 = collection.load(query1);
             ok(dfd1 !== dfd2, 'new deferred');
@@ -452,21 +456,12 @@ define([
         query1 = query2 = {limit: 4, offset: 8}
         equal(query1, query2, 'query1 is equal to query2');
 
-        collection.query.request.ajax =
-            function(params) {
-                var limit = params.data.limit,
-                    offset = params.data.offset,
-                    newData = $.extend(true, {}, data);
-                if(limit) {
-                    newData.resources = data.resources.slice(offset, offset + limit)
-                }
-                params.success(newData, 200, {});
-            };
+        collection.query.request.ajax = pageingAjax;
 
         dfd1 = collection.load();
         dfd1.done(function(models) {
-            ok(collection.total, 10);
-            ok(models.length, 10);
+            equal(collection.total, 10);
+            equal(models.length, 10);
 
             dfd2 = collection.load(query1);
             ok(dfd1 !== dfd2, 'new deferred');
@@ -488,6 +483,58 @@ define([
 
                     start();
                 });
+            });
+        });
+    });
+
+    asyncTest("getting the current page", function() {
+        var collection = Example.collection(),
+            query1 = {limit: 5, offset: 5},
+            query2 = {limit: 4, offset: 0},
+            dfd1, dfd2, dfd3;
+
+        collection.query.request.ajax = pageingAjax;
+
+        dfd1 = collection.load();
+        dfd1.done(function() {
+            equal(collection.total, 10);
+            equal(collection.currentPage().length, 10);
+
+            dfd2 = collection.load(query1);
+            dfd2.done(function() {
+                equal(collection.total, 10);
+                equal(collection.currentPage().length, query1.limit);
+
+                dfd3 = collection.load(query2);
+                dfd3.done(function() {
+                    equal(collection.total, 10);
+                    equal(collection.currentPage().length, query2.limit);
+
+                    start();
+                });
+            });
+        });
+    });
+
+    asyncTest("getting the current page with limit out of range ", function() {
+        var collection = Example.collection(),
+            query1 = {limit: 8, offset: 5},
+            pageLength = 5,
+            dfd1, dfd2;
+
+        collection.query.request.ajax = pageingAjax;
+
+        dfd1 = collection.load();
+        dfd1.done(function() {
+            equal(collection.total, 10);
+            equal(collection.currentPage().length, 10);
+
+            dfd2 = collection.load(query1);
+            dfd2.done(function() {
+                equal(collection.total, 10);
+                equal(collection.currentPage().length, pageLength);
+
+                start();
             });
         });
     });
