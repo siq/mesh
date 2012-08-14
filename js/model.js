@@ -149,11 +149,6 @@ define([
             });
         },
 
-        has: function(attr) {
-            var value = this[attr];
-            return (value !== undefined && value !== null);
-        },
-
         html: function(attr, fallback) {
             var value = this[attr];
             if (value == null) {
