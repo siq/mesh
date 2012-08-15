@@ -255,6 +255,8 @@ define([
             });
         },
 
+        _settableAreEqual: _.isEqual,
+
         _settableOnChange: function(changed, opts) {
             if (!opts.unchanged) {
                 _.extend(this._changes, changed);
