@@ -51,7 +51,10 @@ class ServerResponse(object):
             self.content = content
         return self
 
-    def header(self, name, value):
+    def header(self, name, value, conditional=False):
+        name = name.lower()
+        if conditional and name in self.headers:
+            return
         self.headers[name] = value
 
 class Server(object):

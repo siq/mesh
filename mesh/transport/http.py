@@ -119,13 +119,13 @@ class HttpResponse(ServerResponse):
         return STATUS_LINES[self.status]
 
     def apply_standard_headers(self):
-        self.headers['Cache-Control'] = 'must-revalidate, no-cache'
+        self.headers['cache-control'] = 'must-revalidate, no-cache'
         if not self.content:
             return
-        if 'Content-Type' not in self.headers:
-            self.headers['Content-Type'] = self.mimetype
-        if 'Content-Length' not in self.headers:
-            self.headers['Content-Length'] = str(len(self.content))
+        if 'content-type' not in self.headers:
+            self.headers['content-type'] = self.mimetype
+        if 'content-length' not in self.headers:
+            self.headers['content-length'] = str(len(self.content))
 
 class Path(object):
     """An HTTP request path."""
