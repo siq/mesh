@@ -539,5 +539,34 @@ define([
         });
     });
 
+    asyncTest("reference to query.params.limit/offset doesn't get lost", function() {
+        var collection = Example.collection(),
+            query1 = {limit: 3, offset: 8},
+            query2 = {limit: 3, offset: 5},
+            dfd1, dfd2;
+
+        collection.query.request.ajax = pageingAjax;
+
+        dfd1 = collection.load(query1);
+        dfd1.done(function() {
+            equal(collection.total, 10);
+            equal(collection.currentPage().length, 2);
+
+            dfd2 = collection.load(query2);
+            dfd2.done(function() {
+                equal(collection.total, 10);
+                equal(collection.currentPage().length, query2.limit);
+
+                dfd1 = collection.load(query1);
+                dfd1.done(function() {
+                    equal(collection.total, 10);
+                    equal(collection.currentPage().length, 2);
+
+                    start();
+                });
+            });
+        });
+    });
+
     start();
 });

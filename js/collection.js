@@ -124,8 +124,6 @@ define([
             this.models = [];
             this.query = query;
             this.total = null;
-            this._offset = 0;
-            this._limit = null;
             this.manager.on('change', this.notify, this);
         },
 
@@ -175,10 +173,10 @@ define([
 
         currentPage: function() {
             var self = this,
-                offset, limit, results;
+                offset = self.query.params.offset || 0,
+                limit = self.query.params.limit || null,
+                results;
 
-            offset = (self._offset) ? self._offset : 0;
-            limit = (self._limit > 0) ? self._limit : null;
             if (limit) {
                 results = self.models.slice(offset, offset + limit);
             } else {
@@ -188,9 +186,11 @@ define([
         },
 
         load: function(params) {
-            var self = this, query = this.query.clone(),
-                offset, limit, models, dfd;
+            var self = this,
+                query, offset, limit, models, dfd;
 
+            self.query.params = $.extend(true, self.query.params, params);
+            query = self.query.clone();
             params = params || {};
 
             // siq/mesh issue #10 corner case 1 and 2
@@ -210,8 +210,6 @@ define([
                 query.limit(self.total - offset);
             }
             limit = query.params.limit;
-            self._limit = limit;
-            self._offset = offset;
 
             if (params.offset == null && !params.reload && self.total != null) {
                 return $.Deferred().resolve(self.models);
@@ -219,20 +217,16 @@ define([
 
             if (!params.reload) {
                 models = self.models;
-                while (models[query.params.offset]) {
-                    query.params.offset++;
-                    if (query.params.limit) {
-                        query.params.limit--;
-                        if (query.params.limit === 0) {
-                            models = models.slice(offset, offset + limit);
+                while (models[offset]) {
+                    offset++;
+                    if (limit) {
+                        limit--;
+                        if (limit === 0) {
+                            models = models.slice(query.params.offset, query.params.offset + query.params.limit);
                             return $.Deferred().resolve(models);
                         }
                     }
                 }
-            }
-
-            if (query.params.offset === 0) {
-                delete query.params.offset;
             }
 
             self._lastLoad = {
@@ -243,7 +237,9 @@ define([
             };
 
             query.execute().done(function(data) {
-                var queryOffset = query.params.offset || 0, instance, results;
+                var offset = query.params.offset || 0,
+                    limit = query.params.limit || null,
+                    instance, results;
 
                 // siq/mesh issue #10 corner case 3
                 if (dfd !== self._lastLoad.dfd) {
@@ -253,7 +249,7 @@ define([
                 self.total = data.total;
                 for (var i = 0, l = data.resources.length; i < l; i++) {
                     instance = data.resources[i];
-                    self.models[queryOffset + i] = instance;
+                    self.models[offset + i] = instance;
                     self.ids[instance.id] = instance;
                 }
                 if (limit) {
