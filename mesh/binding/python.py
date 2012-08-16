@@ -89,6 +89,16 @@ class Model(object):
         if params:
             self._update_model(params)
 
+    def __repr__(self):
+        attrs = []
+        for attr in ('id', 'name', 'status'):
+            value = getattr(self, attr, None)
+            if value is not None:
+                attrs.append('%s=%r' % (attr, value))
+
+        classname = type(self).__name__
+        return '%s(%s)' % (classname, ', '.join(attrs))
+
     @classmethod
     def create(cls, **params):
         request = cls._resource['requests'].get('create')
