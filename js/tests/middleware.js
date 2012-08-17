@@ -3,7 +3,7 @@ var fs = require('fs'),
     url = require('url'),
     path = require('path'),
     yaml = require('js-yaml'),
-    configFileName = path.basename(process.cwd()) + '.yaml',
+    configFileName = path.basename(process.cwd()) + '.nix.yaml',
     testServer = require('csi'),
     getProxiesFromConfig = function(config) {
         var ret = {}, prop, match;
@@ -45,7 +45,7 @@ var fs = require('fs'),
             proxyReq = http.request({
                 host: u.hostname,
                 port: u.port || 80,
-                path: u.path + req.url,
+                path: path.join(u.path, req.url.replace(/^\//, '')),
                 method: req.method
             }, function(proxyResp) {
                 proxyResp.on('data', function(chunk) {
