@@ -444,6 +444,10 @@ class HttpClient(Client):
             return template
 
 class HttpProxy(WsgiServer):
+    """An HTTP proxy."""
+
+    PROXIED_HEADERS = {'HTTP_COOKIE': 'Cookie'}
+
     def __init__(self, url, context=None, default_format=None, available_formats=None,
             mediators=None, context_key=None, context_header_prefix=None):
 
@@ -461,13 +465,17 @@ class HttpProxy(WsgiServer):
             if additional:
                 context.update(additional)
 
-        headers = {}
+        request_headers = {}
         for name, value in context.iteritems():
-            headers[self.context_header_prefix + name] = value
+            request_headers[self.context_header_prefix + name] = value
         if mimetype:
-            headers['Content-Type'] = mimetype
+            request_headers['Content-Type'] = mimetype
 
-        response = self.connection.request(method, path, data, headers)
+        for incoming_name, outgoing_name in self.PROXIED_HEADERS.iteritems():
+            if incoming_name in headers:
+                request_headers[outgoing_name] = headers[incoming_name]
+
+        response = self.connection.request(method, path, data, request_headers)
         response.apply_standard_headers()
         return response
 
