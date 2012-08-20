@@ -315,7 +315,7 @@ define([
         //     myCollection.where('id', '1')
         //
         //     // get the model where 'foo' === 'foo' and age === 36
-        //     myCollection.where({name: 'foo', age: 36});  
+        //     myCollection.where({name: 'foo', age: 36});
         //
         //     // get the model where name matches /[Ff]oo/
         //     myCollection.where('name', /[Ff]oo/);

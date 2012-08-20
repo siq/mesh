@@ -177,17 +177,17 @@ define([
                 return self;
             });
         },
-        
+
         poll: function(params) {
             var self = this,
                 interval = params.interval != null? params.interval : this._options.pollInterval,
                 deferred = $.Deferred(),
                 startTime = new Date();
-            
+
             if (!params.timeout) {
                 params.timeout = self._options.pollTimeout;
             }
-            self._poller(params, interval, deferred, startTime);            
+            self._poller(params, interval, deferred, startTime);
             return deferred;
         },
 
@@ -196,7 +196,7 @@ define([
             // check of request timeout
             if (new Date() - startTime > params.timeout) {
                 // TODO: need to pass some error code or something in the reject call 
-                // to indicate request timeout  
+                // to indicate request timeout
                 deferred.reject();
                 return;
             }
@@ -219,7 +219,7 @@ define([
                 deferred.reject(error, xhr);
             });
         },
-        
+
         save: function(params, include_all_attrs) {
             // var self = this, creating = (this.id == null), changes = this._changes,
             var self = this, creating = !this._loaded, changes = this._changes,

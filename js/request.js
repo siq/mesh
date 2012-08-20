@@ -37,7 +37,7 @@ define([
                 throw new Error();
             }
         },
-        
+
         initiate: function(id, data, headers) {
             var self = this, url = this.url, signature, params, deferred;
 

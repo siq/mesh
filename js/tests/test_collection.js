@@ -58,7 +58,7 @@ define([
         deepEqual(query.params.sort, ['alpha', '-beta']);
 
         retval = query.reset();
-        strictEqual(retval, query);  
+        strictEqual(retval, query);
         deepEqual(query.params, {});
     });
 
@@ -133,7 +133,7 @@ define([
                 start();
             }
         });
-        
+
         $.when(collection1.load(), collection2.load()).done(function() {
             setTimeout(function() {
                 if (!donezo) {
@@ -244,7 +244,7 @@ define([
         newDfd = collection.load();
 
         ok(newDfd !== cancelledDfd, 'second load call should return a differentd dfd');
-        
+
         newDfd.then(function(results) {
             ok(true, 'successfully loaded after cancelled');
             equal(results.length, 5);
@@ -285,7 +285,7 @@ define([
         newDfd = collection.load({limit: null});
 
         ok(newDfd !== cancelledDfd, 'second load call should return a differentd dfd');
-        
+
         newDfd.then(function(results) {
             ok(true, 'successfully loaded after cancelled');
             equal(results.length, 10);
@@ -358,7 +358,7 @@ define([
         newDfd = collection.load();
 
         ok(newDfd !== cancelledDfd, 'second load call should return a differentd dfd');
-        
+
         newDfd.then(function(results) {
             ok(true, 'successfully loaded after cancelled');
             equal(results.length, 5);
@@ -408,7 +408,7 @@ define([
             offset = params.data.offset,
             newData = $.extend(true, {}, data);
         if(limit) {
-            newData.resources = data.resources.slice(offset, offset + limit)
+            newData.resources = data.resources.slice(offset, offset + limit);
         }
         params.success(newData, 200, {});
     };
