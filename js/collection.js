@@ -189,7 +189,12 @@ define([
             var self = this,
                 query, offset, limit, models, dfd;
 
-            self.query.params = $.extend(true, self.query.params, params);
+            _.each(params, function(val, key) {
+                if (key !== 'reload') {
+                    self.query.params[key] = _.isObject(val)?
+                            $.extend(true, {}, val) : val;
+                }
+            });
             query = self.query.clone();
             params = params || {};
 
@@ -259,6 +264,8 @@ define([
                 }
                 dfd.resolve(results);
                 self.trigger('update', self, results);
+            }).fail(function(error) {
+                dfd.reject(error);
             });
 
             return dfd;

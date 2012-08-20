@@ -401,6 +401,51 @@ define([
         });
     });
 
+    asyncTest('reload', function() {
+        Example.models.clear();
+        var ajaxCount = 0, collection = Example.collection();
+
+        collection.query.request.ajax = function(params) {
+            var num = params.data.limit? params.data.limit : 10;
+
+            ajaxCount++;
+
+            setTimeout(function() {
+                var split, ret = _.reduce(_.range(num), function(memo, i) {
+                    memo.resources.push({name: 'item ' + i, id: i+1234});
+                    return memo;
+                }, {total: num, resources: []});
+                params.success(ret, 200, {});
+            }, 50);
+        };
+
+        collection.load().done(function() {
+            equal(ajaxCount, 1);
+            collection.load().done(function() {
+                equal(ajaxCount, 1);
+                collection.load({reload: true}).done(function() {
+                    equal(ajaxCount, 2);
+                    collection.load().done(function() {
+                        equal(ajaxCount, 2);
+                        start();
+                    }).fail(function() {
+                        ok(false, '4th colleciton load failed');
+                        start();
+                    });
+                }).fail(function() {
+                    ok(false, '3rd colleciton load failed');
+                    start();
+                });
+            }).fail(function() {
+                ok(false, '2nd colleciton load failed');
+                start();
+            });
+        }).fail(function() {
+            ok(false, '1st colleciton load failed');
+            start();
+        });
+    });
+
     module('pageing');
 
     var pageingAjax = function(params) {
