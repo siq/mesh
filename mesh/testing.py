@@ -1,7 +1,9 @@
+import os
 from types import FunctionType
 
 from unittest2 import TestCase
 
+from mesh.transport.http import HttpClient
 from mesh.transport.internal import InternalTransport
 from mesh.util import call_with_supported_params
 
@@ -17,21 +19,39 @@ def versions(version=None, min_version=None, max_version=None):
     return decorator
 
 def _construct_test_method(function, bundle, generator, version, context, mediators):
-    def test(self):
-        specification = bundle.specify(version)
-        server, client = InternalTransport.construct_fixture(bundle, specification,
-            context=context, mediators=mediators)
+    test_client = os.environ.get('MESH_TEST_CLIENT', '')
+    if test_client[:4] == 'http':
+        url = test_client[5:]
+        def test(self):
+            specification = bundle.specify(version)
+            client = HttpClient(url, specification, context=context)
 
-        if generator:
-            client.register()
-            try:
-                binding = generator.generate_dynamically(bundle, version)
-                call_with_supported_params(function, self, client=client, binding=binding,
-                    **binding.__dict__)
-            finally:
-                client.unregister()
-        else:
-            call_with_supported_params(function, self, client=client)
+            if generator:
+                client.register()
+                try:
+                    binding = generator.generate_dynamically(bundle, version)
+                    call_with_supported_params(function, self, client=client, binding=binding,
+                        **binding.__dict__)
+                finally:
+                    client.unregister()
+            else:
+                call_with_supported_params(function, self, client=client)
+    else:
+        def test(self):
+            specification = bundle.specify(version)
+            server, client = InternalTransport.construct_fixture(bundle, specification,
+                context=context, mediators=mediators)
+
+            if generator:
+                client.register()
+                try:
+                    binding = generator.generate_dynamically(bundle, version)
+                    call_with_supported_params(function, self, client=client, binding=binding,
+                        **binding.__dict__)
+                finally:
+                    client.unregister()
+            else:
+                call_with_supported_params(function, self, client=client)
 
     test.__name__ = '%s_v%d_%d' % (function.__name__, version[0], version[1])
     return test
