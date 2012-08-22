@@ -108,13 +108,18 @@ class Model(object):
         instance = cls(**request['schema'].extract(params))
         return instance.save(request, **params)
 
-    def destroy(self, **params):
+    def destroy(self, quiet=False, **params):
         request = self._get_request('delete')
         if self.id is None:
             return self
 
-        response = self._execute_request(request, params or None)
-        return response.content
+        try:
+            response = self._execute_request(request, params or None)
+        except GoneError:
+            if not quiet:
+                raise
+        else:
+            return response.content
 
     @classmethod
     def execute(cls, request, data, subject=None):
