@@ -78,7 +78,7 @@ class Connection(object):
         connection.request(method, self.path + url, body, headers or {})
 
         response = connection.getresponse()
-        headers = dict(response.getheaders())
+        headers = dict((key.title(), value) for key, value in response.getheaders())
         content = response.read() or None
 
         mimetype = response.getheader('Content-Type', None)
@@ -119,13 +119,13 @@ class HttpResponse(ServerResponse):
         return STATUS_LINES[self.status]
 
     def apply_standard_headers(self):
-        self.headers['cache-control'] = 'must-revalidate, no-cache'
-        if not self.content:
-            return
-        if 'content-type' not in self.headers:
-            self.headers['content-type'] = self.mimetype
-        if 'content-length' not in self.headers:
-            self.headers['content-length'] = str(len(self.content))
+        headers = self.headers
+        if 'Cache-Control' not in headers:
+            headers['Cache-Control'] = 'must-revalidate, no-cache'
+        if 'Content-Type' not in headers and self.mimetype:
+            headers['Content-Type'] = self.mimetype
+        if 'Content-Length' not in headers:
+            headers['Content-Length'] = str(len(self.content or ''))
 
 class Path(object):
     """An HTTP request path."""
@@ -220,6 +220,7 @@ class WsgiServer(Server):
 
             response = self.dispatch(method, path_info, environ.get('CONTENT_TYPE'),
                 context, environ, data)
+            response.apply_standard_headers()
 
             start_response(response.status_line, response.headers.items())
             return response.content or ''
@@ -323,7 +324,6 @@ class HttpServer(WsgiServer):
             response.mimetype = format.mimetype
             response.content = format.serialize(response.content)
             
-        response.apply_standard_headers()
         return response
 
     def _construct_endpoint(self, bundle, version, resource, controller, request):
@@ -446,7 +446,7 @@ class HttpClient(Client):
 class HttpProxy(WsgiServer):
     """An HTTP proxy."""
 
-    PROXIED_HEADERS = {'HTTP_COOKIE': 'Cookie'}
+    PROXIED_REQUEST_HEADERS = {'HTTP_COOKIE': 'Cookie'}
 
     def __init__(self, url, context=None, default_format=None, available_formats=None,
             mediators=None, context_key=None, context_header_prefix=None):
@@ -471,12 +471,11 @@ class HttpProxy(WsgiServer):
         if mimetype:
             request_headers['Content-Type'] = mimetype
 
-        for incoming_name, outgoing_name in self.PROXIED_HEADERS.iteritems():
+        for incoming_name, outgoing_name in self.PROXIED_REQUEST_HEADERS.iteritems():
             if incoming_name in headers:
                 request_headers[outgoing_name] = headers[incoming_name]
 
         response = self.connection.request(method, path, data, request_headers)
-        response.apply_standard_headers()
         return response
 
 class HttpTransport(Transport):
