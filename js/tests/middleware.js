@@ -6,7 +6,9 @@ var fs = require('fs'),
     configFileName = path.basename(process.cwd()) + '.nix.yaml',
     testServer = require('csi'),
     getProxiesFromConfig = function(config) {
-        var ret = {}, prop, match;
+        var prop, match;
+        proxies = proxies || {};
+        meshconf = meshconf || {};
         if (!config || !config.configuration) {
             return;
         }
@@ -15,11 +17,12 @@ var fs = require('fs'),
             if (config.hasOwnProperty(prop)) {
                 match = prop.match(/^(mesh-proxy:)(.*)/);
                 if (match) {
-                    ret['/' + match[2].replace('-', '/')] = config[prop];
+                    proxies['/' + match[2].replace('-', '/')] = config[prop];
+                    config[prop].prefix = config[prop].path + '/' + match[2].replace(/-[\d\.]+$/, '');
+                    meshconf[match[2]] = config[prop].path;
                 }
             }
         }
-        return ret;
     },
     readConfig = function(callback) {
         fs.readFile(configFileName, 'utf8', function(err, file) {
@@ -28,7 +31,7 @@ var fs = require('fs'),
             } else {
                 try {
                     config = yaml.load(file);
-                    proxies = getProxiesFromConfig(config);
+                    getProxiesFromConfig(config);
                 } catch (e) {
                     config = null;
                 }
@@ -41,11 +44,12 @@ var fs = require('fs'),
     },
     proxy = function(req, resp, pathPrefix, info) {
         var u = url.parse(info.url),
-            dest = info.url.replace(/\/$/, '') + req.url,
+            destPath = path.join(u.path, req.url.replace(new RegExp('^'+info.path), '')),
+            dest = 'http://' + u.hostname + ':' + (u.port || 80) + destPath,
             proxyReq = http.request({
                 host: u.hostname,
                 port: u.port || 80,
-                path: path.join(u.path, req.url.replace(/^\//, '')),
+                path: destPath,
                 method: req.method
             }, function(proxyResp) {
                 proxyResp.on('data', function(chunk) {
@@ -68,9 +72,18 @@ var fs = require('fs'),
     },
     serveRequest = function(req, resp, callback) {
         var prop;
+        if (/meshconf/.test(req.url)) {
+            resp.writeHead(200, {
+                'cache-control': 'no-cache, must-revalidate',
+                'content-type': 'application/javascript'
+            });
+            resp.write(meshconfTemplate.replace('%s', JSON.stringify(meshconf)));
+            resp.end();
+            return;
+        }
         for (prop in proxies) {
             if (proxies.hasOwnProperty(prop)) {
-                if (req.url.slice(0, prop.length) === prop) {
+                if (req.url.slice(0, proxies[prop].prefix.length) === proxies[prop].prefix) {
                     proxy(req, resp, prop, proxies[prop]);
                     return;
                 }
@@ -78,7 +91,8 @@ var fs = require('fs'),
         }
         callback();
     },
-    config, proxies;
+    meshconfTemplate = "define([], {\nbundles: %s\n});",
+    config, proxies, meshconf;
 
 exports.request = function(req, resp, callback) {
     if (typeof config !== 'undefined') {

@@ -16,7 +16,6 @@
   "csi": {
     "name": "mesh",
     "sourceDirectory": "js",
-    "testTemplate": "js/tests/testTemplate.html",
     "testMiddleware": "js/tests/middleware.js"
   },
   "devDependencies": {},
