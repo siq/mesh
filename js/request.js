@@ -124,5 +124,42 @@ define([
         return oldAjax;
     };
 
+    // this checks if the specified resource bundle is responding. this is a
+    // generic, shallow status check for any given resource bundle. it returns
+    // a deffered that fails on any error response (>= 400) i.e.:
+    //
+    //      Request.pingResourceBundle('gateway').then(function() {
+    //          console.log('the gateway resource is alive');
+    //      }, function() {
+    //          console.log('the gateway resource is dead');
+    //      });
+    //
+    // this makes the assumption that:
+    //
+    //      meshconf[bundleName + '-' + version] + bundleName
+    //
+    // returns a 200 response when it receives a GET request. for example:
+    //
+    //      meshconf['gateway-1.0'] + '/gateway'
+    //
+    // example usage:
+    //
+    //      Request.pingResourceBundle('gateway')
+    //      Request.pingResourceBundle({name: 'gateway'})
+    //      Request.pingResourceBundle({name: 'gateway', version: '1.0'})
+    //
+    Request.pingResourceBundle = function(params) {
+        if (!_.isObject(params)) {
+            params = {
+                name: params,
+                version: '1.0'
+            };
+        }
+        params.bundle = params.name + '-' + params.version;
+        return $.ajax({
+            url: meshconf.bundles[params.bundle] + '/' + params.name
+        });
+    };
+
     return Request;
 });
