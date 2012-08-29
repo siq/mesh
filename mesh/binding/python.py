@@ -83,7 +83,7 @@ class Model(object):
 
     __metaclass__ = ModelMeta
     query_class = Query
-    repr_attrs = ('id', 'name', 'status')
+    repr_attrs = ('id', 'name', 'status', 'platform_id')
 
     def __init__(self, **params):
         self._data = {}
