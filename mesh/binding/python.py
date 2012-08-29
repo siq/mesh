@@ -83,6 +83,7 @@ class Model(object):
 
     __metaclass__ = ModelMeta
     query_class = Query
+    repr_attrs = ('id', 'name', 'status')
 
     def __init__(self, **params):
         self._data = {}
@@ -91,7 +92,7 @@ class Model(object):
 
     def __repr__(self):
         attrs = []
-        for attr in ('id', 'name', 'status'):
+        for attr in self.repr_attrs:
             value = getattr(self, attr, None)
             if value is not None:
                 attrs.append('%s=%r' % (attr, value))
