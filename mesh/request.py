@@ -284,6 +284,8 @@ class Request(object):
                 error = exception.serialize()
                 log('info', 'request to %s failed controller invocation', str(self))
                 response(INVALID, error)
+            except RequestError, exception:
+                response(exception.status)
 
         definition = self.responses.get(response.status)
         if not definition:
