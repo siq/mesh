@@ -198,12 +198,18 @@ class BindingGenerator(object):
     MODULE_TMPL = get_package_data('mesh.binding', 'templates/module.py.tmpl')
 
     def __init__(self, module_path=None, generate_package=False,
-        binding_module='mesh.standard.python', specification_var='specification'):
+        binding_module='mesh.standard.python', class_modules=None,
+        specification_var='specification'):
 
         if module_path:
             module_path = module_path.strip('.') + '.'
         else:
             module_path = ''
+
+        self.class_modules = []
+        if class_modules:
+            for module in class_modules:
+                self.class_modules.append((module, import_object(module)))
 
         self.binding_module = binding_module
         self.generate_package = generate_package
@@ -252,19 +258,39 @@ class BindingGenerator(object):
         if isinstance(bundle, basestring):
             bundle = import_object(bundle)
 
+        source = ['from %s import *' % self.binding_module]
         description = bundle.describe(version)
-        source = ['from %s import *' % self.binding_module,
-            self._generate_specification(description)]
 
+        models = []
         for name, model in description['resources'].iteritems():
-            source.append(self._generate_model(name, model))
+            class_module = self._find_class_module(model)
+            if class_module:
+                source.append('from %s import %s' % (class_module, model['classname']))
+                base_class = model['classname']
+            else:
+                base_class = 'Model'
+            models.append(self._generate_model(name, model, base_class))
+
+        source.append(self._generate_specification(description))
+        source.extend(models)
 
         module = ModuleType(bundle.name)
         exec '\n'.join(source) in module.__dict__
         return module
 
-    def _generate_model(self, name, model):
+    def _find_class_module(self, model):
+        classname = model['classname']
+        for name, module in self.class_modules:
+            try:
+                getattr(module, classname)
+            except AttributeError:
+                pass
+            else:
+                return name
+
+    def _generate_model(self, name, model, base_class='Model'):
         return self.MODEL_TMPL % {
+            'base_class': base_class,
             'class_name': model['classname'],
             'resource_name': name,
             'specification_var': self.specification_var,
