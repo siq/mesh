@@ -1676,9 +1676,10 @@ class HTTPServer(object):
     You must have the corresponding SSL driver library installed."""
 
     def __init__(self, bind_addr, gateway, minthreads=10, maxthreads=-1,
-                 server_name=None):
+                 server_name=None, post_bind_callback=None):
         self.bind_addr = bind_addr
         self.gateway = gateway
+        self.post_bind_callback = post_bind_callback
 
         self.requests = ThreadPool(self, min=minthreads or 1, max=maxthreads)
 
@@ -1834,6 +1835,9 @@ class HTTPServer(object):
         # Timeout so KeyboardInterrupt can be caught on Win32
         self.socket.settimeout(1)
         self.socket.listen(self.request_queue_size)
+
+        if self.post_bind_callback:
+            self.post_bind_callback()
 
         # Create worker threads
         self.requests.start()
@@ -2084,10 +2088,12 @@ class CherryPyWSGIServer(HTTPServer):
     """The version of WSGI to produce."""
 
     def __init__(self, bind_addr, wsgi_app, numthreads=10, server_name=None,
-                 max=-1, request_queue_size=5, timeout=10, shutdown_timeout=5):
+                 max=-1, request_queue_size=5, timeout=10, shutdown_timeout=5,
+                 post_bind_callback=None):
         self.requests = ThreadPool(self, min=numthreads or 1, max=max)
         self.wsgi_app = wsgi_app
         self.gateway = wsgi_gateways[self.wsgi_version]
+        self.post_bind_callback = post_bind_callback
 
         self.bind_addr = bind_addr
         if not server_name:
@@ -2344,7 +2350,9 @@ except ImportError:
     pass
 
 class WsgiServer(CherryPyWSGIServer):
-    def __init__(self, address, bundles, numthreads=10, timeout=10):
+    def __init__(self, address, bundles, numthreads=10, timeout=10,
+        post_bind_callback=None):
+
         if isinstance(address, basestring):
             hostname, port = address.split(':')
         else:
@@ -2363,7 +2371,7 @@ class WsgiServer(CherryPyWSGIServer):
             pass
 
         super(WsgiServer, self).__init__(address, application, numthreads=numthreads,
-            timeout=timeout)
+            timeout=timeout, post_bind_callback=post_bind_callback)
 
     def dump_threads(self, *args):
         try:
@@ -2396,20 +2404,23 @@ class DaemonizedWsgiServer(WsgiServer):
         user, uid = self._verify_uid(uid or os.getuid())
         group, gid = self._verify_gid(gid or os.getgid())
 
-        self._detach_process()
+        def callback():
+            self._detach_process()
 
-        openfile = open(pidfile, 'w')
-        try:
-            openfile.write(str(os.getpid()))
-        finally:
-            openfile.close()
+            openfile = open(pidfile, 'w')
+            try:
+                openfile.write(str(os.getpid()))
+            finally:
+                openfile.close()
 
-        self._switch_user(uid, gid)
+            self._switch_user(uid, gid)
 
-        def handler(*args):
-            self.stop()
+            def handler(*args):
+                self.stop()
 
-        signals.signal(signals.SIGTERM, handler)
+            signals.signal(signals.SIGTERM, handler)
+
+        self.post_bind_callback = callback
 
     def serve(self, pidfile, uid=None, gid=None):
         self.daemonize(pidfile, uid, gid)
