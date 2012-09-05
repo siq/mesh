@@ -2404,9 +2404,9 @@ class DaemonizedWsgiServer(WsgiServer):
         user, uid = self._verify_uid(uid or os.getuid())
         group, gid = self._verify_gid(gid or os.getgid())
 
-        def callback():
-            self._detach_process()
+        self._detach_process()
 
+        def callback():
             openfile = open(pidfile, 'w')
             try:
                 openfile.write(str(os.getpid()))
