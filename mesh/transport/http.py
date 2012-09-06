@@ -1,5 +1,5 @@
-import BaseHTTPServer
 import re
+import socket
 from httplib import HTTPConnection
 from urlparse import urlparse
 
@@ -26,6 +26,7 @@ STATUS_CODES = {
     NOT_FOUND: 404,
     METHOD_NOT_ALLOWED: 405,
     INVALID: 406,
+    TIMEOUT: 408,
     CONFLICT: 409,
     GONE: 410,
     SERVER_ERROR: 500,
@@ -46,6 +47,7 @@ STATUS_LINES = {
     NOT_FOUND: '404 Not Found',
     METHOD_NOT_ALLOWED: '405 Method Not Allowed',
     INVALID: '406 Invalid',
+    TIMEOUT: '409 Request Timeout',
     CONFLICT: '409 Conflict',
     GONE: '410 Gone',
     SERVER_ERROR: '500 Internal Server Error',
@@ -62,9 +64,10 @@ PATH_EXPR = r"""(?x)^%s
     /?$"""
 
 class Connection(object):
-    def __init__(self, url):
+    def __init__(self, url, timeout=None):
         self.scheme, self.host, self.path = urlparse(url)[:3]
         self.path = self.path.rstrip('/')
+        self.timeout = timeout
 
     def request(self, method, url, body=None, headers=None):
         if url and url[0] != '/':
@@ -74,7 +77,7 @@ class Connection(object):
             url = '%s?%s' % (url, body)
             body = None
 
-        connection = HTTPConnection(self.host)
+        connection = HTTPConnection(self.host, timeout=self.timeout)
         connection.request(method, self.path + url, body, headers or {})
 
         response = connection.getresponse()
@@ -349,13 +352,13 @@ class HttpClient(Client):
     DEFAULT_HEADER_PREFIX = 'X-MESH-'
 
     def __init__(self, url, specification, context=None, format=Json, formats=None,
-            context_header_prefix=None):
+            context_header_prefix=None, timeout=None):
 
         if '//' not in url:
             url = 'http://' + url
 
         super(HttpClient, self).__init__(specification, context, format, formats)
-        self.connection = Connection(url)
+        self.connection = Connection(url, timeout)
         self.context = context
         self.context_header_prefix = context_header_prefix or self.DEFAULT_HEADER_PREFIX
         self.paths = {}
@@ -374,7 +377,11 @@ class HttpClient(Client):
         request, method, path, mimetype, data, headers = self._prepare_request(resource, request,
             subject, data, format, context)
 
-        response = self.connection.request(method, path, data, headers)
+        try:
+            response = self.connection.request(method, path, data, headers)
+        except socket.timeout:
+            raise TimeoutError()
+
         if response.status in request['responses']:
             schema = request['responses'][response.status]['schema']
         elif not (response.status in ERROR_STATUS_CODES and not response.content):
@@ -449,11 +456,11 @@ class HttpProxy(WsgiServer):
     PROXIED_REQUEST_HEADERS = {'HTTP_COOKIE': 'Cookie'}
 
     def __init__(self, url, context=None, default_format=None, available_formats=None,
-            mediators=None, context_key=None, context_header_prefix=None):
+            mediators=None, context_key=None, context_header_prefix=None, timeout=None):
 
         super(HttpProxy, self).__init__(default_format, available_formats, mediators, context_key)
         self.context_header_prefix = context_header_prefix or HttpClient.DEFAULT_HEADER_PREFIX
-        self.connection = Connection(url)
+        self.connection = Connection(url, timeout)
         self.context = context or {}
         self.url = url
 
@@ -475,8 +482,10 @@ class HttpProxy(WsgiServer):
             if incoming_name in headers:
                 request_headers[outgoing_name] = headers[incoming_name]
 
-        response = self.connection.request(method, path, data, request_headers)
-        return response
+        try:
+            return self.connection.request(method, path, data, request_headers)
+        except socket.error:
+            raise TimeoutError()
 
 class HttpTransport(Transport):
     name = 'http'
