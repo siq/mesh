@@ -4,5 +4,17 @@ define([
     'mesh/model',
     'mesh/collection'
 ], function(Request, fields, model, collection) {
-    return model.Model.extend(%s);
+    var preloadedRaw, resource = model.Model.extend(%s);
+
+    if (model.preloaded) {
+        preloadedRaw = model.preloaded[resource.constructor.prototype.__bundle__];
+        if (preloadedRaw) {
+            resource.preloaded = resource.collection();
+            for (var i = 0; i < preloadedRaw.length; i++) {
+                resource.preloaded.add(resource.models.instantiate(preloadedRaw[i]));
+            }
+        }
+    }
+
+    return resource;
 });

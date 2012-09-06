@@ -7,8 +7,11 @@ define([
     './fields',
     './collection'
 ], function(_, $, Class, Eventable, Settable, fields, collection) {
-    var isArray = _.isArray, isBoolean = _.isBoolean, isEmpty = _.isEmpty,
+    var ret,
+        $models = $('head script[type="application/json"][data-models=true]'),
+        isArray = _.isArray, isBoolean = _.isBoolean, isEmpty = _.isEmpty,
         isEqual = _.isEqual, isString = _.isString;
+
 
     var Manager = Class.extend({
         init: function(model) {
@@ -277,8 +280,11 @@ define([
         }
     }, {mixins: [Eventable, Settable]});
 
-    return {
-        Manager: Manager,
-        Model: Model
-    };
+    ret = {Manager: Manager, Model: Model};
+
+    if ($models.length) {
+        ret.preloaded = JSON.parse($models.html());
+    }
+
+    return ret;
 });

@@ -183,6 +183,7 @@ class Generator(object):
 
         specification = {
             '__name__': resource['name'],
+            '__bundle__': bundle,
             '__schema__': schema,
             '__requests__': requests,
         }
