@@ -1,5 +1,5 @@
-import BaseHTTPServer
 import re
+import socket
 from httplib import HTTPConnection
 from urlparse import urlparse
 
@@ -26,6 +26,7 @@ STATUS_CODES = {
     NOT_FOUND: 404,
     METHOD_NOT_ALLOWED: 405,
     INVALID: 406,
+    TIMEOUT: 408,
     CONFLICT: 409,
     GONE: 410,
     SERVER_ERROR: 500,
@@ -46,6 +47,7 @@ STATUS_LINES = {
     NOT_FOUND: '404 Not Found',
     METHOD_NOT_ALLOWED: '405 Method Not Allowed',
     INVALID: '406 Invalid',
+    TIMEOUT: '409 Request Timeout',
     CONFLICT: '409 Conflict',
     GONE: '410 Gone',
     SERVER_ERROR: '500 Internal Server Error',
@@ -375,7 +377,11 @@ class HttpClient(Client):
         request, method, path, mimetype, data, headers = self._prepare_request(resource, request,
             subject, data, format, context)
 
-        response = self.connection.request(method, path, data, headers)
+        try:
+            response = self.connection.request(method, path, data, headers)
+        except socket.timeout:
+            raise TimeoutError()
+
         if response.status in request['responses']:
             schema = request['responses'][response.status]['schema']
         elif not (response.status in ERROR_STATUS_CODES and not response.content):
@@ -476,8 +482,10 @@ class HttpProxy(WsgiServer):
             if incoming_name in headers:
                 request_headers[outgoing_name] = headers[incoming_name]
 
-        response = self.connection.request(method, path, data, request_headers)
-        return response
+        try:
+            return self.connection.request(method, path, data, request_headers)
+        except socket.error:
+            raise TimeoutError()
 
 class HttpTransport(Transport):
     name = 'http'
