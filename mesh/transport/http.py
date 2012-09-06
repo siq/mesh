@@ -62,9 +62,10 @@ PATH_EXPR = r"""(?x)^%s
     /?$"""
 
 class Connection(object):
-    def __init__(self, url):
+    def __init__(self, url, timeout=None):
         self.scheme, self.host, self.path = urlparse(url)[:3]
         self.path = self.path.rstrip('/')
+        self.timeout = timeout
 
     def request(self, method, url, body=None, headers=None):
         if url and url[0] != '/':
@@ -74,7 +75,7 @@ class Connection(object):
             url = '%s?%s' % (url, body)
             body = None
 
-        connection = HTTPConnection(self.host)
+        connection = HTTPConnection(self.host, timeout=self.timeout)
         connection.request(method, self.path + url, body, headers or {})
 
         response = connection.getresponse()
@@ -349,13 +350,13 @@ class HttpClient(Client):
     DEFAULT_HEADER_PREFIX = 'X-MESH-'
 
     def __init__(self, url, specification, context=None, format=Json, formats=None,
-            context_header_prefix=None):
+            context_header_prefix=None, timeout=None):
 
         if '//' not in url:
             url = 'http://' + url
 
         super(HttpClient, self).__init__(specification, context, format, formats)
-        self.connection = Connection(url)
+        self.connection = Connection(url, timeout)
         self.context = context
         self.context_header_prefix = context_header_prefix or self.DEFAULT_HEADER_PREFIX
         self.paths = {}
@@ -449,11 +450,11 @@ class HttpProxy(WsgiServer):
     PROXIED_REQUEST_HEADERS = {'HTTP_COOKIE': 'Cookie'}
 
     def __init__(self, url, context=None, default_format=None, available_formats=None,
-            mediators=None, context_key=None, context_header_prefix=None):
+            mediators=None, context_key=None, context_header_prefix=None, timeout=None):
 
         super(HttpProxy, self).__init__(default_format, available_formats, mediators, context_key)
         self.context_header_prefix = context_header_prefix or HttpClient.DEFAULT_HEADER_PREFIX
-        self.connection = Connection(url)
+        self.connection = Connection(url, timeout)
         self.context = context or {}
         self.url = url
 
