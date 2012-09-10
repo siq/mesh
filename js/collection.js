@@ -358,7 +358,7 @@ define([
             'reduceRight', 'foldr', 'find', 'detect', 'filter', 'select',
             'pluck', 'first', 'last'],
             function(method) {
-                Collection.constructor.prototype[method] = function() {
+                Collection.prototype[method] = function() {
                     var args = Array.prototype.slice.call(arguments);
                     args.unshift(this.models);
                     return _[method].apply(this, args);

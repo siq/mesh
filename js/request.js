@@ -113,13 +113,13 @@ define([
 
     // used for mocking ajax requests
     Request.ajax = function(newAjax) {
-        var oldAjax = Request.constructor.prototype.ajax;
+        var oldAjax = Request.prototype.ajax;
 
         if (newAjax == null) {
             return oldAjax;
         }
 
-        Request.constructor.prototype.ajax = newAjax;
+        Request.prototype.ajax = newAjax;
 
         return oldAjax;
     };
