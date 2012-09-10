@@ -19,7 +19,9 @@ define([
             this.name = params.name;
             this.path = params.path;
             this.responses = params.responses;
-            this.schema = params.schema;
+            if (params.schema) {
+                this.schema = params.schema;
+            }
 
             this.url = this.path;
             if (meshconf && meshconf.bundles) {
