@@ -7,7 +7,7 @@ define([
     var preloadedRaw, resource = model.Model.extend(%s);
 
     if (model.preloaded) {
-        preloadedRaw = model.preloaded[resource.constructor.prototype.__bundle__];
+        preloadedRaw = model.preloaded[resource.prototype.__bundle__];
         if (preloadedRaw) {
             resource.preloaded = resource.collection();
             for (var i = 0; i < preloadedRaw.length; i++) {
