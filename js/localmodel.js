@@ -26,8 +26,8 @@ define([
 
         LocalStorageGet = Request.extend({
             initiate: function(id) {
-                return $.Deferred().resolve(
-                    JSON.parse(localStorage.getItem(token(this, id))));
+                var item = JSON.parse(localStorage.getItem(token(this, id)));
+                return $.Deferred()[item? 'resolve' : 'reject'](item || {});
             },
             schema: FlexibleSchema()
         }),
