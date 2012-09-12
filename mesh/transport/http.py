@@ -128,7 +128,13 @@ class HttpResponse(ServerResponse):
         if 'Content-Type' not in headers and self.mimetype:
             headers['Content-Type'] = self.mimetype
         if 'Content-Length' not in headers:
-            headers['Content-Length'] = str(len(self.content or ''))
+            content_length = 0
+            if isinstance(self.content, list):
+                for chunk in self.content:
+                    content_length += len(chunk)
+                headers['Content-Length'] = str(content_length)
+            else:
+                headers['Content-Length'] = str(len(self.content or ''))
 
 class Path(object):
     """An HTTP request path."""
@@ -326,6 +332,8 @@ class HttpServer(WsgiServer):
         if response.content:
             response.mimetype = format.mimetype
             response.content = format.serialize(response.content)
+            if not isinstance(response.content, list):
+                response.content = [response.content]
             
         return response
 
