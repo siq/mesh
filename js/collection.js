@@ -271,10 +271,11 @@ define([
             return dfd;
         },
 
-        notify: function(event, manager, model) {
-            var id = model.id || model.cid;
+        notify: function(eventName, manager, model) {
+            var id = model.id || model.cid,
+                rest = Array.prototype.slice.call(arguments, 3);
             if (this.ids[id]) {
-                this.trigger('change', this, model);
+                this.trigger.apply(this, [eventName, this, model].concat(rest));
             }
         },
 

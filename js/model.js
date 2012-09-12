@@ -85,9 +85,10 @@ define([
             }
         },
 
-        notify: function(model, event) {
+        notify: function(model, eventName) {
+            var rest = Array.prototype.slice.call(arguments, 2), args;
             if (model.id && this.models[model.id]) {
-                this.trigger('change', this, model);
+                this.trigger.apply(this, [eventName, this, model].concat(rest));
             }
         },
 
@@ -266,7 +267,7 @@ define([
                 _.extend(this._changes, changed);
             }
             this.construct({silent: true});
-            this._manager.notify(this, 'change');
+            this._manager.notify(this, 'change', changed);
             this.trigger('change', this, changed);
         },
 

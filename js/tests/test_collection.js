@@ -100,10 +100,12 @@ define([
             params.success(data, 200, {});
         };
 
-        collection.on('change', function(eventName, collection, model) {
+        collection.on('change', function(eventName, coll, model, changed) {
             if (!donezo) {
                 ok(donezo = true); // assert that this worked
                 equal(model, collection.models[0]);
+                ok(coll === collection);
+                deepEqual(changed, {name: true});
                 start();
             }
         }).load().done(function() {
