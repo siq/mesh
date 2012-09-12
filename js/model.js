@@ -36,6 +36,7 @@ define([
 
         clear: function() {
             this.models = {};
+            this.off();
             return this;
         },
 
