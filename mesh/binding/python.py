@@ -1,3 +1,6 @@
+import sys
+from imp import new_module
+from os.path import exists, join as joinpath
 from types import ModuleType
 
 from mesh.bundle import Specification
@@ -254,7 +257,7 @@ class BindingGenerator(object):
         filename = '%s.py' % bundle.name
         return {bundle.name: (filename, '\n\n'.join(source))}
 
-    def generate_dynamically(self, bundle, version):
+    def generate_dynamically(self, bundle, version, module=None):
         if isinstance(bundle, basestring):
             bundle = import_object(bundle)
 
@@ -274,7 +277,9 @@ class BindingGenerator(object):
         source.append(self._generate_specification(description))
         source.extend(models)
 
-        module = ModuleType(bundle.name)
+        if module is None:
+            module = ModuleType(bundle.name)
+
         exec '\n'.join(source) in module.__dict__
         return module
 
@@ -309,3 +314,48 @@ class BindingGenerator(object):
 
     def _generate_specification(self, description):
         return '%s = %s' % (self.specification_var, StructureFormatter().format(description))
+
+class BindingLoader(object):
+    """Import loader for mesh bindings."""
+
+    def __init__(self, filename):
+        self.filename = filename
+
+    def __repr__(self):
+        return 'BindingLoader(%r)' % self.filename
+
+    @classmethod
+    def find_module(cls, fullname, path=None):
+        if not path:
+            return
+
+        module = fullname.rpartition('.')[-1]
+        filename = joinpath(path[0], '%s.mesh' % module)
+
+        if exists(filename):
+            return cls(filename)
+
+    def load_module(self, fullname):
+        namespace = {}
+        execfile(self.filename, namespace)
+
+        try:
+            bundle, version = namespace['binding']
+        except Exception:
+            raise ImportError(fullname)
+
+        if fullname in sys.modules:
+            module = sys.modules[fullname]
+        else:
+            module = sys.modules[fullname] = new_module(fullname)
+
+        module.__file__ = self.filename
+        module.__loader__ = self
+        module.__package__ = fullname.rpartition('.')[0]
+
+        generator = BindingGenerator(module.__package__)
+        return generator.generate_dynamically(bundle, version, module)
+
+def install_binding_loader():
+    if BindingLoader not in sys.meta_path:
+        sys.meta_path.insert(0, BindingLoader)
