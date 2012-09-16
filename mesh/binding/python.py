@@ -1,5 +1,6 @@
 import sys
 from imp import new_module
+from inspect import getsourcelines
 from os.path import exists, join as joinpath
 from types import ModuleType
 
@@ -197,17 +198,11 @@ class Model(object):
             self._data.update(data)
 
 class BindingGenerator(object):
+    CONSTRUCTOR_PARAMS = ('class_modules', 'binding_module')
     MODEL_TMPL = get_package_data('mesh.binding', 'templates/model.py.tmpl')
-    MODULE_TMPL = get_package_data('mesh.binding', 'templates/module.py.tmpl')
 
-    def __init__(self, module_path=None, generate_package=False,
-        binding_module='mesh.standard.python', class_modules=None,
-        specification_var='specification'):
-
-        if module_path:
-            module_path = module_path.strip('.') + '.'
-        else:
-            module_path = ''
+    def __init__(self, class_modules=None, binding_module='mesh.standard.python',
+            specification_var='specification'):
 
         self.class_modules = []
         if class_modules:
@@ -215,105 +210,73 @@ class BindingGenerator(object):
                 self.class_modules.append((module, import_object(module)))
 
         self.binding_module = binding_module
-        self.generate_package = generate_package
-        self.module_path = module_path
         self.specification_var = specification_var
 
     def generate(self, bundle, version):
-        if not self.generate_package:
-            return self._generate_single_module(bundle, version)
+        if isinstance(bundle, basestring):
+            bundle = import_object(bundle)
 
-        module_path = '%s%s.' % (self.module_path, bundle.name)
-        description = bundle.describe(version)
-
-        models = []
-        for name, model in sorted(description['resources'].iteritems()):
-            models.append((name, self._generate_model(name, model)))
-
-        files = {}
-        if self.separate_models:
-            for name, model in models:
-                module = self._generate_module(module_path, model)
-                files[name] = ('%s.py' % name, module)
-        else:
-            module = self._generate_module(module_path, '\n\n'.join(item[1] for item in models))
-            files['models'] = ('models.py', module)
-
-        specfile = '%s.py' % self.specification_var
-        files['__spec__'] = (specfile, self._generate_specification(description))
-
-        files['__init__'] = ('__init__.py', '')
-        return files
-
-    def _generate_single_module(self, bundle, version):
-        description = bundle.describe(version)
-
-        source = ['from %s import *' % self.binding_module]
-        source.append(self._generate_specification(description))
-
-        for name, model in sorted(description['resources'].iteritems()):
-            source.append(self._generate_model(name, model))
-
-        filename = '%s.py' % bundle.name
-        return {bundle.name: (filename, '\n\n'.join(source))}
+        source = self._generate_binding(bundle, version)
+        return '%s.py' % bundle.name, source
 
     def generate_dynamically(self, bundle, version, module=None):
         if isinstance(bundle, basestring):
             bundle = import_object(bundle)
 
-        source = ['from %s import *' % self.binding_module]
-        description = bundle.describe(version)
-
-        models = []
-        for name, model in description['resources'].iteritems():
-            class_module = self._find_class_module(model)
-            if class_module:
-                source.append('from %s import %s' % (class_module, model['classname']))
-                base_class = model['classname']
-            else:
-                base_class = 'Model'
-            models.append(self._generate_model(name, model, base_class))
-
-        source.append(self._generate_specification(description))
-        source.extend(models)
-
-        if module is None:
+        source = self._generate_binding(bundle, version)
+        if not module:
             module = ModuleType(bundle.name)
 
-        exec '\n'.join(source) in module.__dict__
+        exec source in module.__dict__
         return module
 
-    def _find_class_module(self, model):
-        classname = model['classname']
+    def _find_subclass_candidates(self, classname):
         for name, module in self.class_modules:
             try:
-                getattr(module, classname)
+                subclass = getattr(module, classname)
             except AttributeError:
                 pass
             else:
-                return name
+                yield subclass
+
+    def _generate_binding(self, bundle, version):
+        description = bundle.describe(version)
+
+        source = ['from %s import *' % self.binding_module]
+        source.append(self._generate_specification(description))
+
+        for name, model in description['resources'].iteritems():
+            source.extend(self._generate_model(name, model))
+
+        return '\n\n'.join(source)
 
     def _generate_model(self, name, model, base_class='Model'):
-        return self.MODEL_TMPL % {
+        classname = model['classname']
+        source = [self.MODEL_TMPL % {
             'base_class': base_class,
-            'class_name': model['classname'],
+            'class_name': classname,
             'resource_name': name,
             'specification_var': self.specification_var,
-        }
+        }]
 
-    def _generate_module(self, module_path, content):
-        imports = [
-            'from %s import *' % self.binding_module,
-            'from %s%s import %s' % (module_path, self.specification_var, self.specification_var)
-        ]
+        for subclass in self._find_subclass_candidates(classname):
+            source.append(self._generate_subclass(classname, subclass))
 
-        return self.MODULE_TMPL % {
-            'imports': '\n'.join(imports),
-            'content': content,
-        }
+        return source
 
     def _generate_specification(self, description):
         return '%s = %s' % (self.specification_var, StructureFormatter().format(description))
+
+    def _generate_subclass(self, classname, subclass):
+        source, lineno = getsourcelines(subclass)
+        source[0] = source[0].replace('Model', classname)
+        return ''.join(source)
+
+def generate_dynamic_binding(bundle, version, class_modules=None,
+        binding_module='mesh.standard.python'):
+
+    generator = BindingGenerator(class_modules, binding_module)
+    return generator.generate_dynamically(bundle, version)
 
 class BindingLoader(object):
     """Import loader for mesh bindings."""
@@ -326,12 +289,16 @@ class BindingLoader(object):
 
     @classmethod
     def find_module(cls, fullname, path=None):
-        if not path:
+        if path:
+            path = path[0]
+        else:
             return
 
         module = fullname.rpartition('.')[-1]
-        filename = joinpath(path[0], '%s.mesh' % module)
+        if exists(joinpath(path, '%s.py' % module)):
+            return
 
+        filename = joinpath(path, '%s.mesh' % module)
         if exists(filename):
             return cls(filename)
 
@@ -353,8 +320,16 @@ class BindingLoader(object):
         module.__loader__ = self
         module.__package__ = fullname.rpartition('.')[0]
 
-        generator = BindingGenerator(module.__package__)
+        generator = self._construct_generator(namespace)
         return generator.generate_dynamically(bundle, version, module)
+
+    def _construct_generator(self, namespace):
+        params = {}
+        for param in BindingGenerator.CONSTRUCTOR_PARAMS:
+            if param in namespace:
+                params[param] = namespace[param]
+
+        return BindingGenerator(**params)
 
 def install_binding_loader():
     if BindingLoader not in sys.meta_path:
