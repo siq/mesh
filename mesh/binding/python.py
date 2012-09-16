@@ -281,10 +281,10 @@ class BindingGenerator(object):
     def _generate_specification(self, description):
         return '%s = %s' % (self.specification_var, StructureFormatter().format(description))
 
-def generate_dynamic_binding(bundle, version, class_modules=None,
+def generate_dynamic_binding(bundle, version, mixin_modules=None,
         binding_module='mesh.standard.python'):
 
-    generator = BindingGenerator(class_modules, binding_module)
+    generator = BindingGenerator(mixin_modules, binding_module)
     return generator.generate_dynamically(bundle, version)
 
 class BindingLoader(object):
