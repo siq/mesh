@@ -78,7 +78,7 @@ class GeneratePythonBindings(Task):
     parameters = {
         'binding_module': Text(description='binding module', default='mesh.standard.python'),
         'bundle': ObjectReference(description='module path of bundle', required=True),
-        'class_modules': Sequence(Text()),
+        'mixin_modules': Sequence(Text()),
         'path': Path(description='path to target directory', required=True),
         'version': Text(description='version to build', default='1.0'),
     }
@@ -86,7 +86,7 @@ class GeneratePythonBindings(Task):
     def run(self, runtime):
         from mesh.binding.python import BindingGenerator
         generator = BindingGenerator(binding_module=self['binding_module'],
-            class_modules=self['class_modules'])
+            mixin_modules=self['mixin_modules'])
         filename, source = generator.generate(self['bundle'], self['version'])
 
         root = self['path']

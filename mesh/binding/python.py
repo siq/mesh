@@ -1,6 +1,6 @@
 import sys
 from imp import new_module
-from inspect import getsourcelines
+from inspect import getsource
 from os.path import exists, join as joinpath
 from types import ModuleType
 
@@ -198,19 +198,19 @@ class Model(object):
             self._data.update(data)
 
 class BindingGenerator(object):
-    CONSTRUCTOR_PARAMS = ('class_modules', 'binding_module')
+    CONSTRUCTOR_PARAMS = ('mixin_modules', 'binding_module')
     MODEL_TMPL = get_package_data('mesh.binding', 'templates/model.py.tmpl')
 
-    def __init__(self, class_modules=None, binding_module='mesh.standard.python',
+    def __init__(self, mixin_modules=None, binding_module='mesh.standard.python',
             specification_var='specification'):
 
-        self.class_modules = []
-        if class_modules:
-            for module in class_modules:
-                self.class_modules.append((module, import_object(module)))
-
         self.binding_module = binding_module
+        self.mixin_modules = []
+        self.mixin_targets = {}
         self.specification_var = specification_var
+
+        if mixin_modules:
+            self._enumerate_mixins(mixin_modules)
 
     def generate(self, bundle, version):
         if isinstance(bundle, basestring):
@@ -230,14 +230,25 @@ class BindingGenerator(object):
         exec source in module.__dict__
         return module
 
-    def _find_subclass_candidates(self, classname):
-        for name, module in self.class_modules:
-            try:
-                subclass = getattr(module, classname)
-            except AttributeError:
-                pass
-            else:
-                yield subclass
+    def _enumerate_mixins(self, modules):
+        mixin_targets = self.mixin_targets
+        for name in modules:
+            module = import_object(name)
+            for attr in dir(module):
+                value = getattr(module, attr)
+                try:
+                    targets = value.mixin
+                except Exception:
+                    continue
+                if isinstance(targets, basestring):
+                    targets = targets.split(' ')
+                if isinstance(targets, (list, tuple)):
+                    for target in targets:
+                        if target in mixin_targets:
+                            mixin_targets[target].append(attr)
+                        else:
+                            mixin_targets[target] = [attr]
+            self.mixin_modules.append(module)
 
     def _generate_binding(self, bundle, version):
         description = bundle.describe(version)
@@ -245,32 +256,30 @@ class BindingGenerator(object):
         source = ['from %s import *' % self.binding_module]
         source.append(self._generate_specification(description))
 
+        for module in self.mixin_modules:
+            source.append(getsource(module))
+
         for name, model in description['resources'].iteritems():
-            source.extend(self._generate_model(name, model))
+            source.append(self._generate_model(name, model))
 
         return '\n\n'.join(source)
 
-    def _generate_model(self, name, model, base_class='Model'):
+    def _generate_model(self, name, model):
         classname = model['classname']
-        source = [self.MODEL_TMPL % {
-            'base_class': base_class,
+        bases = ['Model']
+
+        if classname in self.mixin_targets:
+            bases.extend(self.mixin_targets[classname])
+
+        return self.MODEL_TMPL % {
+            'base_classes': ', '.join(bases),
             'class_name': classname,
             'resource_name': name,
             'specification_var': self.specification_var,
-        }]
-
-        for subclass in self._find_subclass_candidates(classname):
-            source.append(self._generate_subclass(classname, subclass))
-
-        return source
+        }
 
     def _generate_specification(self, description):
         return '%s = %s' % (self.specification_var, StructureFormatter().format(description))
-
-    def _generate_subclass(self, classname, subclass):
-        source, lineno = getsourcelines(subclass)
-        source[0] = source[0].replace('Model', classname)
-        return ''.join(source)
 
 def generate_dynamic_binding(bundle, version, class_modules=None,
         binding_module='mesh.standard.python'):
