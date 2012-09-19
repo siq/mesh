@@ -60,6 +60,7 @@ var fs = require('fs'),
                 resp.writeHead(proxyResp.statusCode, proxyResp.headers);
                 log(req, resp, proxyResp.statusCode, dest);
             }).on('error', function(e) {
+                log(req, resp, 600, dest);
                 testServer.serveError(req, resp, e);
             });
 
