@@ -124,7 +124,7 @@ define([
             this.models = [];
             this.query = query;
             this.total = null;
-            this.manager.on('change', this.notify, this);
+            this.manager.on('change destroy', this.notify, this);
         },
 
         add: function(models, idx) {
@@ -275,7 +275,11 @@ define([
             var id = model.id || model.cid,
                 rest = Array.prototype.slice.call(arguments, 3);
             if (this.ids[id]) {
-                this.trigger.apply(this, [eventName, this, model].concat(rest));
+                if (eventName === 'destroy') {
+                    this.remove(model);
+                } else {
+                    this.trigger.apply(this, [eventName, this, model].concat(rest));
+                }
             }
         },
 

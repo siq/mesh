@@ -90,6 +90,7 @@ define([
             if (model.id && this.models[model.id]) {
                 this.trigger.apply(this, [eventName, this, model].concat(rest));
             }
+            return this;
         },
 
         query: function(params, request) {
@@ -142,13 +143,13 @@ define([
         destroy: function(params) {
             var self = this;
             if (self.id == null) {
-                self._manager.dissociate(self);
+                self._manager.notify(self, 'destroy').dissociate(self);
                 self.trigger('destroy', self);
                 return $.Deferred().resolve();
             }
 
             return self._initiateRequest('delete', params).done(function(response) {
-                self._manager.dissociate(self);
+                self._manager.notify(self, 'destroy').dissociate(self);
                 self.trigger('destroy', self, response);
                 return response;
             });

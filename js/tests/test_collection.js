@@ -180,6 +180,41 @@ define([
         });
     });
 
+    asyncTest('model destroy triggers collection update event', function() {
+        var donezo = false,
+            collection = Example.collection(),
+            count = 0,
+            origAjax;
+
+        collection.query.request.ajax = function(params) {
+            params.success(data, 200, {});
+        };
+
+        collection.on('change', function(eventName, collection, model) {
+            ok(false, 'should not have triggered a change event');
+            start();
+        }).on('update', function(eventName, collection, models) {
+            count++;
+        }).load().done(function() {
+            equal(count, 1);
+            origAjax = collection.first().__requests__['delete'].ajax;
+            collection.first().__requests__['delete'].ajax = function(params) {
+                var dfd = $.Deferred();
+                setTimeout(function() {
+                    params.success('', 200, {});
+                    dfd.resolve();
+                }, 0);
+                return dfd;
+            };
+            collection.first().destroy().then(function() {
+                equal(count, 2);
+                collection.first().__requests__['delete'].ajax = origAjax;
+                start();
+            });
+        });
+
+    });
+
     module('load behavior');
 
     var dummyAjax = function(params) {
