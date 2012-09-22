@@ -7,30 +7,49 @@ class ClientShell(Task):
     name = 'mesh.shell'
     description = 'the mesh client shell'
     parameters = {
-        'bundle': Text(description='module path to bundle', required=True),
-        'url': Text(description='url of server', required=True),
-        'version': Tuple((Integer(), Integer()), default=(1, 0)),
+        'bundle': Text(required=True),
+        'url': Text(required=True),
+        'version': Text(default='1.0'),
+        'ipython': Boolean(default=True),
     }
 
     source = """
-        from bake.util import import_object
-        from mesh.transport.http import HttpClient
-        from mesh.binding.python import BindingGenerator
+        def _generate_mesh_binding():
+            from bake.util import import_object
+            from mesh.standard import generate_dynamic_binding
+            from mesh.transport.http import HttpClient
 
-        bundle = import_object('%(bundle)s')
-        specification = bundle.specify(%(version)r)
+            bundle = import_object(%(bundle)r)
+            specification = bundle.specify(%(version)r)
 
-        client = HttpClient('%(url)s', specification)
-        client.register()
+            HttpClient(%(url)r, specification).register()
+            return generate_dynamic_binding(bundle, %(version)r)
 
-        generator = BindingGenerator(binding_module='mesh.standard.python')
-        api = generator.generate_dynamically(bundle, %(version)r)
+        API = _generate_mesh_binding()
+        del _generate_mesh_binding
+    """
 
-        print '[api for %%s ready]' %% specification.id
+    ipython_source = """
+        def _prepare_mesh_environment():
+            ip = get_ipython()
+            models = []
+            for name, resource in sorted(API.specification['resources'].iteritems()):
+                classname = resource['classname']
+                models.append(classname)
+                ip.ex(classname + ' = getattr(API, "' + classname + '")')
+
+            print 'Models available: ' + ', '.join(models)
+
+        _prepare_mesh_environment()
+        del _prepare_mesh_environment
     """
 
     def run(self, runtime):
-        execute_python_shell(self.source % self)
+        source = self.source
+        if self['ipython']:
+            source += self.ipython_source
+
+        execute_python_shell(source % self, self['ipython'])
 
 class GenerateDocs(Task):
     name = 'mesh.docs'
