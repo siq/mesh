@@ -1964,7 +1964,6 @@ class HTTPServer(object):
             if self.stats['Enabled']:
                 self.stats['Socket Errors'] += 1
             if x.args[0] in socket_error_eintr:
-                print 'HERE'
                 # I *think* this is right. EINTR should occur when a signal
                 # is received during the accept() call; all docs say retry
                 # the call, and I *think* I'm reading it right that Python
