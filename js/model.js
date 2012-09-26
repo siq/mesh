@@ -3,10 +3,10 @@ define([
     'vendor/jquery',
     'bedrock/class',
     'bedrock/events',
-    'bedrock/settable',
+    'bedrock/assettable',
     './fields',
     './collection'
-], function(_, $, Class, Eventable, Settable, fields, collection) {
+], function(_, $, Class, Eventable, asSettable, fields, collection) {
     var ret,
         $models = $('head script[type="application/json"][data-models=true]'),
         isArray = _.isArray, isBoolean = _.isBoolean, isEmpty = _.isEmpty,
@@ -261,9 +261,7 @@ define([
             });
         },
 
-        _settableAreEqual: _.isEqual,
-
-        _settableOnChange: function(changed, opts) {
+        onChange: function(changed, opts) {
             if (!opts.unchanged) {
                 _.extend(this._changes, changed);
             }
@@ -272,8 +270,6 @@ define([
             this.trigger('change', this, changed);
         },
 
-        _settableProperty: null,
-
         _getRequest: function(name) {
             return this.__requests__[name];
         },
@@ -281,7 +277,13 @@ define([
         _initiateRequest: function(name, params) {
             return this._getRequest(name).initiate(this.id, params);
         }
-    }, {mixins: [Eventable, Settable]});
+    }, {mixins: [Eventable]});
+
+    asSettable.call(Model.prototype, {
+        onChange: 'onChange',
+        areEqual: _.isEqual,
+        propName: null
+    });
 
     ret = {Manager: Manager, Model: Model};
 
