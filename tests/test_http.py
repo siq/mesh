@@ -44,7 +44,7 @@ class TestHttpServer(TestCase):
         response = http(POST, json.dumps(data))
         self.assertEqual(response.status, OK)
         
-        content = json.loads(response.content)
+        content = json.loads(response.content[0])
         self.assertIsInstance(content, dict)
         self.assertIn('id', content)
         self.assertIsInstance(content['id'], int)
@@ -56,7 +56,7 @@ class TestHttpServer(TestCase):
         response = http(POST, json.dumps({'required_field': 'text'}))
         self.assertEqual(response.status, OK)
 
-        content = json.loads(response.content)
+        content = json.loads(response.content[0])
         self.assertIsInstance(content, dict)
         self.assertIn('id', content)
 
@@ -65,19 +65,19 @@ class TestHttpServer(TestCase):
 
         response = http(GET, resource='example/%d' % id)
         self.assertEqual(response.status, OK)
-        self.assertEqual(json.loads(response.content), {'id': id, 'required_field': 'text', 'default_field': 1})
+        self.assertEqual(json.loads(response.content[0]), {'id': id, 'required_field': 'text', 'default_field': 1})
 
         response = http(POST, json.dumps({'default_field': 3}), resource='example/%d' % id)
         self.assertEqual(response.status, OK)
-        self.assertEqual(json.loads(response.content), {'id': id})
+        self.assertEqual(json.loads(response.content[0]), {'id': id})
 
         response = http(GET, 'exclude=[required_field]', resource='example/%d' % id)
         self.assertEqual(response.status, OK)
-        self.assertEqual(json.loads(response.content), {'id': id, 'default_field': 3})
+        self.assertEqual(json.loads(response.content[0]), {'id': id, 'default_field': 3})
         
         response = http(DELETE, resource='example/%d' % id)
         self.assertEqual(response.status, OK)
-        self.assertEqual(json.loads(response.content), {'id': id})
+        self.assertEqual(json.loads(response.content[0]), {'id': id})
 
         response = http(GET, resource='example/%d' % id)
         self.assertEqual(response.status, GONE)

@@ -198,6 +198,21 @@ class Model(object):
             self._data.update(data)
 
 class BindingGenerator(object):
+    """Generates python bindings for one or more mesh bundles.
+
+    :param list mixin_modules: Optional, default is ``None``; a ``list`` of one or
+        more mixin modules, specified as dotted package paths, to evaluate when
+        generating bindings.
+
+    :param str binding_module: Optional, default is ``mesh.standard.python``; the
+        dotted package path of the module which should be used as the basis
+        for any generated bindings.
+
+    :param str specification_var: Optiona, default is ``specification``; the
+        name which should be used for the bundle specification in the
+        generated bindings.
+    """
+
     CONSTRUCTOR_PARAMS = ('mixin_modules', 'binding_module')
     MODEL_TMPL = get_package_data('mesh.binding', 'templates/model.py.tmpl')
 
@@ -213,6 +228,13 @@ class BindingGenerator(object):
             self._enumerate_mixins(mixin_modules)
 
     def generate(self, bundle, version):
+        """Generates a python binding for ``version`` of ``bundle``.
+
+        :param bundle: The target bundle, specified as either an instance of
+            :class:`Bundle` or a dotted package path of one.
+
+        """
+
         if isinstance(bundle, basestring):
             bundle = import_object(bundle)
 
@@ -220,6 +242,13 @@ class BindingGenerator(object):
         return '%s.py' % bundle.name, source
 
     def generate_dynamically(self, bundle, version, module=None):
+        """Dynamically generates a python binding for ``version`` of ``bundle``,
+        returning a python module.
+
+        :param module: Optional, default is ``None``; if specified, must be a
+            new module instance that will be modified to contain the bindings.
+        """
+
         if isinstance(bundle, basestring):
             bundle = import_object(bundle)
 
@@ -288,7 +317,11 @@ def generate_dynamic_binding(bundle, version, mixin_modules=None,
     return generator.generate_dynamically(bundle, version)
 
 class BindingLoader(object):
-    """Import loader for mesh bindings."""
+    """Import loader for mesh bindings.
+
+    When installed in ``sys.meta_path``, .mesh files will be dynamically converted
+    to binding modules when imported.
+    """
 
     def __init__(self, filename):
         self.filename = filename
@@ -341,5 +374,10 @@ class BindingLoader(object):
         return BindingGenerator(**params)
 
 def install_binding_loader():
+    """Installs the mesh binding loader into ``sys.meta_path``, enabling the use
+    of .mesh files, which will then be dynamically converted into binding modules
+    upon import. This function can be called multiple times without error.
+    """
+
     if BindingLoader not in sys.meta_path:
         sys.meta_path.insert(0, BindingLoader)
