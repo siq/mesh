@@ -57,13 +57,16 @@ class GenerateDocs(Task):
     parameters = {
         'bundle': ObjectReference(description='module path of bundle', required=True),
         'docroot': Path(description='path to docroot', required=True),
+        'nocache': Boolean(default=False),
+        'sphinx': Text(default='sphinx-build'),
         'view': Boolean(description='view documentation after build', default=False),
     }
 
     def run(self, runtime):
         from mesh.documentation.generator import DocumentationGenerator
         DocumentationGenerator(self['docroot']).generate(self['bundle'].describe())
-        runtime.execute('sphinx.html', sourcedir=self['docroot'], view=self['view'])
+        runtime.execute('sphinx.html', sourcedir=self['docroot'], view=self['view'],
+            nocache=self['nocache'], binary=self['sphinx'])
 
 class GenerateJavascriptBindings(Task):
     name = 'mesh.javascript'
