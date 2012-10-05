@@ -262,7 +262,7 @@ class Request(object):
             except StructuralError, exception:
                 error = exception.serialize()
                 log('info', 'request to %s failed schema validation', str(self))
-                response(INVALID, error)
+                return response(INVALID, error)
 
             if self.validators:
                 try:
@@ -270,7 +270,7 @@ class Request(object):
                 except StructuralError, exception:
                     error = exception.serialize()
                     log('info', 'request to %s failed resource validation', str(self))
-                    response(INVALID, error)
+                    return response(INVALID, error)
         elif request.data:
             log('info', 'request to %r improperly specified data', str(self))
             return response(BAD_REQUEST)
@@ -283,9 +283,9 @@ class Request(object):
             except StructuralError, exception:
                 error = exception.serialize()
                 log('info', 'request to %s failed controller invocation', str(self))
-                response(INVALID, error)
+                return response(INVALID, error)
             except RequestError, exception:
-                response(exception.status)
+                return response(exception.status)
 
         definition = self.responses.get(response.status)
         if not definition:
