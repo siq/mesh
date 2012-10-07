@@ -324,7 +324,7 @@ def construct_delete_request(resource, declaration=None):
     if declaration:
         valid_responses = getattr(declaration, 'valid_responses', valid_responses)
 
-    responses = {}
+    responses = {INVALID: Response(Errors)}
     for response_code in valid_responses:
         responses[response_code] = Response(response_schema)
 
