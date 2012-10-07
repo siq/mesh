@@ -1,5 +1,6 @@
 import re
 import socket
+from cgi import parse_header
 from httplib import HTTPConnection
 from urlparse import urlparse
 
@@ -94,6 +95,7 @@ class HttpRequest(ServerRequest):
         context=None, serialized=True, **params):
 
         super(HttpRequest, self).__init__(serialized=serialized, **params)
+        self.accept = self._parse_accept_header(headers)
         self.context = context
         self.headers = headers
         self.method = method
@@ -109,6 +111,18 @@ class HttpRequest(ServerRequest):
         if self.data:
             aspects.append('data=%r' % self.data)
         return 'HttpRequest(%s)' % ' '.join(aspects)
+
+    def _parse_accept_header(self, headers):
+        if not headers:
+            return
+
+        header = headers.get('HTTP_ACCEPT')
+        if not header:
+            return
+
+        mimetype = header.split(';', 1)[0]
+        if mimetype in Format.formats:
+            return parse_header(header)
 
 class HttpResponse(ServerResponse):
     """An HTTP response."""
@@ -292,12 +306,14 @@ class HttpServer(WsgiServer):
         if mimetype not in self.formats:
             mimetype = URLENCODED
 
-        request = HttpRequest(method=method, mimetype=mimetype, headers=headers, context=context)
         try:
-            request.path = path = Path(self, path)
+            path = Path(self, path)
         except Exception:
             log('info', 'no path found for %s', path)
             return response(NOT_FOUND)
+    
+        request = HttpRequest(method, path, mimetype, headers, context)
+        request.format = self._identify_response_format(request)
 
         signature = (path.bundle, path.version, path.resource_path)
         if signature in self.groups:
@@ -323,17 +339,8 @@ class HttpServer(WsgiServer):
             log('exception', 'exception raised during dispatch of %r', request)
             return response(SERVER_ERROR)
 
-        format = self.default_format
-        if path.format:
-            format = self.formats[path.format]
-        elif mimetype and mimetype != URLENCODED:
-            format = self.formats.get(mimetype)
-
         if response.content:
-            response.mimetype = format.mimetype
-            response.content = format.serialize(response.content)
-            if not isinstance(response.content, list):
-                response.content = [response.content]
+            self._prepare_response_content(request, response)
             
         return response
 
@@ -353,6 +360,27 @@ class HttpServer(WsgiServer):
                 controller, self.mediators)
 
         group.attach(request)
+
+    def _identify_response_format(self, request):
+        if request.accept:
+            return (self.formats[request.accept[0]], request.accept[1])
+        elif request.path.format:
+            return (self.formats[request.path.format], None)
+        elif request.mimetype and request.mimetype != URLENCODED:
+            return (self.formats[request.mimetype], None)
+        else:
+            return (self.default_format, None)
+
+    def _prepare_response_content(self, request, response):
+        format, params = request.format
+        if params:
+            response.content = format.serialize(response.content, **params)
+        else:
+            response.content = format.serialize(response.content)
+
+        response.mimetype = format.mimetype
+        if not isinstance(response.content, list):
+            response.content = [response.content]
 
 class HttpClient(Client):
     """An HTTP API client."""

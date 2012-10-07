@@ -7,7 +7,7 @@ from scheme.formats import *
 
 __all__ = ('STANDARD_FORMATS', 'Client', 'Server', 'ServerRequest', 'ServerResponse', 'Transport')
 
-STANDARD_FORMATS = (Json, UrlEncoded)
+STANDARD_FORMATS = (Csv, Json, UrlEncoded)
 
 class ServerRequest(object):
     """An API request."""
