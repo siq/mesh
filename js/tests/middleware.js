@@ -3,7 +3,7 @@ var fs = require('fs'),
     url = require('url'),
     path = require('path'),
     yaml = require('js-yaml'),
-    configFileName = path.basename(process.cwd()) + '.nix.yaml',
+    configFileName = path.basename(process.cwd()) + '.unittest.yaml',
     testServer = require('csi'),
     getProxiesFromConfig = function(config) {
         var prop, match;
