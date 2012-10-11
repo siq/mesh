@@ -59,6 +59,7 @@ define([
                 }
                 data.complete = (xhr.status === 200);
                 data.status = STATUS_CODES[xhr.status];
+                data.xhrStatus = xhr.status;
                 return data;
             });
         },
@@ -124,6 +125,8 @@ define([
             this.models = [];
             this.query = query;
             this.total = null;
+            this.status = null;
+            this.xhrStatus = null;
             this.manager.on('change destroy', this.notify, this);
         },
 
@@ -252,6 +255,8 @@ define([
                 }
 
                 self.total = data.total;
+                self.status = data.status;
+                self.xhrStatus = data.xhrStatus;
                 for (var i = 0, l = data.resources.length; i < l; i++) {
                     instance = data.resources[i];
                     self.models[offset + i] = instance;
