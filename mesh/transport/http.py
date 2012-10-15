@@ -518,6 +518,8 @@ class HttpProxy(WsgiServer):
             if incoming_name in headers:
                 request_headers[outgoing_name] = headers[incoming_name]
 
+        log('debug', 'proxying wsgi request %s:%s to %s' % (method, path, self.url))
+
         try:
             return self.connection.request(method, path, data, request_headers)
         except socket.error:
