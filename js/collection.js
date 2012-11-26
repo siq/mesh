@@ -189,8 +189,8 @@ define([
         },
 
         load: function(params) {
-            var self = this,
-                query, offset, limit, models, dfd, reload;
+            var query, offset, limit, models, dfd, reload, total, underflow,
+                self = this;
 
             // pull out the reload value if it's there
             if (params) {
@@ -213,7 +213,6 @@ define([
 
             // page cache
             if (!reload) {
-                var underflow;
                 models = self.models;
                 limit = params.limit;
                 offset = params.offset,
