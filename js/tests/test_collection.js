@@ -485,15 +485,202 @@ define([
 
     module('pageing');
 
+    var pageingAjaxCount = 0;
     var pageingAjax = function(params) {
         var limit = params.data.limit,
             offset = params.data.offset,
             newData = $.extend(true, {}, data);
+
+        pageingAjaxCount++;
         if(limit) {
             newData.resources = data.resources.slice(offset, offset + limit);
         }
         params.success(newData, 200, {});
     };
+
+    asyncTest("paging w/ reload doesn't change paging values (limit/offset)", function() {
+        Example.models.clear();
+        var ajaxCount = 0, collection = Example.collection();
+
+        collection.query.request.ajax = function(params) {
+            var num = params.data.limit? params.data.limit : 10;
+
+            ajaxCount++;
+
+            setTimeout(function() {
+                var split, ret = _.reduce(_.range(num), function(memo, i) {
+                    memo.resources.push({name: 'item ' + i, id: i+1234});
+                    return memo;
+                }, {total: num, resources: []});
+                params.success(ret, 200, {});
+            }, 50);
+        };
+
+        collection.load({limit: 5}).done(function(data) {
+            equal(ajaxCount, 1);
+            equal(data.length, 5);
+            collection.load().done(function(data) {
+                equal(ajaxCount, 1);
+                equal(data.length, 5);
+                collection.load({reload: true}).done(function(data) {
+                    equal(ajaxCount, 2);
+                    equal(data.length, 5);
+                    collection.load().done(function(data) {
+                        equal(ajaxCount, 2);
+                        equal(data.length, 5);
+                        start();
+                    }).fail(function() {
+                        ok(false, '4th colleciton load failed');
+                        start();
+                    });
+                }).fail(function() {
+                    ok(false, '3rd colleciton load failed');
+                    start();
+                });
+            }).fail(function() {
+                ok(false, '2nd colleciton load failed');
+                start();
+            });
+        }).fail(function() {
+            ok(false, '1st colleciton load failed');
+            start();
+        });
+    });
+
+    asyncTest('pageing w/ cache and no limit', function() {
+        var collection = Example.collection(),
+            dfd1, dfd2, dfd3;
+
+        pageingAjaxCount = 0;
+        collection.query.request.ajax = pageingAjax;
+
+        dfd1 = collection.load(); // load everything
+        dfd1.done(function(data) {
+            equal(data.length, collection.total);
+            equal(pageingAjaxCount, 1); // no cache
+            dfd2 = collection.load();
+            dfd2.done(function(data) {
+                equal(data.length, collection.total);
+                equal(pageingAjaxCount, 1); // load from cache
+                start();
+                // offset with no limit load cache from offset to end
+                dfd3 = collection.load({offset: 5});
+                dfd3.done(function(data) {
+                    equal(data.length, 5);
+                    equal(pageingAjaxCount, 1); // load from cache
+                    start();
+                }).fail(function() {
+                    ok(false, '3rd colleciton load failed');
+                    start();
+                });
+            }).fail(function() {
+                ok(false, '2nd colleciton load failed');
+                start();
+            });
+        }).fail(function() {
+            ok(false, '1st colleciton load failed');
+            start();
+        });
+    });
+
+    asyncTest('paging w/ caching', function() {
+        var collection = Example.collection(),
+            dfd1, dfd2, dfd3, dfd4;
+
+        pageingAjaxCount = 0;
+        collection.query.request.ajax = pageingAjax;
+
+        dfd1 = collection.load({offset: 0, limit: 5});
+        dfd1.done(function(data) {
+            equal(data.length, 5);
+            equal(pageingAjaxCount, 1);
+            dfd2 = collection.load();
+            dfd2.done(function(data) {
+                ok(dfd1 === dfd2, 'the same deferred was returned');
+                equal(data.length, 5);
+                equal(pageingAjaxCount, 1);
+                dfd3 = collection.load({offset: 5, limit: 5});
+                dfd3.done(function(data) {
+                    ok(dfd2 !== dfd3, 'a new deferred was returned');
+                    equal(data.length, 5);
+                    equal(pageingAjaxCount, 2);
+                    var cacheData = data;
+                    dfd4 = collection.load({offset: 0, limit: 5});
+                    dfd4.done(function(data) {
+                        // a new deferred was returned but it was a cached page.
+                        ok(dfd3 !== dfd4, 'a new deferred was returned');
+                        equal(pageingAjaxCount, 2, 'a cached page was returned (no ajax call)');
+                        ok(!_.isEqual(cacheData, data), 'different pages (data)');
+                        equal(data.length, 5);
+                        start();
+                    }).fail(function() {
+                        ok(false, '4th colleciton load failed');
+                        start();
+                    });
+                }).fail(function() {
+                    ok(false, '3rd colleciton load failed');
+                    start();
+                });
+            }).fail(function() {
+                ok(false, '2nd colleciton load failed');
+                start();
+            });
+        }).fail(function() {
+            ok(false, '1st colleciton load failed');
+            start();
+        });
+    });
+
+    asyncTest('paging w/ cache containing null values', function() {
+        var collection = Example.collection(),
+            dfd1, dfd2;
+
+        pageingAjaxCount = 0;
+        collection.query.request.ajax = pageingAjax;
+
+        dfd1 = collection.load({offset: 5, limit: 5});
+        dfd1.done(function(data) {
+            equal(data.length, 5);
+            equal(pageingAjaxCount, 1);
+            dfd2 = collection.load({offset: 0, limit: 10});
+            dfd2.done(function(data) {
+                ok(dfd1 !== dfd2, 'a new deferred was returned');
+                equal(data.length, 10);
+                //ajax call was made because some of the values where not cached
+                equal(pageingAjaxCount, 2);
+                start();
+            }).fail(function() {
+                ok(false, '2nd colleciton load failed');
+                start();
+            });
+        }).fail(function() {
+            ok(false, '1st colleciton load failed');
+            start();
+        });
+    });
+
+    asyncTest('paging w/ underflow cache', function() {
+        var collection = Example.collection(),
+            dfd1, dfd2;
+
+        collection.query.request.ajax = pageingAjax;
+
+        dfd1 = collection.load({offset: 0, limit: 5});
+        dfd1.done(function(data) {
+            equal(data.length, 5);
+            dfd2 = collection.load({offset: 0, limit: 7});
+            dfd2.done(function(data) {
+                equal(data.length, 7);
+                start();
+            }).fail(function() {
+                ok(false, '2nd colleciton load failed');
+                start();
+            });
+        }).fail(function() {
+            ok(false, '1st colleciton load failed');
+            start();
+        });
+    });
 
     asyncTest("calling load w/ limit out of range doesn't break further queries", function() {
         var collection = Example.collection(),

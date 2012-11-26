@@ -190,55 +190,56 @@ define([
 
         load: function(params) {
             var self = this,
-                query, offset, limit, models, dfd;
+                query, offset, limit, models, dfd, reload;
 
-            _.each(params, function(val, key) {
-                if (key !== 'reload') {
-                    self.query.params[key] = _.isObject(val)?
-                            $.extend(true, {}, val) : val;
-                }
-            });
+            // pull out the reload value if it's there
+            if (params) {
+                reload = params.reload;
+                delete params.reload;
+                $.extend(true, self.query.params, params);
+            }
+
             query = self.query.clone();
-            params = params || {};
+            params = $.extend(true, {}, query.params, params);
 
             // siq/mesh issue #10 corner case 1 and 2
-            if (!params.reload) {
+            // same query
+            if (!reload) {
                 if (self._lastLoad && self._lastLoad.query === self.query &&
                         _.isEqual(self._lastLoad.params, params)) {
                     return self._lastLoad.dfd;
                 }
             }
 
-            query.params.offset = offset = params.offset || 0;
-
-            if (typeof params.limit !== 'undefined') {
-                query.limit(params.limit);
-            }
-            if (!query.params.limit && !params.reload && self.total > 0) {
-                query.limit(self.total - offset);
-            }
-            limit = query.params.limit;
-
-            if (params.offset == null && !params.reload && self.total != null) {
-                return $.Deferred().resolve(self.models);
-            }
-
-            if (!params.reload) {
+            // page cache
+            if (!reload) {
+                var underflow;
                 models = self.models;
-                while (models[offset]) {
-                    offset++;
-                    if (limit) {
-                        limit--;
-                        if (limit === 0) {
-                            models = models.slice(query.params.offset, query.params.offset + query.params.limit);
-                            return $.Deferred().resolve(models);
-                        }
-                    }
+                limit = params.limit;
+                offset = params.offset,
+                total = self.total;
+
+                // overflow is handled when the query is resolved so we only need to ensure
+                // the objects we have are valid cached objects
+                models = (limit) ? models.slice(offset, offset + limit) : models.slice(offset);
+                // underflow may happen on limit changes
+                underflow = ((offset + limit) < total) && (models.length !== limit);
+
+                // check to make sure the models are valid and not just empty
+                // remove falsy values i.e. undefined and check if the length is still the same
+                if (!underflow && models.length && (_.compact(models).length === models.length)) {
+                    // the cache is valid
+                    dfd = $.Deferred();
+                    dfd.resolve(models);
+                    self.trigger('update', self, models);
+                    return dfd;
                 }
             }
 
+            // fresh load
+            dfd = $.Deferred();
             self._lastLoad = {
-                dfd: dfd = $.Deferred(),
+                dfd: dfd,
                 // siq/mesh issue #11 corner case 1
                 params: $.extend(true, {}, params),
                 query: self.query
@@ -252,6 +253,10 @@ define([
                 // siq/mesh issue #10 corner case 3
                 if (dfd !== self._lastLoad.dfd) {
                     return;
+                }
+                // handle overflow case (offset + limit > total)
+                if (((offset + limit) > data.total)) {
+                    data.resources = data.resources.slice(0, (data.total - offset));
                 }
 
                 self.total = data.total;
