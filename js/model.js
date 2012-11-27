@@ -263,7 +263,7 @@ define([
                 self.set(data, {unchanged: true});
                 self._loaded = true;
                 self._httpStatus.status = xhr.status;
-                self._httpStatus.statusText = xhr.statusText.toLowerCase();
+                self._httpStatus.statusText = xhr.statusText;
                 return self;
             });
         },
