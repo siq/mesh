@@ -136,9 +136,14 @@ define([
             }
             this._options = $.extend(true, this.defaults, options);
             this._manager.associate(this);
+            this._httpStatus = {status: undefined, statusText: ''};
         },
 
         construct: function() {},
+
+        getStatus: function() {
+            return this._httpStatus;
+        },
 
         destroy: function(params) {
             var self = this;
@@ -250,13 +255,15 @@ define([
                 return $.Deferred().resolve(self);
             }
 
-            return request.initiate(self.id, data).pipe(function(data) {
+            return request.initiate(self.id, data).pipe(function(data, xhr) {
                 if (creating) {
                     self._manager.associate(self, data.id);
                 }
                 self._changes = {};
                 self.set(data, {unchanged: true});
                 self._loaded = true;
+                self._httpStatus.status = xhr.status;
+                self._httpStatus.statusText = xhr.statusText.toLowerCase();
                 return self;
             });
         },
