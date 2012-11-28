@@ -134,9 +134,10 @@ class MockStorage(object):
         return resources
 
     def reset(self):
-        self.connection.close()
+        if hasattr(self, 'connection'):
+            self.connection.close()
         self.tables = set()
-        if self.path != ':memory:':
+        if self.path != ':memory:' and os.path.exists(self.path): 
             os.unlink(self.path)
         self.connection = sqlite3.connect(self.path)
 
@@ -194,7 +195,7 @@ class MockController(StandardController):
         if not name:
             name = '%sController' % resource.title
 
-        return type(name, (MockController,), {
+        return type(name, (cls,), {
             'resource': resource,
             'storage': storage,
             'version': (resource.version, 0),
