@@ -6,7 +6,7 @@
     "Elias Ponvert",
     "Aaron Stacy <astacy@storediq.com>"
   ],
-  "version": "1.0.7",
+  "version": "1.0.8",
   "dependencies": {
     "js-yaml": "0.3.x",
     "csi": "git+ssh://git@github.com:siq/csi.git#1.0.3",
