@@ -6,6 +6,7 @@ define([
     'bedrock/assettable',
     './fields',
     './collection'
+
 ], function(_, $, Class, Eventable, asSettable, fields, collection) {
     var ret,
         $models = $('head script[type="application/json"][data-models=true]'),
@@ -136,7 +137,7 @@ define([
             }
             this._options = $.extend(true, this.defaults, options);
             this._manager.associate(this);
-            this._httpStatus = {status: undefined, statusText: ''};
+            this._httpStatus = null;
         },
 
         construct: function() {},
@@ -262,8 +263,7 @@ define([
                 self._changes = {};
                 self.set(data, {unchanged: true});
                 self._loaded = true;
-                self._httpStatus.status = xhr.status;
-                self._httpStatus.statusText = xhr.statusText;
+                self._httpStatus = request.STATUS_CODES[xhr.status];
                 return self;
             });
         },
