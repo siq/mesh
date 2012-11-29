@@ -7,13 +7,6 @@ define([
     var extend = $.extend, intersection = _.intersection, isArray = _.isArray,
         isString = _.isString, toArray = _.toArray;
 
-    var STATUS_CODES = {
-        200: 'ok',
-        202: 'accepted',
-        203: 'subset',
-        206: 'partial'
-    };
-
     var Query = Class.extend({
         init: function(manager, params, request) {
             if (!request || isString(request)) {
@@ -58,7 +51,7 @@ define([
                     }
                 }
                 data.complete = (xhr.status === 200);
-                data.status = STATUS_CODES[xhr.status];
+                data.status = self.request.STATUS_CODES[xhr.status];
                 data.xhrStatus = xhr.status;
                 return data;
             });

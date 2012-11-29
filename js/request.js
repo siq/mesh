@@ -11,6 +11,13 @@ define([
         ajax: $.ajax,
         path_expr: /\/id(?=\/|$)/,
 
+        STATUS_CODES: {
+            200: 'ok',
+            202: 'accepted',
+            203: 'subset',
+            206: 'partial'
+        },
+
         init: function(params) {
             var url;
             this.bundle = params.bundle;
