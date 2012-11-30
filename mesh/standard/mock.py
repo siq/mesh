@@ -319,6 +319,9 @@ class MockController(StandardController):
 
         resource = {}
         for name, value in subject.iteritems():
+            if name not in self.resource.schema:
+                continue
+
             field = self.resource.schema[name]
             if field.is_identifier:
                 resource[name] = value
