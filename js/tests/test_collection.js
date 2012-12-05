@@ -2,7 +2,7 @@
 define([
     'vendor/underscore',
     'vendor/jquery',
-    './../Request',
+    './../request',
     './example'
 ], function(_, $, Request, Example) {
     var data, ajax = $.ajax,
