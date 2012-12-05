@@ -27,14 +27,14 @@ define([
         LocalStorageGet = Request.extend({
             initiate: function(id) {
                 var item = JSON.parse(localStorage.getItem(token(this, id)));
-                return $.Deferred()[item? 'resolve' : 'reject'](item || {});
+                return $.Deferred()[item? 'resolve' : 'reject'](item || {}, {status: 200});
             },
             schema: FlexibleSchema()
         }),
         LocalStorageCreate = Request.extend({
             initiate: function(id, data) {
                 localStorage.setItem(token(this, id), JSON.stringify(data));
-                return $.Deferred().resolve({});
+                return $.Deferred().resolve({}, {status: 200});
             },
             schema: FlexibleSchema()
         }),
@@ -51,14 +51,14 @@ define([
                         return memo;
                     }, current);
                 localStorage.setItem(t, JSON.stringify(updated));
-                return $.Deferred().resolve({});
+                return $.Deferred().resolve({}, {status: 200});
             },
             schema: FlexibleSchema()
         }),
         LocalStorageDelete = Request.extend({
             initiate: function(id) {
                 localStorage.removeItem(token(this, id));
-                return $.Deferred().resolve({});
+                return $.Deferred().resolve({}, {status: 200});
             }
         });
 
