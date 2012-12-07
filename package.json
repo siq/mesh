@@ -6,12 +6,12 @@
     "Elias Ponvert",
     "Aaron Stacy <astacy@storediq.com>"
   ],
-  "version": "1.0.13",
+  "version": "1.0.14",
   "dependencies": {
     "js-yaml": "0.3.x",
-    "csi": "git+ssh://git@github.com:siq/csi.git#1.0.5",
-    "siq-vendor-js": "git+ssh://git@github.com:siq/siq-vendor-js.git#1.0.5",
-    "bedrockjs": "git+ssh://git@github.com:siq/bedrockjs.git#1.0.6"
+    "csi": "git+ssh://git@github.com:siq/csi.git#1.0.6",
+    "siq-vendor-js": "git+ssh://git@github.com:siq/siq-vendor-js.git#1.0.6",
+    "bedrockjs": "git+ssh://git@github.com:siq/bedrockjs.git#1.0.7"
   },
   "csi": {
     "name": "mesh",
