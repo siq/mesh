@@ -4,7 +4,7 @@ from mesh.constants import *
 from mesh.exceptions import *
 from mesh.request import *
 from mesh.resource import *
-from mesh.standard.controllers import StandardController
+from mesh.standard.controllers import *
 from mesh.standard.requests import DEFAULT_REQUESTS, STANDARD_REQUESTS, VALIDATED_REQUESTS
 from mesh.util import import_object
 from scheme import *
