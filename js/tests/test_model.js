@@ -2,7 +2,7 @@
 define([
     'vendor/underscore',
     'vendor/jquery',
-    'bedrock/uuid',
+    'vendor/uuid',
     './../request',
     './example',
     './examplewithuuid'
