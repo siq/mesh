@@ -30,9 +30,11 @@ class mount(object):
 
         controller = self.controller
         if isinstance(controller, basestring):
-            controller = import_object(controller, True)
-            if not controller:
-                log('warning', 'failed to import %r for %r', controller, bundle.name)
+            try:
+                controller = import_object(controller)
+            except Exception:
+                log('exception', 'failed to import %r for %r', controller, bundle.name)
+                controller = None
         if not controller:
             controller = resource.configuration.create_controller(resource)
 
