@@ -54,6 +54,15 @@ class ResourceMeta(type):
     ATTRS = ('configuration', 'name', 'version')
 
     def __new__(metatype, name, bases, namespace):
+        def _associate_versions(resource):
+            versions = getattr(resource, 'versions', None)
+            if versions is None:
+                versions = resource.versions = {}
+            if resource.version not in versions:
+                versions[resource.version] = resource
+            else:
+                raise SpecificationError('duplicate version')
+
         candidates = [getattr(base, 'configuration', None) for base in bases]
         candidates.append(namespace.get('configuration', None))
 
@@ -66,6 +75,12 @@ class ResourceMeta(type):
                     raise SpecificationError('conflicting mesh configurations')
         if not configuration:
             return type.__new__(metatype, name, bases, namespace)
+
+        asis = namespace.pop('__asis__', False)
+        if asis:
+            resource = type.__new__(metatype, name, bases, namespace)
+            _associate_versions(resource)
+            return resource
 
         schema = namespace.pop('schema', {})
         if isinstance(schema, (type, ClassType)):
@@ -172,13 +187,7 @@ class ResourceMeta(type):
                 if request_name in resource.requests:
                     resource.requests[request_name].validators.append(validator)
 
-        versions = getattr(resource, 'versions', None)
-        if versions is None:
-            versions = resource.versions = {}
-        if resource.version in versions:
-            raise SpecificationError('duplicate version')
-
-        versions[resource.version] = resource
+        _associate_versions(resource)
         return resource
 
     def __getattr__(resource, name):
@@ -278,6 +287,30 @@ class ResourceMeta(type):
             if not exclude or name not in exclude:
                 schema[name] = field.clone()
         return schema
+
+    def reconstruct(resource, description):
+        namespace = {
+            '__asis__': True,
+            'name': description['name'],
+            'requests': {},
+            'schema': {},
+            'validators': {},
+            'version': description['version'][0]}
+
+        schema = description.get('schema')
+        if isinstance(schema, dict):
+            for name, field in schema.iteritems():
+                namespace['schema'][name] = Field.reconstruct(field)
+        
+        resource = type(description['title'], (resource,), namespace)
+        resource.id_field = resource.schema.get(resource.configuration.id_field.name)
+
+        requests = description.get('requests')
+        if isinstance(requests, dict):
+            for name, request in requests.iteritems():
+                namespace['requests'][name] = Request.reconstruct(resource, request)
+
+        return resource
 
 class Resource(object):
     """A resource definition.

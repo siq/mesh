@@ -59,7 +59,7 @@ class Request(object):
 
     def __init__(self, resource=None, name=None, endpoint=None, filter=None, schema=None,
         responses=None, specific=False, description=None, title=None, auto_constructed=False,
-        batch=False, subject_required=True, validators=None, metadata=None):
+        batch=False, subject_required=True, validators=None, metadata=None, **params):
 
         self.auto_constructed = auto_constructed
         self.batch = batch
@@ -176,6 +176,15 @@ class Request(object):
                 params['metadata'] = metadata
 
         return cls(resource=resource, name=declaration.__name__, **params)
+
+    @classmethod
+    def reconstruct(cls, resource, description):
+        description['schema'] = Field.reconstruct(description['schema'])
+        for status, response in description['responses'].items():
+            response['schema'] = Field.reconstruct(response['schema'])
+            description['responses'][status] = Response(**response)
+
+        return cls(resource, **description)
 
     @classmethod
     def _pull_request(cls, resource, request, declaration=None):

@@ -110,7 +110,8 @@ class Bundle(object):
         name = name or self.name
         return Bundle(name, *mounts)
 
-    def describe(self, version=None):
+    def describe(self, version=None, targets=None):
+        prefix = '/' + self.name
         if isinstance(version, basestring):
             version = self._parse_version(version)
 
@@ -119,13 +120,15 @@ class Bundle(object):
             description.update(id='%s-%d.%d' % (self.name, version[0], version[1]),
                 version=version, resources={})
             for name, (resource, controller) in self.versions[version].iteritems():
-                description['resources'][name] = resource.describe(controller, '/' + self.name)
+                if not targets or name in targets:
+                    description['resources'][name] = resource.describe(controller, prefix)
         else:
             versions = description['versions'] = {}
             for version, resources in self.versions.iteritems():
                 versions[version] = {}
                 for name, (resource, controller) in resources.iteritems():
-                    versions[version][name] = resource.describe(controller, '/' + self.name)
+                    if not targets or name in targets:
+                        versions[version][name] = resource.describe(controller, prefix)
 
         return description
 
