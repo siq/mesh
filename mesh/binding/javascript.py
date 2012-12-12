@@ -11,7 +11,7 @@ from mesh.util import get_package_data, write_file
 from scheme import Field
 
 class JavascriptConstructor(object):
-    RESERVED_WORDS = ['delete', 'default']
+    RESERVED_WORDS = ['delete', 'default', 'export']
 
     def __init__(self, indent=4, constructor_attr=None):
         self.constructor_attr = constructor_attr
