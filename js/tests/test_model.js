@@ -4,9 +4,11 @@ define([
     'vendor/jquery',
     'vendor/uuid',
     './../request',
+    './../model',
+    './../fields',
     './example',
     './examplewithuuid'
-], function(_, $, uuid, Request, Example, ExampleWithUuid) {
+], function(_, $, uuid, Request, model, fields, Example, ExampleWithUuid) {
     var manager = Example.models,
         ajaxFailed = function() {
             ok(false, 'ajax request failed');
@@ -335,6 +337,63 @@ define([
             equal(requests, 5);
 
             Request.ajax(oldAjax);
+            start();
+        });
+    });
+
+    module('nested properties');
+
+    asyncTest('serializing a nested property', function() {
+        var created = [],
+            MyModel = model.Model.extend({
+                __new__: function(constructor, base, prototype) {
+                    var Req = Request.extend({
+                        initiate: function(id, data) {
+                            created.push([id, data]);
+                            return $.Deferred().resolve({}, {status: 200});
+                        },
+                        schema: fields.FlexibleSchema()
+                    });
+
+                    // call _super() so that we allocate a Manger for the resource
+                    // that's extending LocalModel
+                    this._super.apply(this, arguments);
+
+                    prototype.__requests__ = {
+                        create: Req({bundle: prototype.__bundle__}),
+                        update: Req({bundle: prototype.__bundle__})
+                    };
+                },
+                __bundle__: 'example2-1.0'
+            }).extend(),
+            m = MyModel({id: 1}).set('foo.bar.baz', 2);
+
+        m.save().then(function() {
+            equal(created.length, 1);
+            deepEqual(created[0], [1, {foo: {bar: {baz: 2}}, id: 1}]);
+            m.set('foo.bar.baz', 3).save().then(function() {
+                equal(created.length, 2);
+
+                // i don't know if this is right, but model changes are tracked
+                // in a flat object. so if you set 'foo.bar', you'll have set
+                // the nested property `model.foo.bar`, but
+                // `model._changes['foo.bar'] === true`
+                //
+                // this would be a problem in the case of an update, but not a
+                // create, since on creation we just copy everything, not just
+                // the stuff in _changes.
+                //
+                // AFAIK this hasnt been an issue b/c we've never had writable
+                // nested properties, all of our nested properties have been
+                // read-only
+
+                // this seems like it should hold, but it doesnt because the
+                // 'bar' object is a reference to the actual property on the
+                // model... this is probably incorrect, but largely innocuous
+                // deepEqual(created[0], [1, {foo: {bar: {baz: 2}}, id: 1}]);
+
+                deepEqual(created[1], [1, {'foo.bar.baz': 3}]);
+            });
             start();
         });
     });

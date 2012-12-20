@@ -3,40 +3,27 @@ define([
     'vendor/underscore',
     'bedrock/class',
     './model',
+    './fields',
     './request'
-], function($, _, Class, model, Request) {
+], function($, _, Class, model, fields, Request) {
     var localStorage = window.localStorage, // so jshint stops whining
         token = function(request, id) {
             return request.bundle + '-' + id;
         },
-
-        // this is just a shell that allows the local models to not need to
-        // specify a rigid schema.
-        FlexibleSchema = Class.extend({
-            extract: function(subject) {
-                return _.reduce(subject, function(memo, val, key) {
-                    if (key[0] !== '_' && key !== 'cid') {
-                        memo[key] = val;
-                    }
-                    return memo;
-                }, {});
-            },
-            structural: true // just so Request doesn't choke
-        }),
 
         LocalStorageGet = Request.extend({
             initiate: function(id) {
                 var item = JSON.parse(localStorage.getItem(token(this, id)));
                 return $.Deferred()[item? 'resolve' : 'reject'](item || {}, {status: 200});
             },
-            schema: FlexibleSchema()
+            schema: fields.FlexibleSchema()
         }),
         LocalStorageCreate = Request.extend({
             initiate: function(id, data) {
                 localStorage.setItem(token(this, id), JSON.stringify(data));
                 return $.Deferred().resolve({}, {status: 200});
             },
-            schema: FlexibleSchema()
+            schema: fields.FlexibleSchema()
         }),
         LocalStorageUpdate = Request.extend({
             initiate: function(id, data) {
@@ -53,7 +40,7 @@ define([
                 localStorage.setItem(t, JSON.stringify(updated));
                 return $.Deferred().resolve({}, {status: 200});
             },
-            schema: FlexibleSchema()
+            schema: fields.FlexibleSchema()
         }),
         LocalStorageDelete = Request.extend({
             initiate: function(id) {

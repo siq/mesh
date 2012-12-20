@@ -243,7 +243,7 @@ define([
                 subject = {};
                 for (name in changes) {
                     if (changes.hasOwnProperty(name)) {
-                        subject[name] = self[name];
+                        subject[name] = self.get(name);
                     }
                 }
             }

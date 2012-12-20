@@ -597,5 +597,19 @@ define([
         }
     });
 
+    // this is just a shell that allows the local models to not need to specify
+    // a rigid schema.
+    fields.FlexibleSchema = Class.extend({
+        extract: function(subject) {
+            return _.reduce(subject, function(memo, val, key) {
+                if (key[0] !== '_' && key !== 'cid') {
+                    memo[key] = val;
+                }
+                return memo;
+            }, {});
+        },
+        structural: true // just so Request doesn't choke
+    });
+
     return fields;
 });
