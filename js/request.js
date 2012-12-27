@@ -164,7 +164,7 @@ define([
                 version: '1.0'
             };
         }
-        params.bundle = params.name + '-' + params.version;
+        params.bundle = params.name;
         return $.ajax({
             url: meshconf.bundles[params.bundle] + '/' + params.name
         });
