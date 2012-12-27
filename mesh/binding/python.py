@@ -53,7 +53,7 @@ class Query(object):
     def _execute_query(self):
         model = self.model
         models = []
-        for result in model._get_client().execute(model._name, 'query', None, self.params or None):
+        for result in model._get_client().execute(model._resource, 'query', None, self.params or None):
             models.append(model(**result))
         return models
 
@@ -102,7 +102,7 @@ class Model(object):
 
     @classmethod
     def execute(cls, request, data, subject=None):
-        return cls._get_client().execute(cls._name, request, subject, data)
+        return cls._get_client().execute(cls._resource, request, subject, data)
 
     @classmethod
     def generate_model(cls, specification, resource, mixins):

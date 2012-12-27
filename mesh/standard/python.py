@@ -24,7 +24,7 @@ class Query(Query):
         params = self.params.copy()
         params['total'] = True
 
-        response = self.model._get_client().execute(self.model._name, 'query', None, params)
+        response = self.model._get_client().execute(self.model._resource, 'query', None, params)
         return response.content.get('total')
 
     def exclude(self, *fields):
@@ -68,7 +68,7 @@ class Query(Query):
 
     def _execute_query(self):
         model = self.model
-        response = model._get_client().execute(model._name, 'query', None, self.params or None)
+        response = model._get_client().execute(model._resource, 'query', None, self.params or None)
 
         models = []
         for resource in response.content.get('resources') or []:
@@ -85,5 +85,5 @@ class Model(Model):
         if attrs:
             data['attrs'] = attrs
 
-        response = cls._get_client().execute(cls._name, 'load', None, data)
+        response = cls._get_client().execute(cls._resource, 'load', None, data)
         return [cls(**resource) for resource in response.content]
