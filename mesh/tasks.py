@@ -84,8 +84,10 @@ class GenerateJavascriptBindings(Task):
         generator = Generator(template_dir=self['templates'], mimetype=self['mimetype'])
 
         root = self['path']
-        if not (root.exists() and root.isdir()):
-            raise TaskError('path is not an existing directory')
+        if not root.exists():
+            root.makedirs_p()
+        if not root.isdir():
+            raise TaskError('path is not a directory')
 
         files = generator.generate(self['bundle'])
         self._create_files(root, files)
