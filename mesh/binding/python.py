@@ -191,6 +191,9 @@ class Model(object):
             self._data.update(data)
 
 def bind(binding, name):
+    if isinstance(binding, basestring):
+        binding = import_object(binding)
+
     if isinstance(binding, ModuleType):
         binding = getattr(binding, 'binding', None)
         if binding is None:
