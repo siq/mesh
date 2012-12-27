@@ -7,6 +7,24 @@ __all__ = ('Bundle', 'Specification', 'mount')
 
 log = LogHelper(__name__)
 
+def format_version(version):
+    if isinstance(version, basestring):
+        return version
+    return '%d.%d' % version
+
+def parse_version(version, silent=False):
+    if not isinstance(version, basestring):
+        return version
+
+    try:
+        major, minor = version.split('.')
+        return (int(major), int(minor))
+    except Exception:
+        if silent:
+            return version
+        else:
+            raise
+
 class mount(object):
     """A resource mount."""
 
@@ -15,6 +33,9 @@ class mount(object):
         self.max_version = max_version
         self.min_version = min_version
         self.resource = resource
+
+    def __repr__(self):
+        return 'mount(%r, %r)' % (self.resource.name, identify_class(self.controller))
 
     def clone(self):
         return mount(self.resource, self.controller, self.min_version, self.max_version)
@@ -55,7 +76,8 @@ class mount(object):
 
         for candidate in reversed(self.versions):
             if version >= candidate:
-                return self.controller.versions[candidate]
+                controller = self.controller.versions[candidate]
+                return controller.resource.name, (controller.resource, controller)
 
     def _validate_version(self, resource, controller, value, attr):
         if value is not None:
@@ -76,6 +98,25 @@ class mount(object):
         else:
             return (getattr(resource, attr), 0)
 
+class recursive_mount(mount):
+    """A recursive mount."""
+
+    def __init__(self, bundles):
+        self.bundles = bundles
+
+    def clone(self):
+        return recursive_mount(self.bundles)
+
+    def construct(self, bundle):
+        self.versions = sorted(self.bundles.keys())
+        return True
+
+    def get(self, version):
+        for candidate in reversed(self.versions):
+            if version >= candidate:
+                bundle = self.bundles[candidate]
+                return bundle.name, bundle.versions
+
 class Bundle(object):
     """A bundle of resources."""
 
@@ -95,6 +136,7 @@ class Bundle(object):
         for mount in mounts:
             if mount.construct(self):
                 self.mounts.append(mount)
+
         if self.mounts:
             self._collate_mounts()
 
@@ -110,25 +152,32 @@ class Bundle(object):
         name = name or self.name
         return Bundle(name, *mounts)
 
-    def describe(self, version=None, targets=None):
-        prefix = '/' + self.name
-        if isinstance(version, basestring):
-            version = self._parse_version(version)
+    def describe(self, targets=None):
+        description = {'__version__': 1, 'name': self.name, 'versions': {}}
+        if self.description:
+            description['description'] = description
 
-        description = {'name': self.name, 'description': self.description}
-        if version is not None:
-            description.update(id='%s-%d.%d' % (self.name, version[0], version[1]),
-                version=version, resources={})
-            for name, (resource, controller) in self.versions[version].iteritems():
-                if not targets or name in targets:
-                    description['resources'][name] = resource.describe(controller, prefix)
-        else:
-            versions = description['versions'] = {}
-            for version, resources in self.versions.iteritems():
-                versions[version] = {}
-                for name, (resource, controller) in resources.iteritems():
-                    if not targets or name in targets:
-                        versions[version][name] = resource.describe(controller, prefix)
+        for version, resources in sorted(self.versions.iteritems()):
+            formatted_version = format_version(version)
+            description['versions'][formatted_version] = self._describe_version(version, resources,
+                [self.name, formatted_version], targets)
+
+        return description
+
+    def _describe_version(self, version, resources, path, targets=None):
+        description = {}
+        for name, candidate in resources.iteritems():
+            if targets and name not in targets:
+                continue
+            if isinstance(candidate, dict):
+                bundle = description[name] = {'__subject__': 'bundle', 'name': name, 'versions': {}}
+                for subversion, subresources in candidate.iteritems():
+                    formatted_subversion = format_version(subversion)
+                    bundle['versions'][formatted_subversion] = self._describe_version(subversion,
+                        subresources, path + [name, formatted_subversion])
+            else:
+                resource, controller = candidate
+                description[name] = resource.describe(controller, path)
 
         return description
 
@@ -161,8 +210,8 @@ class Bundle(object):
 
         return versions
 
-    def specify(self, version):
-        return Specification(self.describe(version))
+    def specify(self):
+        return Specification(self.describe())
 
     def _collate_mounts(self):
         ordering = set()
@@ -174,35 +223,88 @@ class Bundle(object):
 
         for mount in self.mounts:
             for version in self.ordering:
-                controller = mount.get(version)
-                if controller:
-                    resource = mount.resource
+                contribution = mount.get(version)
+                if contribution:
+                    name, contribution = contribution
                     if version not in self.versions:
-                        self.versions[version] = {resource.name: (resource, controller)}
-                    elif resource.name not in self.versions[version]:
-                        self.versions[version][resource.name] = (resource, controller)
+                        self.versions[version] = {name: contribution}
+                    elif name not in self.versions[version]:
+                        self.versions[version][name] = contribution
                     else:
                         raise SpecificationError()
-
-    def _parse_version(self, version):
-        major, minor = version.split('.')
-        return int(major), int(minor)
 
 class Specification(object):
     """A bundle specification for a particular version."""
 
-    def __init__(self, specification):
-        self.__dict__.update(specification)
-        self.id = '%s:%d.%d' % (self.name, self.version[0], self.version[1])
+    def __init__(self, description):
+        self.cache = {}
+        self.description = description.get('description')
+        self.name = description['name']
 
-        for resource in self.resources.itervalues():
-            self._parse_resource(resource)
+        self.versions = {}
+        for version, resources in description['versions'].iteritems():
+            self.versions[parse_version(version)] = resources
+            for resource in resources.itervalues():
+                if resource['__subject__'] == 'bundle':
+                    self._parse_bundle(resource)
+                elif resource['__subject__'] == 'resource':
+                    self._parse_resource(resource)
 
     def __repr__(self):
-        return 'Specification(name=%r, version=%r)' % (self.name, self.version)
+        return 'Specification(name=%r)' % self.name
 
-    def __str__(self):
-        return self.id
+    def find(self, path):
+        if isinstance(path, basestring):
+            path = tuple(parse_version(v, True) for v in path.strip('/').split('/'))
+
+        try:
+            return self.cache[path]
+        except KeyError:
+            pass
+
+        if path[0] != self.name:
+            raise KeyError(path)
+
+        if len(path) == 2:
+            version = path[1]
+            if version in self.versions:
+                bundle = self.cache[path] = self.versions[version]
+                return bundle
+            else:
+                raise KeyError(path)
+
+        version, name = path[1], path[2]
+        if version in self.versions and name in self.versions[version]:
+            resource = self.versions[version][name]
+        else:
+            raise KeyError(path)
+
+        if resource['__subject__'] == 'bundle':
+            version = path[3]
+            if len(path) == 4:
+                if version in resource['versions']:
+                    bundle = self.cache[path] = resource['versions'][version]
+                    return bundle
+                else:
+                    raise KeyError(path)
+            else:
+                name = path[4]
+                if version in resource['versions'] and name in resource['versions'][version]:
+                    resource = resources['versions'][version][name]
+                else:
+                    raise KeyError(path)
+
+        self.cache[path] = resource
+        return resource
+
+    def _parse_bundle(self, bundle):
+        versions = {}
+        for version, resources in bundle['versions'].iteritems():
+            versions[parse_version(version)] = resources
+            for resource in resources.itervalues():
+                self._parse_resource(resource)
+
+        bundle['versions'] = versions
 
     def _parse_resource(self, resource):
         schema = resource.get('schema')

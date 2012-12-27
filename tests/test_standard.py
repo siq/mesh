@@ -9,7 +9,7 @@ from fixtures import *
 server = InternalServer([primary_bundle])
 
 def endpoint(request):
-    return ('primary', (1, 0), 'example', request)
+    return ('primary/1.0/example', request)
 
 class TestStandardResources(TestCase):
     def setUp(self):

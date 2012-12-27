@@ -32,7 +32,7 @@ class TestServerResponse(TestCase):
 
 class TestClient(TestCase):
     def test_global_clients(self):
-        specification = Specification({'name': 'test', 'version': (1, 0), 'resources': {}})
+        specification = Specification({'name': 'test', 'versions': {}})
         self.assertIs(Client.get_client(specification), None)
 
         client = Client(specification).register()

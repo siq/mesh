@@ -1,0 +1,9 @@
+from mesh.binding.python import Binding
+
+specification = %(specification)s
+
+%(mixins)s
+
+binding = Binding(specification,
+    binding_module=%(binding_module)r,
+    mixin_classes=[%(mixin_classes)s])

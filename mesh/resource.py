@@ -240,13 +240,15 @@ class ResourceMeta(type):
             chars.append(char)
         return ''.join(chars).strip()
 
-    def describe(resource, controller, path_prefix=None):
+    def describe(resource, controller, path):
         if controller:
             version = controller.version
         else:
             version = (resource.version, 0)
 
         description = {
+            '__subject__': 'resource',
+            'id': '%s/%s' % ('/'.join(path), resource.name),
             'classname': resource.__name__,
             'controller': identify_class(controller),
             'name': resource.name,
@@ -260,13 +262,11 @@ class ResourceMeta(type):
         for name, field in resource.schema.iteritems():
             description['schema'][name] = field.describe(FIELD_PARAMETERS)
 
-        path = '/%d.%d/' % version
-        if path_prefix:
-            path = path_prefix.rstrip('/') + path
+        prefix = '/%s/' % '/'.join(path)
 
         description['requests'] = {}
         for name, request in resource.requests.iteritems():
-            description['requests'][name] = request.describe(path)
+            description['requests'][name] = request.describe(prefix)
 
         return description
 

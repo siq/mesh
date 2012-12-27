@@ -14,8 +14,8 @@ from fixtures import *
 
 server = InternalServer([primary_bundle, secondary_bundle])
 
-def endpoint(request, resource='example', version=(1, 0), bundle='primary'):
-    return (bundle, version, resource, request)
+def endpoint(request, resource='example', version='1.0', bundle='primary'):
+    return ('%s/%s/%s' % (bundle, version, resource), request)
 
 class TestInternalServer(TestCase):
     def setUp(self):
@@ -53,16 +53,16 @@ class TestInternalClient(TestCase):
         storage.reset()
 
     def test_client_requests(self):
-        specification = Specification(primary_bundle.describe(version=(1,0)))
+        specification = Specification(primary_bundle.describe())
         client = InternalClient(server, specification).register()
 
-        response = client.execute('example', 'create', None, {'required_field': 'text'})
+        response = client.execute('primary/1.0/example', 'create', None, {'required_field': 'text'})
         self.assertEqual(response.status, OK)
 
     def test_invalid_requests(self):
-        specification = Specification(primary_bundle.describe(version=(1,0)))
+        specification = Specification(primary_bundle.describe())
         client = InternalClient(server, specification)
 
-        self.assertRaises(InvalidError, lambda:client.execute('example', 'create', None, set()))
-        self.assertRaises(GoneError, lambda:client.execute('example', 'get', 2, None))
+        self.assertRaises(InvalidError, lambda:client.execute('primary/1.0/example', 'create', None, set()))
+        self.assertRaises(GoneError, lambda:client.execute('primary/1.0/example', 'get', 2, None))
 

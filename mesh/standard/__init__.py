@@ -1,4 +1,4 @@
-from mesh.binding.python import generate_dynamic_binding
+from mesh.binding.python import bind, generate_dynamic_binding
 from mesh.bundle import *
 from mesh.constants import *
 from mesh.exceptions import *

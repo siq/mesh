@@ -106,26 +106,25 @@ class DocumentationGenerator(object):
 
         sections = []
         for version, resources in sorted(bundle['versions'].iteritems(), reverse=True):
-            version_string = '%d.%d' % version
-            path_prefix = '/%s/%s' % (bundle['name'], version_string)
+            path_prefix = '/%s/%s' % (bundle['name'], version)
 
             refs = ['']
 
-            version_path = os.path.join(bundle_path, version_string)
+            version_path = os.path.join(bundle_path, version)
             if not os.path.exists(version_path):
                 os.mkdir(version_path)
 
             for name, specification in sorted(resources.iteritems()):
-                content = self._document_resource(specification, version_string, path_prefix)
+                content = self._document_resource(specification, version, path_prefix)
                 openfile = open(os.path.join(version_path, '%s.rst' % name), 'w+')
                 try:
                     openfile.write(content)
                 finally:
                     openfile.close()
-                refs.append(os.path.join(version_string, name))
+                refs.append(os.path.join(version, name))
 
             sections.append(self.SECTION_TEMPLATE % {
-                'title': 'Version %s' % version_string,
+                'title': 'Version %s' % version,
                 'refs': '\n    '.join(sorted(refs)),
             })
 
@@ -335,7 +334,7 @@ class DocumentationGenerator(object):
     def _generate_index(self, bundle, bundle_path, sections):
         content = self.INDEX_TEMPLATE % {
             'name': bundle['name'],
-            'description': bundle['description'] or '',
+            'description': bundle.get('description', ''),
             'sections': '\n\n'.join(sections),
         }
 

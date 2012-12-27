@@ -4,7 +4,7 @@ from inspect import getsource
 from os.path import exists, join as joinpath
 from types import ModuleType
 
-from mesh.bundle import Specification
+from mesh.bundle import Bundle, Specification
 from mesh.constants import *
 from mesh.exceptions import *
 from mesh.transport.base import Client
@@ -34,31 +34,6 @@ class Attribute(object):
             raise ReadOnlyError(self.name)
         instance._data[self.name] = value
 
-class ModelMeta(type):
-    def __new__(metatype, name, bases, namespace):
-        resource = namespace.pop('__resource__', None)
-        if resource is not None:
-            specification, resource = resource
-            if not isinstance(specification, Specification):
-                specification = Specification(specification)
-        else:
-            return type.__new__(metatype, name, bases, namespace)
-
-        resource = specification.resources.get(resource)
-        if not resource:
-            raise Exception('unknown resource')
-
-        namespace['_name'] = resource['name']
-        namespace['_resource'] = resource
-        namespace['_specification'] = specification
-
-        attributes = namespace['_attributes'] = {}
-        for attr, field in resource['schema'].iteritems():
-            namespace[attr] = attributes[attr] = Attribute(attr, field)
-
-        model = type.__new__(metatype, name, bases, namespace)
-        return model
-
 class Query(object):
     """A resource query."""
 
@@ -85,7 +60,6 @@ class Query(object):
 class Model(object):
     """A resource model."""
 
-    __metaclass__ = ModelMeta
     query_class = Query
     repr_attrs = ('id', 'name', 'status', 'platform_id')
 
@@ -129,6 +103,25 @@ class Model(object):
     @classmethod
     def execute(cls, request, data, subject=None):
         return cls._get_client().execute(cls._name, request, subject, data)
+
+    @classmethod
+    def generate_model(cls, specification, resource, mixins):
+        bases = [cls]
+        if mixins:
+            for mixin in mixins:
+                bases.append(mixin)
+
+        namespace = {
+            '_name': resource['name'],
+            '_resource': resource,
+            '_specification': specification,
+        }
+
+        attributes = namespace['_attributes'] = {}
+        for attr, field in resource['schema'].iteritems():
+            namespace[attr] = attributes[attr] = Attribute(attr, field)
+
+        return type(resource['classname'], tuple(bases), namespace)
 
     @classmethod
     def get(cls, id, **params):
@@ -180,7 +173,7 @@ class Model(object):
         subject = None
         if request['specific']:
             subject = self.id
-        return self._get_client().execute(self._name, request['name'], subject, data)
+        return self._get_client().execute(self._resource, request['name'], subject, data)
 
     @classmethod
     def _get_client(cls):
@@ -196,6 +189,95 @@ class Model(object):
     def _update_model(self, data):
         if data:
             self._data.update(data)
+
+def bind(binding, name):
+    if isinstance(binding, ModuleType):
+        binding = getattr(binding, 'binding', None)
+        if binding is None:
+            raise TypeError(binding)
+
+    if not isinstance(binding, Binding):
+        raise TypeError(binding)
+
+    return binding.generate(name)
+
+class Binding(object):
+    """A python binding manager."""
+
+    def __init__(self, specification, mixin_modules=None,
+            mixin_classes=None, binding_module='mesh.standard.python'):
+
+        if isinstance(specification, basestring):
+            specification = import_object(specification)
+        if isinstance(specification, Bundle):
+            specification = specification.specify()
+        elif not isinstance(specification, Specification):
+            specification = Specification(specification)
+
+        if isinstance(binding_module, basestring):
+            binding_module = import_object(binding_module)
+
+        self.cache = {}
+        self.binding_module = binding_module
+        self.mixins = {}
+        self.specification = specification
+
+        if mixin_classes:
+            for mixin_class in mixin_classes:
+                self._associate_mixin_class(mixin_class)
+        if mixin_modules:
+            self._enumerate_mixin_classes(mixin_modules)
+
+    def __repr__(self):
+        return 'Binding(%s)' % self.specification.name
+
+    def generate(self, name):
+        try:
+            return self.cache[name]
+        except KeyError:
+            pass
+
+        resource = self.specification.find(name)
+        if '__subject__' in resource:
+            target = self._generate_model(resource)
+        else:
+            resources = {}
+            for candidate in resource.itervalues():
+                if candidate['__subject__'] == 'resource':
+                    resources[candidate['classname']] = self._generate_model(candidate)
+            target = type('resources', (object,), resources)
+
+        self.cache[name] = target
+        return target
+
+    def _associate_mixin_class(self, mixin_class):
+        try:
+            targets = mixin_class.mixin
+        except Exception:
+            return
+
+        mixins = self.mixins
+        if isinstance(targets, basestring):
+            targets = targets.split(' ')
+        if isinstance(targets, (list, tuple)):
+            for target in targets:
+                if target in mixins:
+                    mixins[target].append(mixin_class)
+                else:
+                    mixins[target] = [mixin_class]
+
+    def _enumerate_mixin_classes(self, modules):
+        if isinstance(modules, basestring):
+            modules = modules.split(' ')
+
+        for name in modules:
+            module = import_object(name)
+            for attr in dir(module):
+                self._associate_mixin_class(getattr(module, attr))
+
+    def _generate_model(self, resource):
+        return self.binding_module.Model.generate_model(self.specification, resource,
+            self.mixins.get(resource['classname']))
 
 class BindingGenerator(object):
     """Generates python bindings for one or more mesh bundles.
@@ -214,54 +296,52 @@ class BindingGenerator(object):
     """
 
     CONSTRUCTOR_PARAMS = ('mixin_modules', 'binding_module')
-    MODEL_TMPL = get_package_data('mesh.binding', 'templates/model.py.tmpl')
+    MODULE_TMPL = get_package_data('mesh.binding', 'templates/module.py.tmpl')
 
-    def __init__(self, mixin_modules=None, binding_module='mesh.standard.python',
-            specification_var='specification'):
+    def __init__(self, mixin_modules=None, binding_module='mesh.standard.python'):
+        if isinstance(mixin_modules, basestring):
+            mixin_modules = mixin_modules.split(' ')
 
         self.binding_module = binding_module
-        self.mixin_modules = []
-        self.mixin_targets = {}
-        self.specification_var = specification_var
+        self.formatter = StructureFormatter()
+        self.mixin_modules = mixin_modules
 
-        if mixin_modules:
-            self._enumerate_mixins(mixin_modules)
-
-    def generate(self, bundle, version):
-        """Generates a python binding for ``version`` of ``bundle``.
-
-        :param bundle: The target bundle, specified as either an instance of
-            :class:`Bundle` or a dotted package path of one.
-
-        """
-
+    def generate(self, bundle):
         if isinstance(bundle, basestring):
             bundle = import_object(bundle)
 
-        source = self._generate_binding(bundle, version)
+        source = self._generate_binding(bundle)
         return '%s.py' % bundle.name, source
 
-    def generate_dynamically(self, bundle, version, module=None):
-        """Dynamically generates a python binding for ``version`` of ``bundle``,
-        returning a python module.
-
-        :param module: Optional, default is ``None``; if specified, must be a
-            new module instance that will be modified to contain the bindings.
-        """
-
+    def generate_dynamically(self, bundle):
         if isinstance(bundle, basestring):
             bundle = import_object(bundle)
 
-        source = self._generate_binding(bundle, version)
-        if not module:
-            module = ModuleType(bundle.name)
+        source = self._generate_binding(bundle)
+        module = new_module(bundle.name)
 
         exec source in module.__dict__
         return module
 
-    def _enumerate_mixins(self, modules):
-        mixin_targets = self.mixin_targets
-        for name in modules:
+    def _generate_binding(self, bundle):
+        specification = self.formatter.format(bundle.describe())
+        mixins, mixin_classes = self._generate_mixins()
+
+        return self.MODULE_TMPL % {
+            'binding_module': self.binding_module,
+            'mixins': mixins,
+            'mixin_classes': mixin_classes,
+            'specification': specification,
+        }
+
+    def _generate_mixins(self):
+        if not self.mixin_modules:
+            return '', ''
+
+        mixins = []
+        mixin_classes = []
+
+        for name in self.mixin_modules:
             module = import_object(name)
             for attr in dir(module):
                 value = getattr(module, attr)
@@ -269,52 +349,16 @@ class BindingGenerator(object):
                     targets = value.mixin
                 except Exception:
                     continue
-                if isinstance(targets, basestring):
-                    targets = targets.split(' ')
-                if isinstance(targets, (list, tuple)):
-                    for target in targets:
-                        if target in mixin_targets:
-                            mixin_targets[target].append(attr)
-                        else:
-                            mixin_targets[target] = [attr]
-            self.mixin_modules.append(module)
+                mixins.append(getsource(value))
+                mixin_classes.append(attr)
 
-    def _generate_binding(self, bundle, version):
-        description = bundle.describe(version)
+        return '\n'.join(mixins), ', '.join(mixin_classes)
 
-        source = ['from %s import *' % self.binding_module]
-        source.append(self._generate_specification(description))
-
-        for module in self.mixin_modules:
-            source.append(getsource(module))
-
-        for name, model in description['resources'].iteritems():
-            source.append(self._generate_model(name, model))
-
-        return '\n\n'.join(source)
-
-    def _generate_model(self, name, model):
-        classname = model['classname']
-        bases = ['Model']
-
-        if classname in self.mixin_targets:
-            bases.extend(self.mixin_targets[classname])
-
-        return self.MODEL_TMPL % {
-            'base_classes': ', '.join(bases),
-            'class_name': classname,
-            'resource_name': name,
-            'specification_var': self.specification_var,
-        }
-
-    def _generate_specification(self, description):
-        return '%s = %s' % (self.specification_var, StructureFormatter().format(description))
-
-def generate_dynamic_binding(bundle, version, mixin_modules=None,
+def generate_dynamic_binding(bundle, mixin_modules=None,
         binding_module='mesh.standard.python'):
 
     generator = BindingGenerator(mixin_modules, binding_module)
-    return generator.generate_dynamically(bundle, version)
+    return generator.generate_dynamically(bundle)
 
 class BindingLoader(object):
     """Import loader for mesh bindings.
@@ -348,10 +392,11 @@ class BindingLoader(object):
         namespace = {}
         execfile(self.filename, namespace)
 
-        try:
-            bundle, version = namespace['binding']
-        except Exception:
-            raise ImportError(fullname)
+        specification = namespace.get('bundle')
+        if specification is None:
+            specification = namespace.get('specification')
+            if specification is None:
+                raise ImportError(fullname)
 
         if fullname in sys.modules:
             module = sys.modules[fullname]
@@ -362,16 +407,9 @@ class BindingLoader(object):
         module.__loader__ = self
         module.__package__ = fullname.rpartition('.')[0]
 
-        generator = self._construct_generator(namespace)
-        return generator.generate_dynamically(bundle, version, module)
-
-    def _construct_generator(self, namespace):
-        params = {}
-        for param in BindingGenerator.CONSTRUCTOR_PARAMS:
-            if param in namespace:
-                params[param] = namespace[param]
-
-        return BindingGenerator(**params)
+        module.binding = Binding(specification, namespace.get('mixins'))
+        module.specification = module.binding.specification
+        return module
 
 def install_binding_loader():
     """Installs the mesh binding loader into ``sys.meta_path``, enabling the use

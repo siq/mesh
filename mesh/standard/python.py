@@ -78,3 +78,12 @@ class Query(Query):
 
 class Model(Model):
     query_class = Query
+
+    @classmethod
+    def load(cls, identifiers, attrs=None):
+        data = {'identifiers': identifiers}
+        if attrs:
+            data['attrs'] = attrs
+
+        response = cls._get_client().execute(cls._name, 'load', None, data)
+        return [cls(**resource) for resource in response.content]

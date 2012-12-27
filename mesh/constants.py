@@ -3,6 +3,7 @@ FIELD_PARAMETERS = ('readonly', 'deferred', 'sortable', 'operators')
 DELETE = 'DELETE'
 GET = 'GET'
 HEAD = 'HEAD'
+LOAD = 'LOAD'
 OPTIONS = 'OPTIONS'
 POST = 'POST'
 PUT = 'PUT'

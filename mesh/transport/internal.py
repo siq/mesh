@@ -1,4 +1,4 @@
-from mesh.bundle import Specification
+from mesh.bundle import Specification, format_version
 from mesh.constants import *
 from mesh.exceptions import *
 from mesh.transport.base import *
@@ -21,14 +21,20 @@ class InternalServer(Server):
 
         self.endpoints = {}
         for name, bundle in self.bundles.iteritems():
-            for version, resources in bundle.versions.iteritems():
-                for resource, controller in resources.itervalues():
-                    for request in resource.requests.itervalues():
-                        signature = (name, version, resource.name, request.name)
-                        if signature not in self.endpoints:
-                            self.endpoints[signature] = (resource, controller, request)
-                        else:
-                            raise Exception()
+            for version, candidates in bundle.versions.iteritems():
+                preamble = [name, format_version(version)]
+                for subname, candidate in candidates.iteritems():
+                    if isinstance(candidate, dict):
+                        for subversion, resources in candidate.iteritems():
+                            subpreamble = preamble + [subname, format_version(subversion)]
+                            for resource, controller in resources.itervalues():
+                                for request in resource.requests.itervalues():
+                                    self._construct_endpoint(subpreamble, resource,
+                                        controller, request)
+                    else:
+                        resource, controller = candidate
+                        for request in resource.requests.itervalues():
+                            self._construct_endpoint(preamble, resource, controller, request)
 
     def dispatch(self, endpoint, environ, subject, data, format=None):
         request = ServerRequest(endpoint, environ, subject, data)
@@ -53,13 +59,19 @@ class InternalServer(Server):
             definition.process(controller, request, response, self.mediators)
         except Exception, exception:
             import traceback;traceback.print_exc()
-            return response(SERVER_ERROR)
 
         if format:
             response.mimetype = format.mimetype
             if response.content:
                 response.content = format.serialize(response.content)
         return response
+
+    def _construct_endpoint(self, preamble, resource, controller, request):
+        signature = ('/'.join(preamble + [resource.name]), request.name)
+        if signature not in self.endpoints:
+            self.endpoints[signature] = (resource, controller, request)
+        else:
+            raise Exception()
 
 class InternalClient(Client):
     """An internal API client."""
@@ -70,15 +82,15 @@ class InternalClient(Client):
 
     def execute(self, resource, request, subject=None, data=None, format=None, context=None):
         context = self._construct_context(context)
+        if isinstance(resource, dict):
+            resource = resource['id']
 
         format = format or self.format
         if not format:
             return self._dispatch_request(resource, request, subject, data, context)
 
     def _dispatch_request(self, resource, request, subject, data, context):
-        endpoint = (self.specification.name, self.specification.version, resource, request)
-        response = self.server.dispatch(endpoint, context, subject, data)
-
+        response = self.server.dispatch((resource, request), context, subject, data)
         if response.ok:
             return response
         else:

@@ -224,6 +224,28 @@ def construct_create_request(resource, declaration=None):
         }
     )
 
+def construct_load_request(resource, declaration=None):
+    fields = filter_schema_for_response(resource)
+    response_schema = Sequence(Structure(fields), nonnull=True)
+
+    schema = {
+        'attrs': Sequence(Text(nonempty=True), nonnull=True),
+        'identifiers': Sequence(resource.id_field.clone(), nonempty=True),
+    }
+
+    return Request(
+        name = 'load',
+        endpoint = (LOAD, resource.name),
+        auto_constructed = True,
+        resource = resource,
+        title = 'Loading %s' % pluralize(resource.title.lower()),
+        schema = Structure(schema),
+        responses = {
+            OK: Response(response_schema),
+            INVALID: Response(Errors),
+        }
+    )
+
 def construct_put_request(resource, declaration=None):
     resource_schema = {}
     for name, field in resource.filter_schema(exclusive=False, readonly=False).iteritems():
@@ -345,6 +367,7 @@ STANDARD_REQUESTS = {
     'create_update': construct_create_update_request,
     'delete': construct_delete_request,
     'get': construct_get_request(),
+    'load': construct_load_request,
     'put': construct_put_request,
     'query': construct_query_request(),
     'update': construct_update_request,

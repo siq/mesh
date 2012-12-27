@@ -57,13 +57,22 @@ STATUS_LINES = {
 }
 
 PATH_EXPR = r"""(?x)^%s
-    /(?P<bundle>[\w.]+)
-    /(?P<major>\d+)[.](?P<minor>\d+)
+    (?P<preamble>(?:/[\w.]+/\d+[.]\d+)+)
     /(?P<resource>\w+)
     (?:/(?P<subject>[-.:\w]+)(?P<tail>(?:/\w+)+)?)?
     (?:[!](?P<format>\w+))?
     /?$"""
+        
+BUNDLE_EXPR = re.compile(r"""(?x)
+    /(?P<bundle>[\w.]+)
+    /(?P<major>\d+)[.](?P<minor>\d+)""")
 
+INTROSPECTION_PATH_EXPR = r"""(?x)^%s
+    /(?P<bundle>[\w.]+)
+    /_(?P<request>[\w.]+)
+    (?:[!](?P<format>\w+))?
+    /?$"""
+    
 class Connection(object):
     def __init__(self, url, timeout=None):
         self.scheme, self.host, self.path = urlparse(url)[:3]
@@ -151,39 +160,63 @@ class HttpResponse(ServerResponse):
                 headers['Content-Length'] = str(len(self.content or ''))
 
 class Path(object):
-    """An HTTP request path."""
+    """An HTTP path."""
 
     def __init__(self, server, path):
         self.path = path
 
+        match = server.introspection_path_expr.match(path)
+        if match:
+            self._parse_introspection_path(server, path, match)
+            return
+
         match = server.path_expr.match(path)
-        if not match:
+        if match:
+            self._parse_request_path(server, path, match)
+        else:
             raise ValueError(path)
 
-        self.bundle = match.group('bundle')
-        if self.bundle not in server.bundles:
-            raise ValueError(path)
+    def __str__(self):
+        return self.path
 
-        self.resource = match.group('resource')
-        resource_path = [self.resource]
-
-        self.subject = match.group('subject')
-        if self.subject:
-            resource_path.append('id')
-
-        self.tail = match.group('tail')
-        if self.tail:
-            resource_path.append(self.tail)
-
+    def _parse_format(self, server, path, match):
         self.format = match.group('format')
         if self.format is not None and self.format not in server.formats:
             raise ValueError(path)
 
-        self.version = (int(match.group('major')), int(match.group('minor')))
-        self.resource_path = '/'.join(resource_path)
+    def _parse_introspection_path(self, server, path, match):
+        self.type = 'introspection'
+        self.bundle = match.group('bundle')
+        self.request = match.group('request')
+        self.format = self._parse_format(server, path, match)
 
-    def __str__(self):
-        return self.path
+    def _parse_request_path(self, server, path, match):
+        self.type = 'request'
+        self.format = self._parse_format(server, path, match)
+
+        candidates = list(BUNDLE_EXPR.finditer(match.group('preamble')))
+        if not candidates:
+            raise ValueError(path)
+
+        preamble = []
+        for candidate in candidates:
+            version = (int(candidate.group('major')), int(candidate.group('minor')))
+            preamble.extend([candidate.group('bundle'), version])
+
+        self.preamble = tuple(preamble)
+        self.resource = match.group('resource')
+        self.subject = match.group('subject')
+
+        self.tail = match.group('tail')
+        if self.tail:
+            self.tail = self.tail.lstrip('/')
+
+        tokens = [self.resource]
+        if self.subject:
+            tokens.append('id')
+        if self.tail:
+            tokens.append('tail')
+        self.signature = (self.preamble, '/'.join(tokens))
 
 class EndpointGroup(object):
     """An HTTP endpoint group."""
@@ -272,7 +305,9 @@ class HttpServer(WsgiServer):
             path_prefix = '/' + path_prefix.strip('/')
         else:
             path_prefix = ''
+
         self.path_expr = re.compile(PATH_EXPR % path_prefix)
+        self.introspection_path_expr = re.compile(INTROSPECTION_PATH_EXPR % path_prefix)
         
         self.bundles = {}
         for bundle in bundles:
@@ -281,13 +316,9 @@ class HttpServer(WsgiServer):
             else:
                 raise Exception()
 
+        self.descriptions = {}
         self.groups = {}
-        for name, bundle in self.bundles.iteritems():
-            for version, resources in bundle.versions.iteritems():
-                for resource, controller in resources.itervalues():
-                    for request in resource.requests.itervalues():
-                        if request.endpoint:
-                            self._construct_endpoint(name, version, resource, controller, request)
+        self._construct_endpoint_groups()
 
     def dispatch(self, method, path, mimetype, context, headers, data):
         response = HttpResponse()
@@ -311,13 +342,15 @@ class HttpServer(WsgiServer):
         except Exception:
             log('info', 'no path found for %s', path)
             return response(NOT_FOUND)
-    
+
         request = HttpRequest(method, path, mimetype, headers, context)
         request.format = self._identify_response_format(request)
 
-        signature = (path.bundle, path.version, path.resource_path)
-        if signature in self.groups:
-            groups = self.groups[signature]
+        if path.type == 'introspection':
+            return self._dispatch_introspection(request, response)
+
+        if path.signature in self.groups:
+            groups = self.groups[path.signature]
             if method in groups:
                 group = groups[method]
             else:
@@ -344,9 +377,13 @@ class HttpServer(WsgiServer):
             
         return response
 
-    def _construct_endpoint(self, bundle, version, resource, controller, request):
+    def _construct_endpoint(self, preamble, resource, controller, request):
+        preamble = tuple(preamble)
+        if not request.endpoint:
+            return
+
         method, path = request.endpoint
-        signature = (bundle, version, path)
+        signature = (preamble, path)
 
         if signature in self.groups:
             groups = self.groups[signature]
@@ -360,6 +397,41 @@ class HttpServer(WsgiServer):
                 controller, self.mediators)
 
         group.attach(request)
+
+    def _construct_endpoint_groups(self):
+        for name, bundle in self.bundles.iteritems():
+            for version, candidates in bundle.versions.iteritems():
+                preamble = [name, version]
+                for subname, candidate in candidates.iteritems():
+                    if isinstance(candidate, dict):
+                        for subversion, resources in candidate.iteritems():
+                            subpreamble = preamble + [subname, subversion]
+                            for resource, controller in resources.itervalues():
+                                for request in resource.requests.itervalues():
+                                    self._construct_endpoint(subpreamble, resource, controller, request)
+                    else:
+                        resource, controller = candidate
+                        for request in resource.requests.itervalues():
+                            self._construct_endpoint(preamble, resource, controller, request)
+
+    def _dispatch_introspection(self, request, response):
+        if request.method != GET:
+            return response(METHOD_NOT_ALLOWED)
+
+        bundle = request.path.bundle
+        if request.path.request == 'specification':
+            response(OK, self._get_description(bundle))
+
+        if response.content:
+            self._prepare_response_content(request, response)
+        return response
+
+    def _get_description(self, name):
+        try:
+            return self.descriptions[name]
+        except KeyError:
+            self.descriptions[name] = self.bundles[name].describe()
+            return self.descriptions[name]
 
     def _identify_response_format(self, request):
         if request.accept:
@@ -399,8 +471,6 @@ class HttpClient(Client):
         self.context_header_prefix = context_header_prefix or self.DEFAULT_HEADER_PREFIX
         self.paths = {}
         self.url = url.rstrip('/')
-        self.initial_path = '/%s/%d.%d/' % (self.specification.name,
-            self.specification.version[0], self.specification.version[1])
 
     def construct_headers(self, context=None):
         headers = {}
@@ -451,12 +521,14 @@ class HttpClient(Client):
             'data': data, 'headers': headers}
 
     def _prepare_request(self, resource, request, subject=None, data=None, format=None, context=None):
+        if not isinstance(resource, dict):
+            resource = self.specification.find(resource)
+        request = resource['requests'][request]
+
         format = format or self.format
-        request = self.specification.resources[resource]['requests'][request]
-
         method, path = request['endpoint']
-        mimetype = None
 
+        mimetype = None
         if data is not None:
             data = request['schema'].process(data, OUTGOING, True)
             if method == GET:
@@ -466,7 +538,7 @@ class HttpClient(Client):
                 data = format.serialize(data)
                 mimetype = format.mimetype
 
-        path = self._get_path(path)
+        path = self._get_path(request['path'])
         if subject:
             path = path % (subject, format.name)
         else:
@@ -482,7 +554,7 @@ class HttpClient(Client):
         try:
             return self.paths[path]
         except KeyError:
-            template = '%s%s!%%s' % (self.initial_path, re.sub(r'\/id(?=\/|$)', '/%s', path))
+            template = '%s!%%s' % re.sub(r'\/id(?=\/|$)', '/%s', path)
             self.paths[path] = template
             return template
 

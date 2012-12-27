@@ -121,14 +121,22 @@ class Generator(object):
         self.mimetype = mimetype or JSON
         self.template_dir = template_dir
 
-    def generate(self, bundle, version):
+    def generate(self, bundle):
+        description = bundle.describe()
+
         files = {}
+        self._generate_versions(bundle, description['versions'], files)
+        return {bundle.name: files}
 
-        description = bundle.describe(version)
-        for name, resource in description['resources'].iteritems():
-            files['%s.js' % name] = self._construct_resource(resource, description['id'])
-
-        return files
+    def _generate_versions(self, bundle, versions, files):
+        for version, candidates in versions.iteritems():
+            items = files[version] = {}
+            for name, candidate in candidates.iteritems():
+                if candidate['__subject__'] == 'resource':
+                    items['%s.js' % name] = self._construct_resource(candidate, bundle.name)
+                elif candidate['__subject__'] == 'bundle':
+                    subitems = items[candidate['name']] = {}
+                    self._generate_versions(bundle, candidate['versions'], subitems)
 
     def _construct_field(self, field):
         specification = {'__type__': self.FIELDS[field['__type__']]}

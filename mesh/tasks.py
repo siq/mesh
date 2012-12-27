@@ -1,5 +1,6 @@
 from bake import *
 from bake.util import execute_python_shell
+from mesh.util import StructureFormatter
 from scheme import *
 from scheme.supplemental import ObjectReference
 
@@ -76,46 +77,67 @@ class GenerateJavascriptBindings(Task):
         'mimetype': Text(description='mimetype'),
         'path': Path(description='path to target directory', required=True),
         'templates': Path(description='path to templates directory'),
-        'version': Tuple((Integer(), Integer()), description='version to build', required=True),
     }
 
     def run(self, runtime):
         from mesh.binding.javascript import Generator
         generator = Generator(template_dir=self['templates'], mimetype=self['mimetype'])
-        files = generator.generate(self['bundle'], self['version'])
 
         root = self['path']
-        if not root.exists():
-            root.makedirs_p()
-        if not root.isdir():
-            raise TaskError('...')
+        if not (root.exists() and root.isdir()):
+            raise TaskError('path is not an existing directory')
 
-        for filename, content in files.iteritems():
-            (root / filename).write_bytes(content)
+        files = generator.generate(self['bundle'])
+        self._create_files(root, files)
 
+    def _create_files(self, root, files):
+        for name, content in files.iteritems():
+            if isinstance(content, dict):
+                directory = root / name
+                directory.mkdir()
+                self._create_files(directory, content)
+            else:
+                (root / name).write_bytes(content)
 
 class GeneratePythonBindings(Task):
     name = 'mesh.python'
     description = 'generate python bindings for a mesh bundle'
     parameters = {
-        'binding_module': Text(description='binding module', default='mesh.standard.python'),
-        'bundle': ObjectReference(description='module path of bundle', required=True),
+        'binding_module': Text(default='mesh.standard.python'),
+        'bundle': ObjectReference(required=True),
         'mixin_modules': Sequence(Text()),
         'path': Path(description='path to target directory', required=True),
-        'version': Text(description='version to build', default='1.0'),
     }
 
     def run(self, runtime):
         from mesh.binding.python import BindingGenerator
         generator = BindingGenerator(binding_module=self['binding_module'],
             mixin_modules=self['mixin_modules'])
-        filename, source = generator.generate(self['bundle'], self['version'])
+        filename, source = generator.generate(self['bundle'])
 
         root = self['path']
         if not (root.exists() and root.isdir()):
-            raise TaskError('...')
+            raise TaskError('path is not an existing directory')
 
         (root / filename).write_bytes(source)
+
+class GenerateSpecification(Task):
+    name = 'mesh.specification'
+    description = 'generate the specification for a bundle'
+    parameters = {
+        'bundle': ObjectReference(required=True),
+        'path': Path(required=True),
+        'versions': Text(),
+    }
+
+    def run(self, runtime):
+        versions = None
+        if self['versions']:
+            version = str(self['versions']).split(',')
+
+        description = self['bundle'].describe(versions)
+        content = StructureFormatter().format(description)
+        self['path'].write_bytes(content)
 
 class StartWsgiServer(Task):
     name = 'mesh.wsgi'

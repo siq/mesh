@@ -93,19 +93,19 @@ class Client(object):
         raise NotImplementedError()
 
     @classmethod
-    def get_client(cls, id):
-        if isinstance(id, Specification):
-            id = id.id
-        return cls.clients.get(id)
+    def get_client(cls, name):
+        if isinstance(name, Specification):
+            name = name.name
+        return cls.clients.get(name)
 
     def register(self):
-        self.clients[self.specification.id] = self
+        self.clients[self.specification.name] = self
         return self
 
     def unregister(self):
-        id = self.specification.id
-        if self.clients.get(id) is self:
-            del self.clients[id]
+        name = self.specification.name
+        if self.clients.get(name) is self:
+            del self.clients[name]
         return self
 
     def _construct_context(self, additional=None):

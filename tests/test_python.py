@@ -7,16 +7,13 @@ from mesh.transport.internal import *
 from fixtures import *
 
 server = InternalServer([primary_bundle])
-specification = primary_bundle.specify((1, 0))
+specification = primary_bundle.specify()
 client = InternalClient(server, specification).register()
 
-from mesh.standard.python import Model
+from mesh.binding.python import Binding
 
-class Example(Model):
-    __resource__ = (specification, 'example')
-
-    def __repr__(self):
-        return '[%s, %s]' % (self.required_field, self.integer_field)
+binding = Binding(specification)
+Example = binding.generate('primary/1.0/example')
 
 class TestPythonInterface(TestCase):
     def setUp(self):
