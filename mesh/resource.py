@@ -302,7 +302,7 @@ class ResourceMeta(type):
             for name, field in schema.iteritems():
                 namespace['schema'][name] = Field.reconstruct(field)
         
-        resource = type(description['title'], (resource,), namespace)
+        resource = type(str(description['title']), (resource,), namespace)
         resource.id_field = resource.schema.get(resource.configuration.id_field.name)
 
         requests = description.get('requests')
@@ -333,7 +333,7 @@ class ControllerMeta(type):
             if not issubclass(resource, Resource):
                 raise SpecificationError('controller %r specifies an invalid resource' % name)
             if not (isinstance(version, tuple) and len(version) == 2 and version[0] >= 1 and version[1] >= 0):
-                raise SpecificationError('controller %r specifies an invalid version' % name)
+                raise SpecificationError('controller %r specifies an invalid version: %r' % (name, version))
             if version[0] in resource.versions:
                 resource = controller.resource = resource.versions[version[0]]
             else:

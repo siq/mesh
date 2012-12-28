@@ -317,8 +317,24 @@ class HttpServer(WsgiServer):
                 raise Exception()
 
         self.descriptions = {}
+        self.configure_endpoints()
+
+    def configure_endpoints(self):
         self.groups = {}
-        self._construct_endpoint_groups()
+        for name, bundle in self.bundles.iteritems():
+            for version, candidates in bundle.versions.iteritems():
+                preamble = [name, version]
+                for subname, candidate in candidates.iteritems():
+                    if isinstance(candidate, dict):
+                        for subversion, resources in candidate.iteritems():
+                            subpreamble = preamble + [subname, subversion]
+                            for resource, controller in resources.itervalues():
+                                for request in resource.requests.itervalues():
+                                    self._construct_endpoint(subpreamble, resource, controller, request)
+                    else:
+                        resource, controller = candidate
+                        for request in resource.requests.itervalues():
+                            self._construct_endpoint(preamble, resource, controller, request)
 
     def dispatch(self, method, path, mimetype, context, headers, data):
         response = HttpResponse()
@@ -397,22 +413,6 @@ class HttpServer(WsgiServer):
                 controller, self.mediators)
 
         group.attach(request)
-
-    def _construct_endpoint_groups(self):
-        for name, bundle in self.bundles.iteritems():
-            for version, candidates in bundle.versions.iteritems():
-                preamble = [name, version]
-                for subname, candidate in candidates.iteritems():
-                    if isinstance(candidate, dict):
-                        for subversion, resources in candidate.iteritems():
-                            subpreamble = preamble + [subname, subversion]
-                            for resource, controller in resources.itervalues():
-                                for request in resource.requests.itervalues():
-                                    self._construct_endpoint(subpreamble, resource, controller, request)
-                    else:
-                        resource, controller = candidate
-                        for request in resource.requests.itervalues():
-                            self._construct_endpoint(preamble, resource, controller, request)
 
     def _dispatch_introspection(self, request, response):
         if request.method != GET:

@@ -92,11 +92,20 @@ class Client(object):
     def execute(self, resource, request, subject=None, data=None, format=None, context=None):
         raise NotImplementedError()
 
+    def extract(self, resource, request, subject):
+        request = self.get_request(resource, request)
+        return request['schema'].extract(subject)
+
     @classmethod
     def get_client(cls, name):
         if isinstance(name, Specification):
             name = name.name
         return cls.clients.get(name)
+
+    def get_request(self, resource, request):
+        if not isinstance(resource, dict):
+            resource = self.specification.find(resource)
+        return resource['requests'][request]
 
     def register(self):
         self.clients[self.specification.name] = self
