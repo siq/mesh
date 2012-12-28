@@ -18,13 +18,22 @@ def versions(version=None, min_version=None, max_version=None):
         return method
     return decorator
 
+def _execute_wrapper(method, bundle, version):
+    def wrapper(resource, *args, **kwargs):
+        if isinstance(resource, basestring):
+            resource = '%s/%s.%s/%s' % (bundle.name, version[0], version[1], resource)
+        return method(resource, *args, **kwargs)
+
+    return wrapper
+
 def _construct_test_method(function, bundle, generator, version, context, mediators):
     test_client = os.environ.get('MESH_TEST_CLIENT', '')
     if test_client[:4] == 'http':
         url = test_client[5:]
         def test(self):
-            specification = bundle.specify(version)
+            specification = bundle.specify()
             client = HttpClient(url, specification, context=context)
+            client.execute = _execute_wrapper(client.execute, bundle, version)
 
             if generator:
                 client.register()
@@ -38,9 +47,10 @@ def _construct_test_method(function, bundle, generator, version, context, mediat
                 call_with_supported_params(function, self, client=client)
     else:
         def test(self):
-            specification = bundle.specify(version)
+            specification = bundle.specify()
             server, client = InternalTransport.construct_fixture(bundle, specification,
                 context=context, mediators=mediators)
+            client.execute = _execute_wrapper(client.execute, bundle, version)
 
             if generator:
                 client.register()
