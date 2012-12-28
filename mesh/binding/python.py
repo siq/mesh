@@ -190,9 +190,20 @@ class Model(object):
         if data:
             self._data.update(data)
 
-def bind(binding, name):
+class ResourceSet(dict):
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(name)
+
+def bind(binding, name, mixin_modules=None):
     if isinstance(binding, basestring):
         binding = import_object(binding)
+
+    if isinstance(binding, Bundle):
+        specification = binding.specify()
+        binding = Binding(specification, mixin_modules)
 
     if isinstance(binding, ModuleType):
         binding = getattr(binding, 'binding', None)
@@ -244,11 +255,10 @@ class Binding(object):
         if '__subject__' in resource:
             target = self._generate_model(resource)
         else:
-            resources = {}
+            target = ResourceSet()
             for candidate in resource.itervalues():
                 if candidate['__subject__'] == 'resource':
-                    resources[candidate['classname']] = self._generate_model(candidate)
-            target = type('resources', (object,), resources)
+                    target[candidate['classname']] = self._generate_model(candidate)
 
         self.cache[name] = target
         return target

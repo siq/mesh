@@ -17,14 +17,12 @@ class ClientShell(Task):
     source = """
         def _generate_mesh_binding():
             from bake.util import import_object
-            from mesh.standard import generate_dynamic_binding
+            from mesh.standard import bind
             from mesh.transport.http import HttpClient
 
             bundle = import_object(%(bundle)r)
-            specification = bundle.specify(%(version)r)
-
-            HttpClient(%(url)r, specification).register()
-            return generate_dynamic_binding(bundle, %(version)r)
+            HttpClient(%(url)r, bundle.specify()).register()
+            return bind(bundle, bundle.name + '/' + %(version)r)
 
         API = _generate_mesh_binding()
         del _generate_mesh_binding
@@ -33,13 +31,10 @@ class ClientShell(Task):
     ipython_source = """
         def _prepare_mesh_environment():
             ip = get_ipython()
-            models = []
-            for name, resource in sorted(API.specification['resources'].iteritems()):
-                classname = resource['classname']
-                models.append(classname)
-                ip.ex(classname + ' = getattr(API, "' + classname + '")')
+            for name in API:
+                ip.ex(name + ' = getattr(API, "' + name + '")')
 
-            print 'Models available: ' + ', '.join(models)
+            print 'Models available: ' + ', '.join(sorted(API))
 
         _prepare_mesh_environment()
         del _prepare_mesh_environment
@@ -129,15 +124,11 @@ class GenerateSpecification(Task):
     parameters = {
         'bundle': ObjectReference(required=True),
         'path': Path(required=True),
-        'versions': Text(),
+        'targets': Sequence(Text()),
     }
 
     def run(self, runtime):
-        versions = None
-        if self['versions']:
-            version = str(self['versions']).split(',')
-
-        description = self['bundle'].describe(versions)
+        description = self['bundle'].describe(self['targets'])
         content = StructureFormatter().format(description)
         self['path'].write_bytes(content)
 
