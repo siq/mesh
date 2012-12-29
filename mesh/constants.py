@@ -1,4 +1,5 @@
 FIELD_PARAMETERS = ('readonly', 'deferred', 'sortable', 'operators')
+RETURNING = 'returning'
 
 DELETE = 'DELETE'
 GET = 'GET'

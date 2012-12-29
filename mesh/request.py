@@ -235,8 +235,6 @@ class Request(object):
 
     def process(self, controller, request, response, mediators=None):
         log('debug', 'beginning to process %r', request)
-
-
         if mediators:
             for mediator in mediators:
                 try:
