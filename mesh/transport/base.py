@@ -76,10 +76,7 @@ class Client(object):
 
     clients = {}
 
-    def __init__(self, specification, context=None, format=None, formats=None):
-        if not isinstance(specification, Specification):
-            specification = Specification(specification)
-
+    def __init__(self, specification=None, context=None, format=None, formats=None):
         self.context = context or {}
         self.format = format
         self.specification = specification

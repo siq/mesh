@@ -459,17 +459,24 @@ class HttpClient(Client):
 
     DEFAULT_HEADER_PREFIX = 'X-MESH-'
 
-    def __init__(self, url, specification, context=None, format=Json, formats=None,
-            context_header_prefix=None, timeout=None):
+    def __init__(self, url, specification=None, context=None, format=Json, formats=None,
+            context_header_prefix=None, timeout=None, bundle=None):
 
+        super(HttpClient, self).__init__(context, format, formats)
         if '//' not in url:
             url = 'http://' + url
 
-        super(HttpClient, self).__init__(specification, context, format, formats)
         self.connection = Connection(url, timeout)
-        self.context = context
+        if bundle and not specification:
+            specification = self._introspect_bundle(bundle)
+        if not specification:
+            raise ValueError(specification)
+        if not isinstance(specification, Specification):
+            specification = Specification(specification)
+
         self.context_header_prefix = context_header_prefix or self.DEFAULT_HEADER_PREFIX
         self.paths = {}
+        self.specification = specification
         self.url = url.rstrip('/')
 
     def construct_headers(self, context=None):
@@ -520,6 +527,11 @@ class HttpClient(Client):
         return {'method': method, 'url': self.url + path, 'mimetype': mimetype,
             'data': data, 'headers': headers}
 
+    def _introspect_bundle(self, bundle):
+        response = self.connection.request(GET, '%s/_specification' % bundle,
+            headers=self.construct_headers())
+        return self.format.unserialize(response.content)
+        
     def _prepare_request(self, resource, request, subject=None, data=None, format=None, context=None):
         if not isinstance(resource, dict):
             resource = self.specification.find(resource)

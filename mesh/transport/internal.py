@@ -77,8 +77,12 @@ class InternalClient(Client):
     """An internal API client."""
 
     def __init__(self, server, specification, context=None, format=None, formats=None):
-        super(InternalClient, self).__init__(specification, context, format, formats)
+        if not isinstance(specification, Specification):
+            specification = Specification(specification)
+
+        super(InternalClient, self).__init__(context, format, formats)
         self.server = server
+        self.specification = specification
 
     def execute(self, resource, request, subject=None, data=None, format=None, context=None):
         context = self._construct_context(context)

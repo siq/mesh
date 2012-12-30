@@ -121,7 +121,7 @@ class Model(object):
         for attr, field in resource['schema'].iteritems():
             namespace[attr] = attributes[attr] = Attribute(attr, field)
 
-        return type(resource['classname'], tuple(bases), namespace)
+        return type(str(resource['classname']), tuple(bases), namespace)
 
     @classmethod
     def get(cls, id, **params):
@@ -201,14 +201,14 @@ def bind(binding, name, mixin_modules=None):
     if isinstance(binding, basestring):
         binding = import_object(binding)
 
-    if isinstance(binding, Bundle):
-        specification = binding.specify()
-        binding = Binding(specification, mixin_modules)
-
     if isinstance(binding, ModuleType):
         binding = getattr(binding, 'binding', None)
-        if binding is None:
-            raise TypeError(binding)
+
+    if isinstance(binding, Bundle):
+        binding = binding.specify()
+
+    if isinstance(binding, (Specification, dict)):
+        binding = Binding(binding, mixin_modules)
 
     if not isinstance(binding, Binding):
         raise TypeError(binding)

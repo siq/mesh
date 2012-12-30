@@ -153,6 +153,9 @@ class Bundle(object):
         return Bundle(name, *mounts)
 
     def describe(self, targets=None):
+        if isinstance(targets, basestring):
+            targets = targets.split(' ')
+
         description = {'__version__': 1, 'name': self.name, 'versions': {}}
         if self.description:
             description['description'] = description
@@ -290,7 +293,7 @@ class Specification(object):
             else:
                 name = path[4]
                 if version in resource['versions'] and name in resource['versions'][version]:
-                    resource = resources['versions'][version][name]
+                    resource = resource['versions'][version][name]
                 else:
                     raise KeyError(path)
 
