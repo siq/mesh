@@ -80,7 +80,8 @@ class InternalClient(Client):
         if not isinstance(specification, Specification):
             specification = Specification(specification)
 
-        super(InternalClient, self).__init__(context, format, formats)
+        super(InternalClient, self).__init__(context=context, format=format,
+                formats=formats)
         self.server = server
         self.specification = specification
 
