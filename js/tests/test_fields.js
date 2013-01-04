@@ -402,5 +402,134 @@ define([
         });
     });
 
+    module('validation errors');
+
+    test('instanceof Error', function() {
+        ok(fields.ValidationError() instanceof Error);
+    });
+
+    test('toString is validationerror', function() {
+        equal(fields.ValidationError().toString(), 'validationerror');
+    });
+
+    test('name property equals token property', function() {
+        var e = fields.ValidationError();
+        equal(e.name, e.token);
+    });
+
+    test('messages work', function() {
+        equal(fields.ValidationError('foo').toString(), 'validationerror: foo');
+    });
+
+    test('inheriting maintains instanceof correctly', function() {
+        ok(fields.InvalidTypeError() instanceof Error);
+        ok(fields.InvalidTypeError() instanceof fields.ValidationError);
+    });
+
+    test('tokens inherit correctly', function() {
+        equal(fields.InvalidTypeError().toString(), 'invalidtypeerror');
+        equal(fields.InvalidTypeError().token, 'invalidtypeerror');
+        equal(fields.InvalidTypeError().name, 'invalidtypeerror');
+    });
+
+    module('validating multiple items');
+
+    function assertValidation(schema, value, assertion) {
+        var threw = false;
+        try {
+            schema.validate(value);
+        } catch (e) {
+            threw = true;
+            if (! (e instanceof fields.ValidationError)) {
+                throw e;
+            }
+            assertion(e);
+        }
+        ok(threw, 'validation should have failed');
+    }
+
+    test('map', function() {
+        assertValidation(fields.MapField({
+                nonnull: false,
+                required: false,
+                value: fields.TextField({
+                    nonnull: true,
+                    required: false,
+                    strip: true
+                })
+            }),
+            {foo: 123, bar: 456},
+            function(e) {
+                ok(_.isObject(e.structure), 'error structure is object');
+                ok(_.isArray(e.structure.foo), 'array of errors for foo');
+                equal(e.structure.foo.length, 1, 'foo has only one error');
+                equal(e.structure.foo[0].token, 'invalidtypeerror',
+                    'foo is an invalidtypeerror');
+                equal(e.structure.bar.length, 1, 'bar has only one error');
+                equal(e.structure.bar[0].token, 'invalidtypeerror',
+                    'bar is an invalidtypeerror');
+            });
+    });
+
+    test('sequence', function() {
+        assertValidation(fields.SequenceField({
+                nonnull: false,
+                required: false,
+                unique: false,
+                item: fields.TextField({
+                    nonnull: true,
+                    required: false,
+                    strip: true
+                })
+            }),
+            [123, 'abc', null],
+            function(e) {
+                ok(_.isArray(e.structure), 'error structure is array');
+                equal(e.structure.length, 3,
+                    'error structure has one item for each item in value');
+                ok(_.isArray(e.structure[0]), 'array of errors for first item');
+                equal(e.structure[0].length, 1, 'first item has only one error');
+                equal(e.structure[0][0].token, 'invalidtypeerror',
+                    'first item is an invalidtypeerror');
+                ok(e.structure[1] == null, 'second item is null');
+                ok(_.isArray(e.structure[2]), 'array of errors for last item');
+                equal(e.structure[2].length, 1, 'last item has only one error');
+                equal(e.structure[2][0].token, 'nonnull',
+                    'last item is an nonnull');
+            });
+    });
+
+    test('structure', function() {
+        assertValidation(fields.StructureField({
+                nonnull: false,
+                required: false,
+                strict: true,
+                structure: {
+                    id: fields.UUIDField({nonnull: true, required: true}),
+                    name: fields.TextField({
+                        nonnull: true,
+                        required: true,
+                        strip: true
+                    }),
+                    age: fields.IntegerField({nonnull: true, required: true})
+                }
+            }),
+            {name: 123, age: 123},
+            function(e) {
+                ok(_.isObject(e.structure), 'error structure is object');
+                ok(_.isArray(e.structure.name), 'array of errors for name');
+                equal(e.structure.name.length, 1, 'name has only one error');
+                equal(e.structure.name[0].token, 'invalidtypeerror',
+                    'name is an invalidtypeerror');
+                equal(e.structure.id.length, 1, 'id has only one error');
+                equal(e.structure.id[0].token, 'nonnull',
+                    'id is a nonnull error');
+            });
+    });
+
+    // TODO: test for polymorphic and nested structures
+
+    // TODO: test validation for everything after 'structure'
+
     start();
 });

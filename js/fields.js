@@ -23,12 +23,20 @@ define([
         return '[' + sequence.join(',') + ']';
     };
 
-    var ValidationError = Class.extend({
-        token: 'validationerror',
-        init: function(message, params) {
-            this.message = message;
-            $.extend(true, this, params);
-        }
+    // we want ValidationError's to behave like Error's, but still get the
+    // benefits of Class.extend, so we'll have to munge them a bit here
+    var token = 'validationerror', ValidationError = Class.extend();
+    ValidationError.prototype = new Error(token);
+    ValidationError.prototype.name = ValidationError.prototype.token = token;
+    ValidationError.prototype.init = function(message, params) {
+        this.message = message;
+        $.extend(true, this, params);
+    };
+    ValidationError.extend = _.wrap(ValidationError.extend, function(extend) {
+        var args = Array.prototype.slice.call(arguments, 1),
+            ret = extend.apply(this, args);
+        ret.prototype.name = ret.prototype.token;
+        return ret;
     });
 
     var InvalidTypeError = ValidationError.extend({token: 'invalidtypeerror'});
@@ -37,6 +45,9 @@ define([
     // fiedls, but scheme seems to use 'nonnull' -- try to match the backend
     // here
     var NonNullError = ValidationError.extend({token: 'nonnull'});
+
+    // when we validate, we roll-up multiple errors into one CompoundError
+    var CompoundError = ValidationError.extend({token: 'compounderror'});
 
     var Field = Class.extend({
         structural: false,
@@ -75,12 +86,13 @@ define([
             value = this._normalizeValue(value);
             if (value == null) {
                 if (this.nonnull) {
-                    throw new ValidationError('nonnull');
+                    throw NonNullError('nonnull');
                 } else {
                     return value;
                 }
             }
             this._validateValue(value);
+            this._validateType(value);
             if (mimetype) {
                 value = this.serialize(value, mimetype, true);
             }
@@ -107,7 +119,8 @@ define([
         Field: Field,
         InvalidTypeError: InvalidTypeError,
         ValidationError: ValidationError,
-        NonNullError: NonNullError
+        NonNullError: NonNullError,
+        CompoundError: CompoundError
     };
 
     fields.BooleanField = Field.extend({
@@ -303,6 +316,31 @@ define([
                 value[name] = value_field.unserialize(value[name], mimetype);
             }
             return value;
+        },
+
+        validate: function(value, mimetype) {
+            var error;
+
+            this._super.apply(this, arguments);
+
+            for (var k in value) {
+                if (value.hasOwnProperty(k)) {
+                    try {
+                        this.value.validate(value[k]);
+                    } catch (e) {
+                        if (!error) {
+                            error = CompoundError(null, {structure: {}});
+                        }
+                        error.structure[k] = [e];
+                    }
+                }
+            }
+
+            if (error) {
+                throw error;
+            }
+
+            return this;
         }
     });
 
@@ -348,6 +386,40 @@ define([
                 value[i] = item.unserialize(value[i], mimetype);
             }
             return value;
+        },
+
+        validate: function(value, mimetype) {
+            var i, j, l, error, failed;
+
+            this._super.apply(this, arguments);
+
+            for (i = 0, l = value.length; i < l; i++) {
+                failed = false;
+                try {
+                    this.item.validate(value[i]);
+                } catch (e) {
+                    if (! (e instanceof ValidationError)) {
+                        throw e;
+                    }
+                    failed = true;
+                    if (!error) {
+                        error = CompoundError(null, {structure: []});
+                        for (j = 0; j < i; j++) {
+                            error.structure.push(null);
+                        }
+                    }
+                    error.structure.push([e]);
+                }
+                if (!failed && error) {
+                    error.structure.push(null);
+                }
+            }
+
+            if (error) {
+                throw error;
+            }
+
+            return this;
         }
     });
 
@@ -456,6 +528,47 @@ define([
             } else {
                 return this.structure;
             }
+        },
+
+        validate: function(value, mimetype) {
+            var name, field, structure, error;
+
+            this._super.apply(this, arguments);
+
+            structure = this._get_structure(value);
+            for (name in value) {
+                if (value.hasOwnProperty(name)) {
+                    field = structure[name];
+                    if (field == null) {
+                        throw new fields.ValidationError(
+                                'attempt to validate unknown field "' +
+                                name + '"');
+                    }
+                    try {
+                        field.validate(value, mimetype);
+                    } catch (e) {
+                        error = error || CompoundError(null, {structure: {}});
+                        error.structure[name] = [e];
+                    }
+                }
+            }
+
+            for (name in structure) {
+                if (structure.hasOwnProperty(name)) {
+                    if (structure[name].required && value[name] == null) {
+                        error = error || CompoundError(null, {structure: {}});
+                        error.structure[name] = 
+                            [NonNullError('missing required field "' +
+                                    name + '"')];
+                    }
+                }
+            }
+
+            if (error) {
+                throw error;
+            }
+
+            return this;
         }
     });
 
