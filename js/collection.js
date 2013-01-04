@@ -266,8 +266,11 @@ define([
                 }
                 dfd.resolve(results);
                 self.trigger('update', self, results);
-            }).fail(function(error) {
-                dfd.reject(error);
+            }).fail(function(error, xhr) {
+                self.status = xhr.statusText;
+                self.xhrStatus = xhr.status;
+                dfd.reject(error, xhr);
+                self.trigger('load-error', self, error);
             });
 
             return dfd;
