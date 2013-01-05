@@ -267,8 +267,8 @@ define([
                 dfd.resolve(results);
                 self.trigger('update', self, results);
             }).fail(function(error, xhr) {
-                self.status = xhr.statusText;
-                self.xhrStatus = xhr.status;
+                self.status = xhr && xhr.statusText;
+                self.xhrStatus = xhr && xhr.status;
                 dfd.reject(error, xhr);
                 self.trigger('load-error', self, error);
             });
