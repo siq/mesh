@@ -485,6 +485,7 @@ class HttpClient(Client):
         if context is not False:
             for name, value in self._construct_context(context).iteritems():
                 headers[self.context_header_prefix + name] = value
+
         return headers
 
     def execute(self, resource, request, subject=None, data=None, format=None, context=None):

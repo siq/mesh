@@ -64,9 +64,16 @@ class Model(object):
     repr_attrs = ('id', 'name', 'status', 'platform_id')
 
     def __init__(self, **params):
-        self._data = {}
-        if params:
-            self._update_model(params)
+        if not params:
+            self._data = {}
+            return
+
+        attributes = self._attributes
+        for key in params:
+            if key not in attributes:
+                raise AttributeError(key)
+
+        self._data = params
 
     def __repr__(self):
         attrs = []

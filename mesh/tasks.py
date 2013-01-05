@@ -8,6 +8,8 @@ class ClientShell(Task):
     name = 'mesh.shell'
     description = 'the mesh client shell'
     parameters = {
+        'context': Map(Text()),
+        'context_header_prefix': Text(),
         'bundle': Text(required=True),
         'url': Text(required=True),
         'version': Text(default='1.0'),
@@ -21,7 +23,8 @@ class ClientShell(Task):
             from mesh.transport.http import HttpClient
 
             bundle = import_object(%(bundle)r)
-            HttpClient(%(url)r, bundle.specify()).register()
+            HttpClient(%(url)r, bundle.specify(), context=%(context)r,
+                context_header_prefix=%(context_header_prefix)r).register()
             return bind(bundle, bundle.name + '/' + %(version)r)
 
         API = _generate_mesh_binding()
