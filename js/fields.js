@@ -32,6 +32,9 @@ define([
         this.message = message;
         $.extend(true, this, params);
     };
+    ValidationError.prototype.toString = function() {
+        return this.message != null? this.name + ': ' + this.message : this.name;
+    };
     ValidationError.extend = _.wrap(ValidationError.extend, function(extend) {
         var args = Array.prototype.slice.call(arguments, 1),
             ret = extend.apply(this, args);
@@ -48,6 +51,15 @@ define([
 
     // when we validate, we roll-up multiple errors into one CompoundError
     var CompoundError = ValidationError.extend({token: 'compounderror'});
+
+    // when we're validating a structure, and there's some property on the
+    // value that the defined structure doesn't know how to handle (like the
+    // client-side id field of a model), it will throw an 'UnknownFieldError'.
+    //
+    // so when you want to validate a model object, and you just want to ignore
+    // all of the spurious errors you get for stuff like 'cant validate the
+    // client-side id', just catch and ignore UnknownFieldError's
+    var UnknownFieldError = ValidationError.extend({token: 'unknownfielderror'});
 
     var Field = Class.extend({
         structural: false,
@@ -120,7 +132,8 @@ define([
         InvalidTypeError: InvalidTypeError,
         ValidationError: ValidationError,
         NonNullError: NonNullError,
-        CompoundError: CompoundError
+        CompoundError: CompoundError,
+        UnknownFieldError: UnknownFieldError
     };
 
     fields.BooleanField = Field.extend({
@@ -285,7 +298,7 @@ define([
             return extraction;
         },
 
-        serialize: function(value, mimetype, outermost) {
+        serialize: function(value, mimetype, options) {
             var value_field = this.value;
             if (value == null) {
                 return value;
@@ -299,7 +312,7 @@ define([
                     value[name] = value_field.serialize(value[name], mimetype);
                 }
             }
-            if (mimetype === URLENCODED && !outermost) {
+            if (mimetype === URLENCODED) {
                 value = urlencodeMapping(value);
             }
             return value;
@@ -446,7 +459,7 @@ define([
             return extraction;
         },
 
-        serialize: function(value, mimetype, outermost) {
+        serialize: function(value, mimetype, options) {
             var structure, name, field, errors;
             if (value == null) {
                 return value;
@@ -459,7 +472,10 @@ define([
                 if (value.hasOwnProperty(name)) {
                     field = structure[name];
                     if (field == null) {
-                        throw new fields.ValidationError('attempt to serialize unknown field "' + name + '"');
+                        if (!options || !options.ignoreUnknownFields) {
+                            throw fields.UnknownFieldError('attempt to serialize "'+name+'"');
+                        }
+                        continue;
                     }
                     if (field.structural && value[name] == null) {
                         delete value[name];
@@ -488,7 +504,7 @@ define([
                 });
             }
             
-            if (mimetype === URLENCODED && !outermost) {
+            if (mimetype === URLENCODED) {
                 value = urlencodeMapping(value);
             }
             return value;
@@ -530,7 +546,7 @@ define([
             }
         },
 
-        validate: function(value, mimetype) {
+        validate: function(value, mimetype, options) {
             var name, field, structure, error;
 
             this._super.apply(this, arguments);
@@ -540,12 +556,14 @@ define([
                 if (value.hasOwnProperty(name)) {
                     field = structure[name];
                     if (field == null) {
-                        throw new fields.ValidationError(
-                                'attempt to validate unknown field "' +
-                                name + '"');
+                        if (!options || !options.ignoreUnknownFields) {
+                            throw fields.UnknownFieldError(
+                                    'attempt to validate "'+name+'"');
+                        }
+                        continue;
                     }
                     try {
-                        field.validate(value, mimetype);
+                        field.validate(value[name], mimetype);
                     } catch (e) {
                         error = error || CompoundError(null, {structure: {}});
                         error.structure[name] = [e];
@@ -557,9 +575,12 @@ define([
                 if (structure.hasOwnProperty(name)) {
                     if (structure[name].required && value[name] == null) {
                         error = error || CompoundError(null, {structure: {}});
-                        error.structure[name] = 
-                            [NonNullError('missing required field "' +
-                                    name + '"')];
+                        if (!error.structure[name]) {
+                            error.structure[name] = [];
+                        }
+                        error.structure[name].push(
+                                NonNullError('missing required field "' +
+                                    name + '"'));
                     }
                 }
             }
@@ -659,6 +680,40 @@ define([
                 value[i] = values[i].unserialize(value[i], mimetype);
             }
             return value;
+        },
+
+        validate: function(value, mimetype) {
+            var i, j, l, error, failed;
+
+            this._super.apply(this, arguments);
+
+            for (i = 0, l = value.length; i < l; i++) {
+                failed = false;
+                try {
+                    this.values[i].validate(value[i]);
+                } catch (e) {
+                    if (! (e instanceof ValidationError)) {
+                        throw e;
+                    }
+                    failed = true;
+                    if (!error) {
+                        error = CompoundError(null, {structure: []});
+                        for (j = 0; j < i; j++) {
+                            error.structure.push(null);
+                        }
+                    }
+                    error.structure.push([e]);
+                }
+                if (!failed && error) {
+                    error.structure.push(null);
+                }
+            }
+
+            if (error) {
+                throw error;
+            }
+
+            return this;
         }
     });
 
@@ -699,6 +754,44 @@ define([
                 }
             }
             throw InvalidTypeError();
+        },
+
+        // as of this commit we have no API's that use the UnionField. i don't
+        // think it's actually something we support, but in the interest of not
+        // getting 'method-not-implemented' errors, we're adding a boilerplate
+        // 'validate' method here.
+        validate: function(value, mimetype) {
+            var i, j, l, error, failed;
+
+            this._super.apply(this, arguments);
+
+            for (i = 0, l = value.length; i < l; i++) {
+                failed = false;
+                try {
+                    this.fields[i].validate(value[i]);
+                } catch (e) {
+                    if (! (e instanceof ValidationError)) {
+                        throw e;
+                    }
+                    failed = true;
+                    if (!error) {
+                        error = CompoundError(null, {structure: []});
+                        for (j = 0; j < i; j++) {
+                            error.structure.push(null);
+                        }
+                    }
+                    error.structure.push([e]);
+                }
+                if (!failed && error) {
+                    error.structure.push(null);
+                }
+            }
+
+            if (error) {
+                throw error;
+            }
+
+            return this;
         }
     });
 

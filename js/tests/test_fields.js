@@ -511,10 +511,14 @@ define([
                         required: true,
                         strip: true
                     }),
-                    age: fields.IntegerField({nonnull: true, required: true})
+                    age: fields.IntegerField({nonnull: true, required: true}),
+                    description: fields.TextField({
+                        nonnull: true,
+                        required: true
+                    })
                 }
             }),
-            {name: 123, age: 123},
+            {name: 123, age: 123, description: 'foobar'},
             function(e) {
                 ok(_.isObject(e.structure), 'error structure is object');
                 ok(_.isArray(e.structure.name), 'array of errors for name');
@@ -524,12 +528,73 @@ define([
                 equal(e.structure.id.length, 1, 'id has only one error');
                 equal(e.structure.id[0].token, 'nonnull',
                     'id is a nonnull error');
+                ok(e.structure.description == null, 'no errors for description');
             });
     });
 
     // TODO: test for polymorphic and nested structures
+    // - the big question here seems to be how we're supposed to turn the
+    //   ValidationError object into something that looks like a response from
+    //   the API. or should we convert the API response into a ValidationError
+    //   object? eventually, we'll have a Binding class that handles the
+    //   interaction between model fields and UI elements, and this will be the
+    //   primary consumer of the errors, so whatever is best for it is the way
+    //   we should go
 
-    // TODO: test validation for everything after 'structure'
+    test('tuple', function() {
+        assertValidation(fields.TupleField({
+                nonnull: true,
+                required: true,
+                values: [
+                    fields.UUIDField({nonnull: true, required: true}),
+                    fields.TextField({
+                        nonnull: true,
+                        required: true,
+                        strip: true
+                    }),
+                    fields.IntegerField({nonnull: true, required: true})
+                ]
+            }),
+            [null, 123, 123],
+            function(e) {
+                ok(_.isArray(e.structure), 'error structure is an array');
+                ok(_.isArray(e.structure[0]), 'array of errors for first item');
+                equal(e.structure[0].length, 1, 'first item has only one error');
+                equal(e.structure[0][0].token, 'nonnull',
+                    'first item error is an invalidtypeerror');
+                equal(e.structure[1].length, 1, 'second item has only one error');
+                equal(e.structure[1][0].token, 'invalidtypeerror',
+                    'second item is an invalidtypeerror error');
+                ok(e.structure[2] == null, 'last item has no errors');
+            });
+    });
+
+    test('union', function() {
+        assertValidation(fields.UnionField({
+                name: "union_field",
+                nonnull: true,
+                required: true,
+                fields: [
+                    fields.TextField({
+                        nonnull: true,
+                        required: true
+                    }),
+                    fields.IntegerField({
+                        nonnull: true,
+                        required: true
+                    })
+                ]
+            }),
+            [123, 123],
+            function(e) {
+                ok(_.isArray(e.structure), 'error structure is an array');
+                ok(_.isArray(e.structure[0]), 'array of errors for first item');
+                equal(e.structure[0].length, 1, 'first item has only one error');
+                equal(e.structure[0][0].token, 'invalidtypeerror',
+                    'first item is an invalidtypeerror error');
+                ok(e.structure[1] == null, 'last item has no errors');
+            });
+    });
 
     start();
 });
