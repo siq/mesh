@@ -292,7 +292,7 @@ class Request(object):
                 log('info', 'request to %s failed controller invocation', str(self))
                 response(INVALID, error)
             except RequestError, exception:
-                return response(exception.status)
+                return response(exception.status, exception.content)
 
         definition = self.responses.get(response.status)
         if not definition:
