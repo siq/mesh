@@ -35,6 +35,41 @@ define([
     ValidationError.prototype.toString = function() {
         return this.message != null? this.name + ': ' + this.message : this.name;
     };
+    ValidationError.prototype.serialize = function() {
+        if (this.structure) {
+            // if it's a structural error, it will be something like:
+            //
+            //     {
+            //         field1: [field1error1, field1error2],
+            //         field2: [field2error1, field2error2]
+            //     }
+            //
+            // or
+            //
+            //     [
+            //         [item1error1, item1error2],
+            //         [item2error1, item2error2]
+            //     ]
+            //
+            // this should maybe be in CompoundError...
+            if (isArray(this.structure)) {
+                return _.map(this.structure, function(item) {
+                    return _.map(item, function(e) {return e.serialize();});
+                });
+            } else {
+                return _.reduce(this.structure, function(memo, item, key) {
+                    memo[key] = _.map(item, function(e) {return e.serialize();});
+                    return memo;
+                }, {});
+            }
+        } else {
+            var ret = {token: this.token};
+            if (this.message != null) {
+                ret.message = this.message;
+            }
+            return ret;
+        }
+    };
     ValidationError.extend = _.wrap(ValidationError.extend, function(extend) {
         var args = Array.prototype.slice.call(arguments, 1),
             ret = extend.apply(this, args);

@@ -596,5 +596,39 @@ define([
             });
     });
 
+    module('serializing validation errors');
+
+    test('serailzing StructureField error', function() {
+        var s, f = fields.StructureField({
+                nonnull: false,
+                required: false,
+                strict: true,
+                structure: {
+                    id: fields.UUIDField({nonnull: true, required: true}),
+                    name: fields.TextField({
+                        nonnull: true,
+                        required: true,
+                        strip: true
+                    }),
+                    age: fields.IntegerField({nonnull: true, required: true}),
+                    description: fields.TextField({
+                        nonnull: true,
+                        required: true
+                    })
+                }
+            }),
+            v = {name: 123, age: 123, description: 'foobar'};
+        try {
+            f.validate(v);
+        } catch (e) {
+            s = e.serialize();
+        }
+
+        deepEqual(s, {
+            name: [{token: 'invalidtypeerror'}],
+            id: [{token: 'nonnull', message: 'missing required field "id"'}]
+        });
+    });
+
     start();
 });
