@@ -722,7 +722,7 @@ define([
             query1, query2,
             dfd1, dfd2, dfd3;
 
-        query1 = query2 = {limit: 4, offset: 8}
+        query1 = query2 = {limit: 4, offset: 8};
         equal(query1, query2, 'query1 is equal to query2');
 
         collection.query.request.ajax = pageingAjax;
