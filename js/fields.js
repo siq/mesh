@@ -363,7 +363,7 @@ define([
                     value[name] = value_field.serialize(value[name], mimetype);
                 }
             }
-            if (mimetype === URLENCODED) {
+            if (mimetype === URLENCODED && (!options || !options.outermost)) {
                 value = urlencodeMapping(value);
             }
             return value;
@@ -561,7 +561,7 @@ define([
                 });
             }
             
-            if (mimetype === URLENCODED) {
+            if (mimetype === URLENCODED && (!options || !options.outermost)) {
                 value = urlencodeMapping(value);
             }
             return value;

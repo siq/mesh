@@ -68,7 +68,9 @@ define([
                 if (!isString(data)) {
                     if (self.schema != null) {
                         try {
-                            data = self.schema.serialize(data, self.mimetype, true);
+                            data = self.schema.serialize(data, self.mimetype, {
+                                outermost: true
+                            });
                         } catch (error) {
                             if (error instanceof fields.ValidationError) {
                                 return deferred.reject([null, error.errors]);
