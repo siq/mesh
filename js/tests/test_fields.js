@@ -6,6 +6,20 @@ define([
 ], function(_, datetime, fields) {
     var URLENCODED = 'application/x-www-form-urlencoded';
 
+    function assertValidation(schema, value, assertion) {
+        var threw = false;
+        try {
+            schema.validate(value);
+        } catch (e) {
+            threw = true;
+            if (! (e instanceof fields.ValidationError)) {
+                throw e;
+            }
+            assertion(e);
+        }
+        ok(threw, 'validation should have failed');
+    }
+
     module('boolean fields');
 
     test('serialization', function() {
@@ -311,6 +325,32 @@ define([
         });
     });
 
+    test('validation', function() {
+        var tf1 = fields.TextField({strip: true,    nonnull: true}),
+            tf2 = fields.TextField({strip: false,   nonnull: true}),
+            tf3 = fields.TextField({strip: true,    nonnull: false}),
+            tf4 = fields.TextField({strip: false,   nonnull: false});
+
+        assertValidation(tf1, ' ', function(e) {
+            equal(e.token, 'blanktexterror');
+        });
+        assertValidation(tf1, '', function(e) {
+            equal(e.token, 'blanktexterror');
+        });
+
+        tf2.validate(' '); // should not trhow error
+        assertValidation(tf2, '', function(e) {
+            equal(e.token, 'blanktexterror');
+        });
+
+        tf3.validate(' '); // should not throw error
+        tf3.validate(''); // should not throw error
+
+        tf4.validate(' '); // should not throw error
+        tf4.validate(''); // should not throw error
+
+    });
+
     module('time fields');
 
     test('serialization', function() {
@@ -433,20 +473,6 @@ define([
     });
 
     module('validating multiple items');
-
-    function assertValidation(schema, value, assertion) {
-        var threw = false;
-        try {
-            schema.validate(value);
-        } catch (e) {
-            threw = true;
-            if (! (e instanceof fields.ValidationError)) {
-                throw e;
-            }
-            assertion(e);
-        }
-        ok(threw, 'validation should have failed');
-    }
 
     test('map', function() {
         assertValidation(fields.MapField({

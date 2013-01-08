@@ -5,7 +5,8 @@ define([
     './datetime'
 ], function($, _, Class, datetime) {
     var isArray = _.isArray, isNumber = _.isNumber, isString = _.isString,
-        isObject = _.isObject, URLENCODED = 'application/x-www-form-urlencoded';
+        isObject = _.isObject, trim = $.trim,
+        URLENCODED = 'application/x-www-form-urlencoded';
 
     var isPlainObject = function(obj) {
         return (obj && obj === Object(obj) && obj.constructor === Object);
@@ -86,6 +87,14 @@ define([
 
     // when we validate, we roll-up multiple errors into one CompoundError
     var CompoundError = ValidationError.extend({token: 'compounderror'});
+
+    // if a TextField is set to 'nonnull: true', and its value is an empty
+    // string, we consider it an error even though the value does not strictly
+    // == null (see GA-176).
+    //
+    // this is the error we throw in that case (also if there's a string with
+    // only spaces and 'nonnull: true, strip: true'
+    var BlankTextError = ValidationError.extend({token: 'blanktexterror'});
 
     // when we're validating a structure, and there's some property on the
     // value that the defined structure doesn't know how to handle (like the
@@ -645,6 +654,16 @@ define([
         _validateType: function(value) {
             if (!isString(value)) {
                 throw InvalidTypeError();
+            }
+        },
+        _validateValue: function(value) {
+            if (this.nonnull && isString(value)) {
+                if (this.strip) {
+                    value = trim(value);
+                }
+                if (!value) {
+                    throw BlankTextError('field cannot be left blank');
+                }
             }
         }
     });
