@@ -5,7 +5,7 @@ define([
     './datetime'
 ], function($, _, Class, datetime) {
     var isArray = _.isArray, isNumber = _.isNumber, isString = _.isString,
-        URLENCODED = 'application/x-www-form-urlencoded';
+        isObject = _.isObject, URLENCODED = 'application/x-www-form-urlencoded';
 
     var isPlainObject = function(obj) {
         return (obj && obj === Object(obj) && obj.constructor === Object);
@@ -94,6 +94,10 @@ define([
     // so when you want to validate a model object, and you just want to ignore
     // all of the spurious errors you get for stuff like 'cant validate the
     // client-side id', just catch and ignore UnknownFieldError's
+    //
+    // also, this is a bit of an anti-pattern, we prob want to be precise about
+    // the things we validate, so in proper framework code only validate
+    // against stuff that's been .extract()'ed
     var UnknownFieldError = ValidationError.extend({token: 'unknownfielderror'});
 
     var Field = Class.extend({
@@ -318,6 +322,9 @@ define([
 
         extract: function(subject) {
             var value_field = this.value, extraction = {}, name, value;
+            if (!isObject(subject)) {
+                return subject;
+            }
             for (name in subject) {
                 value = subject[name];
                 if (value !== undefined) {
@@ -397,6 +404,9 @@ define([
 
         extract: function(subject) {
             var item = this.item, extraction = [], value;
+            if (!isArray(subject)) {
+                return subject;
+            }
             for (var i = 0, l = subject.length; i < l; i++) {
                 value = subject[i];
                 if (item.structural && value !== null) {
@@ -476,6 +486,9 @@ define([
 
         extract: function(subject) {
             var structure = this._get_structure(subject), extraction = {}, name, value, field;
+            if (!isObject(subject)) {
+                return subject;
+            }
             for (name in structure) {
                 field = structure[name];
                 if (field != null) {
@@ -668,8 +681,8 @@ define([
 
         extract: function(subject) {
             var values = this.values, extraction = [], field, value;
-            if (subject.length != values.length) {
-                throw new Error();
+            if (!isArray(subject)) {
+                return subject;
             }
             for (var i = 0, l = subject.length; i < l; i++) {
                 field = values[i];

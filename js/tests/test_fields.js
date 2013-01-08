@@ -532,15 +532,6 @@ define([
             });
     });
 
-    // TODO: test for polymorphic and nested structures
-    // - the big question here seems to be how we're supposed to turn the
-    //   ValidationError object into something that looks like a response from
-    //   the API. or should we convert the API response into a ValidationError
-    //   object? eventually, we'll have a Binding class that handles the
-    //   interaction between model fields and UI elements, and this will be the
-    //   primary consumer of the errors, so whatever is best for it is the way
-    //   we should go
-
     test('tuple', function() {
         assertValidation(fields.TupleField({
                 nonnull: true,
@@ -628,6 +619,185 @@ define([
             name: [{token: 'invalidtypeerror'}],
             id: [{token: 'nonnull', message: 'missing required field "id"'}]
         });
+    });
+
+    module('extracting');
+
+    var nnr = {nonnull: true, required: true},
+        bigSchema = fields.StructureField({
+            nonnull: true,
+            required: true,
+            strict: true,
+            structure: {
+                id: fields.UUIDField(nnr),
+                name: fields.TupleField(_.extend({
+                    values: [fields.TextField(nnr), fields.TextField(nnr)]
+                }, nnr)),
+                age: fields.IntegerField(nnr),
+                description: fields.TextField(nnr),
+                address: fields.StructureField({
+                    nonnull: true,
+                    required: true,
+                    strict: true,
+                    structure: {
+                        number: fields.IntegerField(nnr),
+                        street: fields.SequenceField(_.extend({
+                            unique: false,
+                            item: fields.TextField(nnr)
+                        }, nnr)),
+                        city: fields.TextField(nnr),
+                        state: fields.TextField(nnr),
+                        zip: fields.TextField(nnr)
+                    }
+                }),
+                relatives: fields.MapField(_.extend({
+                    value: fields.TextField(nnr)
+                }, nnr))
+            }
+        });
+
+    test('simple fields that are undefined', function() {
+        var example1 = {
+                id: undefined,
+                name: [123],
+                age: 12,
+                // description: 'foobar',
+                address: {
+                    number: '4515',
+                    street: ['Highland Terrace', 'PO Box 1234'],
+                    city: 'Austin',
+                    // state: 'TX',
+                    zip: 78731
+                },
+                relatives: {'cousin': 'Lil Wayne', 'aunt': 'Jemima'}
+            };
+
+        deepEqual(bigSchema.extract(example1), {
+            name: [123],
+            age: 12,
+            address: {
+                number: '4515',
+                street: ['Highland Terrace', 'PO Box 1234'],
+                city: 'Austin',
+                zip: 78731
+            },
+            relatives: {'cousin': 'Lil Wayne', 'aunt': 'Jemima'}
+        });
+
+    });
+
+    test('sequence fields that are undefined', function() {
+        var example2 = {
+                id: 123,
+                // name: [123],
+                age: 12,
+                description: 'foobar',
+                address: {
+                    number: '4515',
+                    street: ['Highland Terrace', 'PO Box 1234'],
+                    city: 'Austin',
+                    state: 'TX',
+                    zip: '78731'
+                },
+                relatives: {'cousin': 'Lil Wayne', 'aunt': 'Jemima'}
+            };
+
+        deepEqual(bigSchema.extract(example2), {
+            id: 123,
+            age: 12,
+            description: 'foobar',
+            address: {
+                number: '4515',
+                street: ['Highland Terrace', 'PO Box 1234'],
+                city: 'Austin',
+                state: 'TX',
+                zip: '78731'
+            },
+            relatives: {'cousin': 'Lil Wayne', 'aunt': 'Jemima'}
+        });
+    });
+
+    test('structure fields that are undefined', function() {
+        var example3 = {
+                id: 123,
+                // name: [123],
+                age: 12,
+                description: 'foobar',
+                // address: {
+                //     number: '4515',
+                //     street: ['Highland Terrace', 'PO Box 1234'],
+                //     city: 'Austin',
+                //     state: 'TX',
+                //     zip: '78731'
+                // }
+                relatives: {'cousin': 'Lil Wayne', 'aunt': 'Jemima'}
+            };
+        deepEqual(bigSchema.extract(example3), {
+            id: 123,
+            age: 12,
+            description: 'foobar',
+            relatives: {'cousin': 'Lil Wayne', 'aunt': 'Jemima'}
+        });
+    });
+
+    test('tuple fields that are undefined', function() {
+        var example4 = {
+                id: null,
+                name: [123],
+                age: 12,
+                description: 'foobar',
+                address: {
+                    number: '4515',
+                    // street: ['Highland Terrace', 'PO Box 1234'],
+                    city: 'Austin',
+                    state: 'TX',
+                    zip: '78731'
+                },
+                relatives: {'cousin': 'Lil Wayne', 'aunt': 'Jemima'}
+            };
+        deepEqual(bigSchema.extract(example4), {
+            id: null,
+            name: [123],
+            age: 12,
+            description: 'foobar',
+            address: {
+                number: '4515',
+                city: 'Austin',
+                state: 'TX',
+                zip: '78731'
+            },
+            relatives: {'cousin': 'Lil Wayne', 'aunt': 'Jemima'}
+        });
+
+    });
+
+    test('map fields that are undefined', function() {
+        var example5 = {
+                id: null,
+                name: [123],
+                age: 12,
+                description: 'foobar',
+                address: {
+                    number: '4515',
+                    // street: ['Highland Terrace', 'PO Box 1234'],
+                    city: 'Austin',
+                    state: 'TX',
+                    zip: '78731'
+                }
+            };
+        deepEqual(bigSchema.extract(example5), {
+            id: null,
+            name: [123],
+            age: 12,
+            description: 'foobar',
+            address: {
+                number: '4515',
+                city: 'Austin',
+                state: 'TX',
+                zip: '78731'
+            }
+        });
+
     });
 
     start();
