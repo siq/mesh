@@ -117,6 +117,16 @@ define([
 
             self.ajax(params);
             return deferred;
+        },
+
+        validate: function(value, mimetype) {
+            if (this.schema && this.schema.structural) {
+                this.schema.validate.apply(this.schema, arguments);
+            } else {
+                throw fields.ValidationError(
+                        'attempting to validate request with no schema');
+            }
+            return this;
         }
     });
 

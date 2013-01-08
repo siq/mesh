@@ -277,6 +277,12 @@ define([
             this.trigger('change', this, changed);
         },
 
+        validate: function() {
+            var request = this._getRequest(this._loaded? 'update' : 'create');
+            request.validate(request.extract(this));
+            return this;
+        },
+
         _getRequest: function(name) {
             return this.__requests__[name];
         },
