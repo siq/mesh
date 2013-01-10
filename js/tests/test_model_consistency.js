@@ -243,5 +243,22 @@ define([
     //     });
     // });
 
+    // asyncTest('calling delete after successful delete returns same promise', function() {
+    //     setup().then(function(c) {
+    //         Example.mockDelay(10);
+    //         var m = c.first(),
+    //             dfd1 = m.destroy();
+
+    //         equal(dfd1.state(), 'pending');
+
+    //         dfd1.then(function() {
+    //             var dfd2 = m.destroy();
+    //             ok(dfd1 === dfd2);
+    //             equal(dfd2.state(), 'resolved');
+    //             start();
+    //         });
+    //     });
+    // });
+
     start();
 });
