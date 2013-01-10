@@ -4,12 +4,16 @@ define([
     'bedrock/class',
     'mesh/tests/example',
     './examplefixtures'
-], function($, _, Class, Example, exampleFixtures) {
-    var defaultDelay = 0, delay = defaultDelay, fail = false,
+], function($, _, Class, Example, defaultExampleFixtures) {
+    var id, defaultDelay = 0, delay = defaultDelay, fail = false,
         Xhr = Class.extend({
             init:               function(stat) { this.status = stat || 200; },
             getResponseHeader:  function() { return 'application/json'; }
-        });
+        }),
+        exampleFixtures = $.extend(true, {}, defaultExampleFixtures);
+
+    id = exampleFixtures.length + 1;
+
     window.Example = Example;
 
     Example.prototype.__requests__.query.ajax = function(params) {
@@ -50,13 +54,36 @@ define([
     Example.prototype.__requests__.get.ajax = function(params) {
         var obj, which = _.last(params.url.split('/'));
 
-        obj = _.find(exampleFixtures, function(e) {
+        obj = $.extend(true, {}, _.find(exampleFixtures, function(e) {
             return e.id === which;
-        });
+        }));
 
         setTimeout(function() {
-            params.success($.extend(true, {}, obj), 200, Xhr());
+            params.success(obj, 200, Xhr());
         }, delay);
+    };
+
+    Example.prototype.__requests__.update.ajax = function(params) {
+        var obj, which = _.last(params.url.split('/'));
+
+        obj = _.find(exampleFixtures, function(e) { return e.id == which; });
+        $.extend(obj, JSON.parse(params.data));
+
+        setTimeout(function() {
+            params.success({id: obj.id}, 200, Xhr());
+        }, delay);
+    };
+
+    Example.prototype.__requests__.create.ajax = function(params) {
+        var obj, which = _.last(params.url.split('/'));
+
+        exampleFixtures.push(JSON.parse(params.data));
+        _.last(exampleFixtures.id = id++);
+
+        setTimeout(function() {
+            params.success({id: _.last(exampleFixtures).id}, 200, Xhr());
+        }, delay);
+
     };
 
     Example.mockDelay = function(newDelay) {
@@ -66,6 +93,17 @@ define([
 
     Example.mockFailure = function(shouldFail) {
         fail = shouldFail == null? false : shouldFail;
+        return Example;
+    };
+
+    Example.mockDataChange = function(change) {
+        if (change == null) {
+            exampleFixtures = _.map(defaultExampleFixtures, function(f) {
+                return $.extend(true, {}, f);
+            });
+        } else {
+            change(exampleFixtures);
+        }
         return Example;
     };
 
