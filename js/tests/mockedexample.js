@@ -74,6 +74,19 @@ define([
         }, delay);
     };
 
+    Example.prototype.__requests__['delete'].ajax = function(params) {
+        var obj, which = +_.last(params.url.split('/'));
+
+        exampleFixtures = _.filter(exampleFixtures, function(f) {
+            return f.id !== which;
+        });
+
+        setTimeout(function() {
+            params.success({id: which}, 200, Xhr());
+        }, delay);
+
+    };
+
     Example.prototype.__requests__.create.ajax = function(params) {
         var obj, which = _.last(params.url.split('/'));
 

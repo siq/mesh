@@ -228,5 +228,20 @@ define([
 
     module('delete');
 
+    // asyncTest('calling delete with in flight requests returns current promise', function() {
+    //     setup().then(function(c) {
+    //         Example.mockDelay(10);
+    //         var dfd1 = c.first().destroy(),
+    //             dfd2 = c.first().destroy();
+
+    //         ok(dfd1 === dfd2);
+    //         equal(dfd1.state(), 'pending');
+
+    //         dfd1.then(function() {
+    //             start();
+    //         });
+    //     });
+    // });
+
     start();
 });
