@@ -260,5 +260,33 @@ define([
     //     });
     // });
 
+    // asyncTest('calling delete and then save', function() {
+    //     setup().then(function(c) {
+    //         Example.mockDelay(10);
+    //         var m = c.first(),
+    //             dfd1 = m.destroy();
+
+    //         equal(dfd1.state(), 'pending');
+
+    //         dfd1.then(function() {
+    //             Example.models.clear();
+    //             var c = Example.collection();
+    //             c.load().then(function() {
+    //                 ok(!c.where({id: m.get('id')}));
+    //                 m.save().then(function() {
+    //                     c.load().then(function() {
+    //                         var newM = c.where({id: m.get('id')});
+    //                         ok(newM);
+    //                         if (newM) {
+    //                             equal(newM.get('text_field'), m.get('text_field'));
+    //                         }
+    //                         start();
+    //                     });
+    //                 });
+    //             });
+    //         });
+    //     });
+    // });
+
     start();
 });
