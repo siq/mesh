@@ -82,7 +82,11 @@ define([
         });
 
         setTimeout(function() {
-            params.success({id: which}, 200, Xhr());
+            if (fail) {
+                params.error(Xhr(406));
+            } else {
+                params.success({id: which}, 200, Xhr());
+            }
         }, delay);
 
     };

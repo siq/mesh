@@ -260,6 +260,26 @@ define([
     //     });
     // });
 
+    asyncTest('calling delete after failed delete returns new promise', function() {
+        setup().then(function(c) {
+            Example.mockFailure(true);
+            var m = c.first(), dfd1 = m.destroy();
+
+            dfd1.then(function() {
+                ok(false, 'destroy should have failed');
+                start();
+            }, function() {
+                Example.mockFailure(false);
+                var dfd2 = m.destroy();
+                ok(dfd1 !== dfd2);
+                dfd2.then(function() {
+                    ok(true);
+                    start();
+                });
+            });
+        });
+    });
+
     // asyncTest('calling delete and then save', function() {
     //     setup().then(function(c) {
     //         Example.mockDelay(10);
