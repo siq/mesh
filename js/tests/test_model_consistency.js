@@ -113,5 +113,120 @@ define([
 
     // });
 
+    module('save');
+
+    asyncTest('saving a value on an existing model works', function() {
+        setup().then(function(c) {
+            ok(c.first().get('required_field') == null);
+            c.first().set('required_field', 'foo').save().then(function() {
+                Example.models.clear();
+                Example.collection().load().then(function(models) {
+                    equal(models[0].get('required_field'), 'foo');
+                    start();
+                });
+            });
+        });
+    });
+
+    asyncTest('saving a value on a new model works', function() {
+        setup({noCollection: true}).then(function() {
+            var m = Example();
+            m.set('required_field', 'foo').save().then(function() {
+                var id = m.get('id');
+                Example.models.clear();
+                Example.collection().load().then(function(models) {
+                    var m = _.find(models, function(m) {
+                        return m.get('id') == id;
+                    });
+                    ok(m);
+                    equal(m.get('required_field'), 'foo');
+                    start();
+                });
+            });
+        });
+    });
+
+    // asyncTest('calling save with in flight create returns first dfd', function() {
+    //     setup({noCollection: true}).then(function() {
+    //         Example.mockDelay(10);
+    //         var m = Example(),
+    //             dfd1 = m.set('required_field', 'foo').save(),
+    //             dfd2 = m.save();
+    //         ok(dfd1 === dfd2, 'second save\'s dfd is equal to the first');
+    //         dfd1.then(function() {
+    //             start();
+    //         }, function() {
+    //             ok(false, 'should have resolved');
+    //             start();
+    //         });
+    //     });
+    // });
+
+    // asyncTest('calling save with in flight update returns first dfd', function() {
+    //     setup().then(function(c) {
+    //         Example.mockDelay(10);
+    //         var dfd1 = c.first().set('required_field', 'foo').save(),
+    //             dfd2 = c.first().save();
+    //         ok(dfd1 === dfd2, 'second save\'s dfd is equal to the first');
+    //         dfd1.then(function() {
+    //             start();
+    //         }, function() {
+    //             ok(false, 'should have resolved');
+    //             start();
+    //         });
+    //     });
+    // });
+
+    asyncTest('calling save with in flight create and changes returns new dfd', function() {
+        setup({noCollection: true}).then(function() {
+            Example.mockDelay(10);
+            var m = Example(),
+                dfd1 = m.set('required_field', 'foo').save(),
+                dfd2 = m.set('boolean_field', true).save();
+
+            ok(dfd1 !== dfd2, 'different deferred objects');
+
+            dfd1.then(function() {
+                equal(dfd2.state(), 'pending');
+                equal(m.get('required_field'), 'foo');
+                equal(m.get('boolean_field'), true);
+            });
+
+            dfd2.then(function() {
+                equal(dfd1.state(), 'resolved');
+                equal(m.get('required_field'), 'foo');
+                equal(m.get('boolean_field'), true);
+                start();
+            });
+
+        });
+    });
+
+    asyncTest('calling save with in flight update and changes returns new dfd', function() {
+        setup().then(function(c) {
+            Example.mockDelay(10);
+            var dfd1 = c.first().set('required_field', 'foo').save(),
+                dfd2 = c.first().set('boolean_field', true).save();
+
+            ok(dfd1 !== dfd2, 'different deferred objects');
+
+            dfd1.then(function() {
+                equal(dfd2.state(), 'pending');
+                equal(c.first().get('required_field'), 'foo');
+                equal(c.first().get('boolean_field'), true);
+            });
+
+            dfd2.then(function() {
+                equal(dfd1.state(), 'resolved');
+                equal(c.first().get('required_field'), 'foo');
+                equal(c.first().get('boolean_field'), true);
+                start();
+            });
+
+        });
+    });
+
+    module('delete');
+
     start();
 });
