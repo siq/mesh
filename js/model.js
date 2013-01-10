@@ -80,7 +80,7 @@ define([
 
         load: function(id, params) {
             if (_.isNumber(id) || isString(id)) {
-                return this.get(id).refresh(params, true);
+                return this.get(id).refresh(params, {condition: true});
             } else {
                 return this.collection(id).load();
             }
@@ -169,14 +169,14 @@ define([
             return _.escape('' + value);
         },
 
-        refresh: function(params, conditional) {
-            var self = this;
-            if (isBoolean(params)) {
-                conditional = params;
-                params = null;
-            } else if (params != null) {
-                conditional = false;
-            }
+        refresh: function(params, options) {
+            var self = this, conditional = options && options.conditional;
+            // if (isBoolean(params)) {
+            //     conditional = params;
+            //     params = null;
+            // } else if (params != null) {
+            //     conditional = false;
+            // }
 
             if (self.id == null || (self._loaded && conditional && isEmpty(self._changes))) {
                 return $.Deferred().resolve(self);
