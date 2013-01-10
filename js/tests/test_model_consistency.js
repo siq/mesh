@@ -31,6 +31,7 @@ define([
 
     module('refresh');
 
+    // for siq/mesh #12 -- probably gonna remove this
     // asyncTest('refresh with inflight request returns original promise', function() {
     //     setup().then(function(c) {
     //         var models = c.models;
