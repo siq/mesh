@@ -10,7 +10,9 @@ define([
             init:               function(stat) { this.status = stat || 200; },
             getResponseHeader:  function() { return 'application/json'; }
         }),
-        exampleFixtures = $.extend(true, {}, defaultExampleFixtures);
+        exampleFixtures = _.map(defaultExampleFixtures, function(f) {
+            return $.extend(true, {}, f);
+        });
 
     id = exampleFixtures.length + 1;
 
@@ -52,7 +54,7 @@ define([
     };
 
     Example.prototype.__requests__.get.ajax = function(params) {
-        var obj, which = _.last(params.url.split('/'));
+        var obj, which = +_.last(params.url.split('/'));
 
         obj = $.extend(true, {}, _.find(exampleFixtures, function(e) {
             return e.id === which;
@@ -64,9 +66,9 @@ define([
     };
 
     Example.prototype.__requests__.update.ajax = function(params) {
-        var obj, which = _.last(params.url.split('/'));
+        var obj, which = +_.last(params.url.split('/'));
 
-        obj = _.find(exampleFixtures, function(e) { return e.id == which; });
+        obj = _.find(exampleFixtures, function(e) { return e.id === which; });
         $.extend(obj, JSON.parse(params.data));
 
         setTimeout(function() {
