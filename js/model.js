@@ -170,17 +170,35 @@ define([
         },
 
         refresh: function(params, options) {
-            var self = this, conditional = options && options.conditional;
+            var dfd, self = this, conditional = options && options.conditional;
 
             if (self.id == null || (conditional && self._loaded)) {
-                return self._lastGet;
+                return _.last(self._previousGetPromises);
             }
 
-            return self._lastGet = self._initiateRequest('get', params).pipe(function(data) {
-                self._loaded = true;
-                self.set(data, {unchanged: true, noclobber: true});
-                return self;
-            });
+            (self._previousGets = self._previousGets || []).push(
+                dfd = self._initiateRequest('get', params));
+
+            (self._previousGetPromises = self._previousGetPromises || []).push(
+                dfd.pipe(function(data) {
+                    var previous;
+                    self._loaded = true;
+                    if ((previous = self._previousGets)) {
+                        self.set(data, {unchanged: true, noclobber: true});
+                        for (var i = 0, l = previous.length; i < l; i++) {
+                            if (previous[i] !== dfd) {
+                                previous[i].resolve(data);
+                            } else {
+                                break;
+                            }
+                        }
+                        self._previousGets = self._previousGets.slice(i+1);
+                        self._previousGetPromises = self._previousGetPromises.slice(i+1);
+                    }
+                    return self;
+                }));
+
+            return _.last(self._previousGetPromises);
         },
 
         poll: function(params) {

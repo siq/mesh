@@ -94,66 +94,176 @@ define([
         });
     });
 
-    // asyncTest('out of order response to refresh with data change', function() {
-    //     setup().then(function(c) {
-    //         Example.mockDelay(100);
-    //         var dfd1 = c.first().refresh(), dfd2;
-    //         Example.mockDataChange(function(exampleFixtures) {
-    //             var cur = _.find(exampleFixtures, function(f) {
-    //                 return f.id === c.first().get('id');
-    //             });
-    //             cur.required_field = 'changed value';
-    //         });
-    //         Example.mockDelay(25);
-    //         dfd2 = c.first().refresh();
-    //         ok(dfd1 !== dfd2, 'deferreds are different');
+    asyncTest('out of order response to refresh with data change', function() {
+        setup().then(function(c) {
+            Example.mockDelay(100);
+            var dfd1 = c.first().refresh(), dfd2;
+            Example.mockDataChange(function(exampleFixtures) {
+                var cur = _.find(exampleFixtures, function(f) {
+                    return f.id === c.first().get('id');
+                });
+                cur.required_field = 'changed value';
+            });
+            Example.mockDelay(25);
+            dfd2 = c.first().refresh();
+            ok(dfd1 !== dfd2, 'deferreds are different');
 
-    //         dfd1.then(function() {
-    //             equal(dfd2.state(), 'pending',
-    //                 'the second request completed after the first');
-    //             equal(c.first().get('required_field'), 'changed value');
-    //         });
+            dfd1.then(function() {
+                equal(dfd2.state(), 'pending',
+                    'the second request completed after the first');
+                equal(c.first().get('required_field'), 'changed value');
+            });
 
-    //         dfd2.then(function() {
-    //             equal(dfd1.state(), 'resolved',
-    //                 'the first request completed before the second');
-    //             equal(c.first().get('required_field'), 'changed value');
-    //         });
+            dfd2.then(function() {
+                equal(dfd1.state(), 'resolved',
+                    'the first request completed before the second');
+                equal(c.first().get('required_field'), 'changed value');
+                start();
+            });
+        });
+    });
 
-    //         start();
-    //     });
-    // });
+    asyncTest('out of order response to refresh with data change lifecycle', function() {
+        setup().then(function(c) {
+            Example.mockDelay(100);
+            var dfd1 = c.first().refresh(), dfd2;
+            Example.mockDataChange(function(exampleFixtures) {
+                var cur = _.find(exampleFixtures, function(f) {
+                    return f.id === c.first().get('id');
+                });
+                cur.required_field = 'changed value';
+            });
+            Example.mockDelay(25);
+            dfd2 = c.first().refresh();
+            ok(dfd1 !== dfd2, 'deferreds are different');
 
-    // asyncTest('in order response to refresh with data change', function() {
-    //     setup().then(function(c) {
-    //         Example.mockDelay(25);
-    //         var dfd1 = c.first().refresh(), dfd2;
-    //         Example.mockDataChange(function(exampleFixtures) {
-    //             var cur = _.find(exampleFixtures, function(f) {
-    //                 return f.id === c.first().get('id');
-    //             });
-    //             cur.required_field = 'changed value';
-    //         });
-    //         Example.mockDelay(50);
-    //         dfd2 = c.first().refresh();
-    //         ok(dfd1 !== dfd2, 'deferreds are different');
+            dfd1.then(function() {
+                equal(dfd2.state(), 'pending',
+                    'the first request completed before the second');
+                equal(c.first().get('required_field'), 'changed value');
+            });
 
-    //         dfd1.then(function() {
-    //             equal(dfd2.state(), 'pending',
-    //                 'the second request completed after the first');
-    //             ok(c.first().get('required_field') == null, 'required field is null');
-    //         });
+            dfd2.then(function() {
+                equal(dfd1.state(), 'resolved',
+                    'the second request completed after the first');
+                equal(c.first().get('required_field'), 'changed value');
 
-    //         dfd2.then(function() {
-    //             equal(dfd1.state(), 'resolved',
-    //                 'the first request completed before the second');
-    //             equal(c.first().get('required_field'), 'changed value');
-    //         });
+                Example.mockDelay(100);
+                var dfd3 = c.first().refresh(), dfd4;
+                Example.mockDataChange(function(exampleFixtures) {
+                    var cur = _.find(exampleFixtures, function(f) {
+                        return f.id === c.first().get('id');
+                    });
+                    cur.required_field = 'changed value 2';
+                });
+                Example.mockDelay(25);
+                dfd4 = c.first().refresh();
+                ok(dfd3 !== dfd4, 'deferreds are different');
 
-    //         start();
-    //     });
+                dfd3.then(function() {
+                    equal(dfd4.state(), 'pending',
+                        'the third request completed after the second');
+                    equal(c.first().get('required_field'), 'changed value 2');
+                });
 
-    // });
+                dfd4.then(function() {
+                    equal(dfd3.state(), 'resolved',
+                        'the fourth request completed after the third');
+                    equal(c.first().get('required_field'), 'changed value 2');
+
+                    equal(c.first()._previousGets.length, 0,
+                        'state was cleaned up property');
+                    equal(c.first()._previousGetPromises.length, 0,
+                        'state was cleaned up property');
+                    start();
+                });
+            });
+        });
+    });
+
+    asyncTest('in order response to refresh with data change', function() {
+        setup().then(function(c) {
+            Example.mockDelay(25);
+            var dfd1 = c.first().refresh(), dfd2;
+            Example.mockDataChange(function(exampleFixtures) {
+                var cur = _.find(exampleFixtures, function(f) {
+                    return f.id === c.first().get('id');
+                });
+                cur.required_field = 'changed value';
+            });
+            Example.mockDelay(50);
+            dfd2 = c.first().refresh();
+            ok(dfd1 !== dfd2, 'deferreds are different');
+
+            dfd1.then(function() {
+                equal(dfd2.state(), 'pending',
+                    'the second request completed after the first');
+                ok(c.first().get('required_field') == null, 'required field is null');
+            });
+
+            dfd2.then(function() {
+                equal(dfd1.state(), 'resolved',
+                    'the first request completed before the second');
+                equal(c.first().get('required_field'), 'changed value');
+                start();
+            });
+        });
+
+    });
+
+    asyncTest('in order response to refresh with data change lifecycle', function() {
+        setup().then(function(c) {
+            Example.mockDelay(25);
+            var dfd1 = c.first().refresh(), dfd2;
+            Example.mockDataChange(function(exampleFixtures) {
+                var cur = _.find(exampleFixtures, function(f) {
+                    return f.id === c.first().get('id');
+                });
+                cur.required_field = 'changed value';
+            });
+            Example.mockDelay(50);
+            dfd2 = c.first().refresh();
+            ok(dfd1 !== dfd2, 'deferreds are different');
+
+            dfd1.then(function() {
+                equal(dfd2.state(), 'pending',
+                    'the second request completed after the first');
+                ok(c.first().get('required_field') == null, 'required field is null');
+            });
+
+            dfd2.then(function() {
+                equal(dfd1.state(), 'resolved',
+                    'the first request completed before the second');
+                equal(c.first().get('required_field'), 'changed value');
+                Example.mockDelay(25);
+                var dfd3 = c.first().refresh(), dfd4;
+                Example.mockDataChange(function(exampleFixtures) {
+                    var cur = _.find(exampleFixtures, function(f) {
+                        return f.id === c.first().get('id');
+                    });
+                    cur.required_field = 'changed value 2';
+                });
+                Example.mockDelay(50);
+                dfd4 = c.first().refresh();
+                ok(dfd3 !== dfd4, 'deferreds are different');
+
+                dfd3.then(function() {
+                    equal(dfd4.state(), 'pending',
+                        'the second request completed after the first');
+                    ok(c.first().get('required_field') === 'changed value',
+                        'required field is set to original value');
+                });
+
+                dfd4.then(function() {
+                    equal(dfd3.state(), 'resolved',
+                        'the first request completed before the second');
+                    equal(c.first().get('required_field'), 'changed value 2');
+                    start();
+                });
+            });
+        });
+
+    });
 
     module('save');
 
