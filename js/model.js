@@ -171,21 +171,14 @@ define([
 
         refresh: function(params, options) {
             var self = this, conditional = options && options.conditional;
-            // if (isBoolean(params)) {
-            //     conditional = params;
-            //     params = null;
-            // } else if (params != null) {
-            //     conditional = false;
-            // }
 
-            if (self.id == null || (self._loaded && conditional && isEmpty(self._changes))) {
-                return $.Deferred().resolve(self);
+            if (self.id == null || (conditional && self._loaded)) {
+                return self._lastGet;
             }
 
-            return self._initiateRequest('get', params).pipe(function(data) {
-                self._changes = {};
+            return self._lastGet = self._initiateRequest('get', params).pipe(function(data) {
                 self._loaded = true;
-                self.set(data, {unchanged: true});
+                self.set(data, {unchanged: true, noclobber: true});
                 return self;
             });
         },
@@ -321,6 +314,22 @@ define([
         areEqual: _.isEqual,
         propName: null
     });
+
+    Model.prototype._set = _.wrap(Model.prototype._set,
+        function(f, newProps, opts) {
+            var args = Array.prototype.slice.call(arguments, 2),
+                _changes = this._changes,
+                props = opts.noclobber?
+                    _.reduce(newProps, function(memo, val, key) {
+                        if (!_changes.hasOwnProperty(key)) {
+                            memo[key] = val;
+                        }
+                        return memo;
+                    }, {}) :
+                    newProps;
+
+            return f.apply(this, [props].concat(args));
+        });
 
     ret = {Manager: Manager, Model: Model};
 

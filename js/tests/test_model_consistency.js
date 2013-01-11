@@ -53,6 +53,47 @@ define([
     //     });
     // });
 
+    asyncTest('conditional refresh returns same deferred', function() {
+        setup().then(function(c) {
+            var dfd1 = c.first().refresh(), dfd2;
+            Example.mockDelay(50);
+            dfd2 = c.first().refresh(null, {conditional: true});
+            ok(dfd1 === dfd2);
+            dfd1.then(function() {
+                equal(dfd1.state(), 'resolved');
+                equal(dfd2.state(), 'resolved');
+                start();
+            });
+        });
+    });
+
+    asyncTest('refresh doesnt overrwite changed properties', function() {
+        setup().then(function(c) {
+            var origValue = c.first().get('text_field'),
+                newValue = 'foo';
+            ok(c.first().get('text_field') !== newValue);
+            c.first().set('text_field', newValue);
+            c.first().refresh().then(function() {
+                equal(c.first().get('text_field'), newValue);
+                start();
+            });
+        });
+    });
+
+    asyncTest('refresh doesnt overrwite properties changed after initial request', function() {
+        setup().then(function(c) {
+            var dfd, origValue = c.first().get('text_field'),
+                newValue = 'foo';
+            ok(c.first().get('text_field') !== newValue);
+            dfd = c.first().refresh();
+            c.first().set('text_field', newValue);
+            dfd.then(function() {
+                equal(c.first().get('text_field'), newValue);
+                start();
+            });
+        });
+    });
+
     // asyncTest('out of order response to refresh with data change', function() {
     //     setup().then(function(c) {
     //         Example.mockDelay(100);
