@@ -1,7 +1,7 @@
 import re
 import socket
 from cgi import parse_header
-from httplib import HTTPConnection
+from httplib import HTTPConnection, HTTPSConnection
 from urlparse import urlparse
 
 from mesh.bundle import Specification
@@ -76,6 +76,8 @@ INTROSPECTION_PATH_EXPR = r"""(?x)^%s
 class Connection(object):
     def __init__(self, url, timeout=None):
         self.scheme, self.host, self.path = urlparse(url)[:3]
+
+        self.implementation = (HTTPSConnection if self.scheme == 'https' else HTTPConnection)
         self.path = self.path.rstrip('/')
         self.timeout = timeout
 
@@ -87,7 +89,7 @@ class Connection(object):
             url = '%s?%s' % (url, body)
             body = None
 
-        connection = HTTPConnection(self.host, timeout=self.timeout)
+        connection = self.implementation(self.host, timeout=self.timeout)
         connection.request(method, self.path + url, body, headers or {})
 
         response = connection.getresponse()
