@@ -138,6 +138,7 @@ define([
             this._options = $.extend(true, this.defaults, options);
             this._manager.associate(this);
             this._httpStatus = null;
+            this._inFlight = {refresh: [], save: []};
         },
 
         construct: function() {},
@@ -170,35 +171,25 @@ define([
         },
 
         refresh: function(params, options) {
-            var dfd, self = this, conditional = options && options.conditional;
+            var dfd, self = this, conditional = options && options.conditional,
+                inFlight = self._inFlight.refresh;
 
             if (self.id == null || (conditional && self._loaded)) {
-                return _.last(self._previousGetPromises);
+                return _.last(inFlight).promise;
             }
 
-            (self._previousGets = self._previousGets || []).push(
-                dfd = self._initiateRequest('get', params));
+            inFlight.push({dfd: dfd = self._initiateRequest('get', params)});
 
-            (self._previousGetPromises = self._previousGetPromises || []).push(
-                dfd.pipe(function(data) {
-                    var previous;
-                    self._loaded = true;
-                    if ((previous = self._previousGets)) {
-                        self.set(data, {unchanged: true, noclobber: true});
-                        for (var i = 0, l = previous.length; i < l; i++) {
-                            if (previous[i] !== dfd) {
-                                previous[i].resolve(data);
-                            } else {
-                                break;
-                            }
-                        }
-                        self._previousGets = self._previousGets.slice(i+1);
-                        self._previousGetPromises = self._previousGetPromises.slice(i+1);
-                    }
-                    return self;
-                }));
-
-            return _.last(self._previousGetPromises);
+            return _.last(inFlight).promise = dfd.pipe(function(data) {
+                var i = 0, prevDfd;
+                self._loaded = true;
+                self.set(data, {unchanged: true, noclobber: true});
+                while ((prevDfd = inFlight[i++].dfd) !== dfd) {
+                    prevDfd.resolve(data);
+                }
+                self._inFlight.refresh = inFlight.slice(i + 1);
+                return self;
+            });
         },
 
         poll: function(params) {
@@ -246,7 +237,7 @@ define([
         save: function(params, include_all_attrs) {
             // var self = this, creating = (this.id == null), changes = this._changes,
             var self = this, creating = !this._loaded, changes = this._changes,
-                request, subject, data;
+                request, subject, data, name;
             request = self._getRequest(creating ? 'create' : 'update');
 
             subject = self;

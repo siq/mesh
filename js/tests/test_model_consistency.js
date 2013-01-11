@@ -171,9 +171,7 @@ define([
                         'the fourth request completed after the third');
                     equal(c.first().get('required_field'), 'changed value 2');
 
-                    equal(c.first()._previousGets.length, 0,
-                        'state was cleaned up property');
-                    equal(c.first()._previousGetPromises.length, 0,
+                    equal(c.first()._inFlight.refresh.length, 0,
                         'state was cleaned up property');
                     start();
                 });
@@ -298,21 +296,21 @@ define([
         });
     });
 
-    // asyncTest('calling save with in flight create returns first dfd', function() {
-    //     setup({noCollection: true}).then(function() {
-    //         Example.mockDelay(10);
-    //         var m = Example(),
-    //             dfd1 = m.set('required_field', 'foo').save(),
-    //             dfd2 = m.save();
-    //         ok(dfd1 === dfd2, 'second save\'s dfd is equal to the first');
-    //         dfd1.then(function() {
-    //             start();
-    //         }, function() {
-    //             ok(false, 'should have resolved');
-    //             start();
-    //         });
-    //     });
-    // });
+    asyncTest('calling save with in flight create returns first dfd', function() {
+        setup({noCollection: true}).then(function() {
+            Example.mockDelay(10);
+            var m = Example(),
+                dfd1 = m.set('required_field', 'foo').save(),
+                dfd2 = m.save();
+            ok(dfd1 === dfd2, 'second save\'s dfd is equal to the first');
+            dfd1.then(function() {
+                start();
+            }, function() {
+                ok(false, 'should have resolved');
+                start();
+            });
+        });
+    });
 
     // asyncTest('calling save with in flight update returns first dfd', function() {
     //     setup().then(function(c) {
