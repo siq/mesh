@@ -235,12 +235,16 @@ define([
         },
 
         save: function(params, include_all_attrs) {
-            // var self = this, creating = (this.id == null), changes = this._changes,
-            var self = this, creating = !this._loaded, changes = this._changes,
-                request, subject, data, name;
+            var request, subject, data, name, dfd, self = this,
+                args = Array.prototype.slice(0),
+                changes = self._changes,
+                inFlight = self._inFlight.save,
+                creating = !self._loaded && inFlight.length === 0;
+
             request = self._getRequest(creating ? 'create' : 'update');
 
             subject = self;
+
             if (!creating && !include_all_attrs) {
                 subject = {};
                 var i, l, changeArray = [], isBaseProp, thisChange;
@@ -271,10 +275,21 @@ define([
                 $.extend(true, data, params);
             }
             if (isEmpty(data)) {
-                return $.Deferred().resolve(self);
+                return _.last(inFlight).promise;
             }
 
-            return request.initiate(self.id, data).pipe(function(data, xhr) {
+            // handle the case where there's an in-flight 'create' call, but we
+            // can't make the 'update' call until we've got the ID the server
+            // gave us from the 'create'
+            if (!creating && !self._loaded) {
+                return _.last(inFlight).promise.then(function() {
+                    return self.save.apply(self, args);
+                });
+            }
+
+            inFlight.push(dfd = request.initiate(self.id, data));
+
+            return _.last(inFlight).promise = dfd.pipe(function(data, xhr) {
                 if (creating) {
                     self._manager.associate(self, data.id);
                 }

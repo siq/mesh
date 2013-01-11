@@ -299,8 +299,8 @@ define([
     asyncTest('calling save with in flight create returns first dfd', function() {
         setup({noCollection: true}).then(function() {
             Example.mockDelay(10);
-            var m = Example(),
-                dfd1 = m.set('required_field', 'foo').save(),
+            var m = Example({required_field: 'foo'}),
+                dfd1 = m.save(),
                 dfd2 = m.save();
             ok(dfd1 === dfd2, 'second save\'s dfd is equal to the first');
             dfd1.then(function() {
@@ -311,6 +311,47 @@ define([
             });
         });
     });
+
+    asyncTest('calling save fails when theres an in flight create that fails', function() {
+        setup({noCollection: true}).then(function() {
+            Example.mockDelay(10);
+            var m = Example({required_field: 'foo'}), dfd1, dfd2, dfd1Failed;
+            Example.mockFailure(true);
+            dfd1 = m.save();
+            dfd2 = m.set('text_field', 'bar').save();
+            ok(dfd1 !== dfd2, 'second save\'s dfd is not equal to the first');
+            dfd1.then(function() {
+                ok(false, 'should have failed');
+            }, function() {
+                ok(true, 'first deferred should have failed');
+                dfd1Failed = true;
+            });
+            dfd1.then(function() {
+                ok(false, 'second deferred should have failed');
+                start();
+            }, function() {
+                ok(true, 'first deferred should have failed');
+                ok(dfd1Failed);
+                start();
+            });
+        });
+    });
+
+    // asyncTest('calling save with in flight create returns first dfd 2', function() {
+    //     setup({noCollection: true}).then(function() {
+    //         Example.mockDelay(10);
+    //         var m = Example(),
+    //             dfd1 = m.set('required_field', 'foo').save(),
+    //             dfd2 = m.save();
+    //         ok(dfd1 === dfd2, 'second save\'s dfd is equal to the first');
+    //         dfd1.then(function() {
+    //             start();
+    //         }, function() {
+    //             ok(false, 'should have resolved');
+    //             start();
+    //         });
+    //     });
+    // });
 
     // asyncTest('calling save with in flight update returns first dfd', function() {
     //     setup().then(function(c) {

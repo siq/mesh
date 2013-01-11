@@ -72,7 +72,11 @@ define([
         $.extend(obj, JSON.parse(params.data));
 
         setTimeout(function() {
-            params.success({id: obj.id}, 200, Xhr());
+            if (fail) {
+                params.error(Xhr(406));
+            } else {
+                params.success({id: obj.id}, 200, Xhr());
+            }
         }, delay);
     };
 
@@ -100,7 +104,11 @@ define([
         _.last(exampleFixtures.id = id++);
 
         setTimeout(function() {
-            params.success({id: _.last(exampleFixtures).id}, 200, Xhr());
+            if (fail) {
+                params.error(Xhr(406));
+            } else {
+                params.success({id: _.last(exampleFixtures).id}, 200, Xhr());
+            }
         }, delay);
 
     };
