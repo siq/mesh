@@ -80,7 +80,7 @@ define([
 
         load: function(id, params) {
             if (_.isNumber(id) || isString(id)) {
-                return this.get(id).refresh(params, {condition: true});
+                return this.get(id).refresh(params, {conditional: true});
             } else {
                 return this.collection(id).load();
             }
