@@ -76,10 +76,13 @@ INTROSPECTION_PATH_EXPR = r"""(?x)^%s
 class Connection(object):
     def __init__(self, url, timeout=None):
         self.scheme, self.host, self.path = urlparse(url)[:3]
-
-        self.implementation = (HTTPSConnection if self.scheme == 'https' else HTTPConnection)
         self.path = self.path.rstrip('/')
         self.timeout = timeout
+        
+        if self.scheme == 'https':
+            self.implementation = HTTPSConnection
+        else:
+            self.implementation = HTTPConnection
 
     def request(self, method, url, body=None, headers=None):
         if url and url[0] != '/':
