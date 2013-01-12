@@ -234,7 +234,7 @@ define([
             });
         },
 
-        save: function(params, include_all_attrs) {
+        save: function() {
             var request, subject, data, name, dfd, self = this,
                 args = Array.prototype.slice(0),
                 changes = self._changes,
@@ -245,7 +245,7 @@ define([
 
             subject = self;
 
-            if (!creating && !include_all_attrs) {
+            if (!creating) {
                 subject = {};
                 var i, l, changeArray = [], isBaseProp, thisChange;
                 for (name in changes) {
@@ -271,9 +271,7 @@ define([
             }
 
             data = request.extract(subject);
-            if (params != null) {
-                $.extend(true, data, params);
-            }
+
             if (isEmpty(data)) {
                 return _.last(inFlight).promise;
             }
