@@ -101,7 +101,7 @@ define([
         var obj, which = _.last(params.url.split('/'));
 
         exampleFixtures.push(JSON.parse(params.data));
-        _.last(exampleFixtures.id = id++);
+        _.last(exampleFixtures).id = id++;
 
         setTimeout(function() {
             if (fail) {

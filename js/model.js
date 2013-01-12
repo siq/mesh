@@ -274,7 +274,8 @@ define([
             data = request.extract(subject);
 
             if (isEmpty(data)) {
-                return _.last(inFlight).promise;
+                return inFlight.length?
+                    _.last(inFlight).promise : $.Deferred().resolve(self);
             }
 
             // handle the case where there's an in-flight 'create' call, but we
@@ -286,12 +287,21 @@ define([
                 });
             }
 
-            inFlight.push(dfd = request.initiate(self.id, data));
+            inFlight.push({dfd: dfd = request.initiate(self.id, data)});
 
             return _.last(inFlight).promise = dfd.pipe(function(data, xhr) {
+                var inFlight = self._inFlight.save,
+                    idx = _.indexOf(_.pluck(inFlight, 'dfd'), dfd);
                 if (creating) {
                     self._manager.associate(self, data.id);
                 }
+                self._inFlight.save =_.reduce(inFlight,
+                    function(inFlight, o, i) {
+                        if (i >= idx || o.promise.state() === 'pending') {
+                            inFlight.push(o);
+                        }
+                        return inFlight;
+                    }, []);
                 self._changes = {};
                 self.set(data, {unchanged: true});
                 self._loaded = true;

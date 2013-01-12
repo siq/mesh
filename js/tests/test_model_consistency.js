@@ -350,6 +350,27 @@ define([
         });
     });
 
+    asyncTest('calling save on already-loaded model another', function() {
+        setup().then(function(c) {
+            c.first().save().then(function() {
+                ok(true, 'saved succeeded');
+                start();
+            });
+        });
+    });
+
+    asyncTest('cleaning up state after save', function() {
+        setup({noCollection: true}).then(function() {
+            var m = Example({required_field: 'foo'});
+            m.save().then(function() {
+                m.set({required_field: 'bar'}).save().then(function() {
+                    equal(m._inFlight.save.length, 1);
+                    start();
+                });
+            });
+        });
+    });
+
     // asyncTest('calling save with in flight create returns first dfd 2', function() {
     //     setup({noCollection: true}).then(function() {
     //         Example.mockDelay(10);
@@ -381,6 +402,8 @@ define([
     //     });
     // });
 
+    // TODO: verify state of persisted data 'server-side' (i.e. w/
+    // Example.mockDataChange)
     asyncTest('calling save with in flight create and changes returns new dfd', function() {
         setup({noCollection: true}).then(function() {
             Example.mockDelay(10);
