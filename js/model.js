@@ -175,19 +175,20 @@ define([
                 inFlight = self._inFlight.refresh;
 
             if (self.id == null || (conditional && self._loaded)) {
-                return _.last(inFlight).promise;
+                return inFlight.length?
+                    _.last(inFlight).promise : $.Deferred().resolve(self);
             }
 
             inFlight.push({dfd: dfd = self._initiateRequest('get', params)});
 
             return _.last(inFlight).promise = dfd.pipe(function(data) {
-                var i = 0, prevDfd;
+                var i = 0, prevDfd, inFlight = self._inFlight.refresh;
                 self._loaded = true;
                 self.set(data, {unchanged: true, noclobber: true});
                 while ((prevDfd = inFlight[i++].dfd) !== dfd) {
                     prevDfd.resolve(data);
                 }
-                self._inFlight.refresh = inFlight.slice(i + 1);
+                self._inFlight.refresh = inFlight.slice(i - 1);
                 return self;
             });
         },

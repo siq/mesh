@@ -171,7 +171,7 @@ define([
                         'the fourth request completed after the third');
                     equal(c.first().get('required_field'), 'changed value 2');
 
-                    equal(c.first()._inFlight.refresh.length, 0,
+                    equal(c.first()._inFlight.refresh.length, 1,
                         'state was cleaned up property');
                     start();
                 });
@@ -261,6 +261,19 @@ define([
             });
         });
 
+    });
+
+    asyncTest('conditional refresh after loading via collection', function() {
+        setup().then(function(c) {
+            var promise = c.first().refresh(null, {conditional: true});
+
+            ok(promise.state(), 'resolved');
+
+            promise.then(function() {
+                ok(true, 'didnt fail');
+                start();
+            });
+        });
     });
 
     module('save');
