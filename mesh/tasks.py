@@ -13,34 +13,33 @@ class ClientShell(Task):
         'bundle': Text(required=True),
         'url': Text(required=True),
         'version': Text(default='1.0'),
+        'introspect': Boolean(default=False),
         'ipython': Boolean(default=True),
     }
 
     source = """
-        def _generate_mesh_binding():
-            from bake.util import import_object
-            from mesh.standard import bind
-            from mesh.transport.http import HttpClient
+        from bake.util import import_object
+        from mesh.standard import bind
+        from mesh.transport.http import HttpClient
 
-            bundle = import_object(%(bundle)r)
-            HttpClient(%(url)r, bundle.specify(), context=%(context)r,
+        if %(introspect)r:
+            CLIENT = HttpClient(%(url)r, bundle=%(bundle)r, context=%(context)r,
                 context_header_prefix=%(context_header_prefix)r).register()
-            return bind(bundle, bundle.name + '/' + %(version)r)
-
-        API = _generate_mesh_binding()
-        del _generate_mesh_binding
+            SPECIFICATION = CLIENT.specification
+            API = bind(SPECIFICATION, %(bundle)r + '/' + %(version)r)
+        else:
+            SPECIFICATION = import_object(%(bundle)r).specify()
+            CLIENT = HttpClient(%(url)r, SPECIFICATION, context=%(context)r,
+                context_header_prefix=%(context_header_prefix)r).register()
+            API = bind(SPECIFICATION, SPECIFICATION.name + '/' + %(version)r)
     """
 
     ipython_source = """
-        def _prepare_mesh_environment():
-            ip = get_ipython()
-            for name in API:
-                ip.ex(name + ' = getattr(API, "' + name + '")')
+        IP = get_ipython()
+        for name in API:
+            IP.ex(name + ' = getattr(API, "' + name + '")')
 
-            print 'Models available: ' + ', '.join(sorted(API))
-
-        _prepare_mesh_environment()
-        del _prepare_mesh_environment
+        print 'Models available: ' + ', '.join(sorted(API))
     """
 
     def run(self, runtime):
