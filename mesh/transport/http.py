@@ -32,6 +32,7 @@ STATUS_CODES = {
     GONE: 410,
     SERVER_ERROR: 500,
     UNIMPLEMENTED: 501,
+    BAD_GATEWAY: 502,
     UNAVAILABLE: 503,
 }
 
@@ -53,13 +54,18 @@ STATUS_LINES = {
     GONE: '410 Gone',
     SERVER_ERROR: '500 Internal Server Error',
     UNIMPLEMENTED: '501 Not Implemented',
+    BAD_GATEWAY: '502 Bad Gateway',
     UNAVAILABLE: '503 Service Unavailable',
 }
 
 PATH_EXPR = r"""(?x)^%s
     (?P<preamble>(?:/[\w.]+/\d+[.]\d+)+)
     /(?P<resource>\w+)
-    (?:/(?P<subject>[-.:\w]+)(?P<tail>(?:/\w+)+)?)?
+    (?:/(?P<subject>[-.:\w]+)
+        (?:/(?P<subresource>\w+)
+            (?:/(?P<subsubject>[-.:\w]+))?
+        )?
+    )?
     (?:[!](?P<format>\w+))?
     /?$"""
         
@@ -184,6 +190,12 @@ class Path(object):
     def __str__(self):
         return self.path
 
+    def __repr__(self):
+        tokens = []
+        for attr, value in sorted(self.__dict__.iteritems()):
+            tokens.append('%s=%r' % (attr, value))
+        return 'Path(%s)' % ', '.join(tokens)
+
     def _parse_format(self, server, path, match):
         self.format = match.group('format')
         if self.format is not None and self.format not in server.formats:
@@ -211,16 +223,16 @@ class Path(object):
         self.preamble = tuple(preamble)
         self.resource = match.group('resource')
         self.subject = match.group('subject')
-
-        self.tail = match.group('tail')
-        if self.tail:
-            self.tail = self.tail.lstrip('/')
+        self.subresource = match.group('subresource')
+        self.subsubject = match.group('subsubject')
 
         tokens = [self.resource]
         if self.subject:
             tokens.append('id')
-        if self.tail:
-            tokens.append('tail')
+        if self.subresource:
+            tokens.append(self.subresource)
+        if self.subsubject:
+            tokens.append('id')
         self.signature = (self.preamble, '/'.join(tokens))
 
 class EndpointGroup(object):

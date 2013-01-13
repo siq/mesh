@@ -1,7 +1,11 @@
+import socket
+
 from scheme.exceptions import StructuralError
 
 from mesh.constants import *
 from mesh.util import construct_all_list
+
+ConnectionError = socket.error
 
 class OperationError(StructuralError):
     """An operational error."""
@@ -52,6 +56,9 @@ class ServerError(RequestError):
 class UnimplementedError(RequestError):
     status = UNIMPLEMENTED
 
+class BadGatewayError(RequestError):
+    status = BAD_GATEWAY
+
 class UnavailableError(RequestError):
     status = UNAVAILABLE
 
@@ -65,6 +72,7 @@ RequestError.errors = {
     GONE: GoneError,
     SERVER_ERROR: ServerError,
     UNIMPLEMENTED: UnimplementedError,
+    BAD_GATEWAY: BadGatewayError,
     UNAVAILABLE: UnavailableError,
 }
 
