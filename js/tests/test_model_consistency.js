@@ -601,5 +601,20 @@ define([
         });
     });
 
+    module('load');
+
+    asyncTest('calling load refreshes with unloaded model and retuns cached result otherwise', function() {
+        setup({noCollection: true}).then(function() {
+            var m = Example.models.get(1), dfd1 = m.load();
+
+            dfd1.then(function() {
+                var dfd2 = m.load();
+                ok(dfd1 === dfd2, 'second load returns cached promise');
+                equal(dfd2.state(), 'resolved');
+                start();
+            });
+        });
+    });
+
     start();
 });

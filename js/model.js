@@ -180,6 +180,10 @@ define([
             return _.escape('' + value);
         },
 
+        load: function() {
+            return this.refresh(null, {conditional: true});
+        },
+
         refresh: function(params, options) {
             var dfd, self = this, conditional = options && options.conditional,
                 inFlight = self._inFlight.refresh;
