@@ -164,9 +164,9 @@ define([
             inFlight.push({dfd: dfd = self._initiateRequest('delete')});
 
             return _.last(inFlight).promise = dfd.done(function(response) {
-                self.del('id', {unchanged: true});
                 delete self._loaded;
                 self._manager.notify(self, 'destroy').dissociate(self);
+                self.del('id', {unchanged: true});
                 self.trigger('destroy', self, response);
                 return response;
             });
