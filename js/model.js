@@ -138,7 +138,7 @@ define([
             this._options = $.extend(true, this.defaults, options);
             this._manager.associate(this);
             this._httpStatus = null;
-            this._inFlight = {refresh: [], save: []};
+            this._inFlight = {refresh: [], save: [], destroy: []};
         },
 
         construct: function() {},
@@ -148,14 +148,24 @@ define([
         },
 
         destroy: function() {
-            var self = this;
-            if (self.id == null) {
+            var self = this, inFlight = self._inFlight.destroy, dfd;
+
+            if (inFlight.length &&
+                    _.last(inFlight).promise.state() !== 'rejected') {
+                return _.last(inFlight).promise;
+            }
+
+            if (self.get('id') == null) {
                 self._manager.notify(self, 'destroy').dissociate(self);
                 self.trigger('destroy', self);
                 return $.Deferred().resolve();
             }
 
-            return self._initiateRequest('delete').done(function(response) {
+            inFlight.push({dfd: dfd = self._initiateRequest('delete')});
+
+            return _.last(inFlight).promise = dfd.done(function(response) {
+                self.del('id', {unchanged: true});
+                delete self._loaded;
                 self._manager.notify(self, 'destroy').dissociate(self);
                 self.trigger('destroy', self, response);
                 return response;
@@ -174,7 +184,7 @@ define([
             var dfd, self = this, conditional = options && options.conditional,
                 inFlight = self._inFlight.refresh;
 
-            if (self.id == null || (conditional && self._loaded)) {
+            if (!self.has('id') || (conditional && self._loaded)) {
                 return inFlight.length?
                     _.last(inFlight).promise : $.Deferred().resolve(self);
             }
@@ -288,7 +298,7 @@ define([
             }
 
             inFlight.push({
-                dfd: dfd = request.initiate(self.id, data),
+                dfd: dfd = request.initiate(self.get('id'), data),
                 changes: changes
             });
 
@@ -310,6 +320,7 @@ define([
                         }
                         return inFlight;
                     }, []);
+                self._inFlight.destroy = [];
                 self.set(data, {unchanged: true});
                 self._loaded = true;
                 self._httpStatus = request.STATUS_CODES[xhr.status];
@@ -345,7 +356,7 @@ define([
         },
 
         _initiateRequest: function(name, params) {
-            return this._getRequest(name).initiate(this.id, params);
+            return this._getRequest(name).initiate(this.get('id'), params);
         }
     }, {mixins: [Eventable]});
 

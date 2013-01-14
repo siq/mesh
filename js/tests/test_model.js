@@ -121,7 +121,8 @@ define([
                     deepEqual(model._changes, {});
 
                     model.destroy().then(function(response) {
-                        deepEqual(response, {id: model.id});
+                        ok(_.isObject(response));
+                        ok(_.isNumber(response.id));
                         ok(manager.models[model.id] === undefined);
                         Request.ajax(oldAjax);
                         start();
@@ -257,6 +258,7 @@ define([
     module('poll');
 
     asyncTest('polling works', function() {
+        Example.models.clear();
         var self = this,
 
             count = 0,
@@ -307,6 +309,7 @@ define([
     });
 
     asyncTest('polling timeout works', function() {
+        Example.models.clear();
         var self = this,
             requests = 0,
 

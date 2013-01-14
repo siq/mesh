@@ -504,37 +504,39 @@ define([
 
     module('delete');
 
-    // asyncTest('calling delete with in flight requests returns current promise', function() {
-    //     setup().then(function(c) {
-    //         Example.mockDelay(10);
-    //         var dfd1 = c.first().destroy(),
-    //             dfd2 = c.first().destroy();
+    asyncTest('calling delete with in flight requests returns current promise', function() {
+        setup().then(function(c) {
+            Example.mockDelay(10);
+            var dfd1 = c.first().destroy(),
+                dfd2 = c.first().destroy();
 
-    //         ok(dfd1 === dfd2);
-    //         equal(dfd1.state(), 'pending');
+            ok(dfd1 === dfd2, 'same promise is returned');
+            equal(dfd1.state(), 'pending', 'promises in "pending" state');
 
-    //         dfd1.then(function() {
-    //             start();
-    //         });
-    //     });
-    // });
+            dfd1.then(function() {
+                start();
+            });
+        });
+    });
 
-    // asyncTest('calling delete after successful delete returns same promise', function() {
-    //     setup().then(function(c) {
-    //         Example.mockDelay(10);
-    //         var m = c.first(),
-    //             dfd1 = m.destroy();
+    asyncTest('calling delete after successful delete returns same promise', function() {
+        setup().then(function(c) {
+            Example.mockDelay(10);
+            var m = c.first(),
+                dfd1 = m.destroy();
 
-    //         equal(dfd1.state(), 'pending');
+            equal(dfd1.state(), 'pending', 'initial deferred state is pending');
 
-    //         dfd1.then(function() {
-    //             var dfd2 = m.destroy();
-    //             ok(dfd1 === dfd2);
-    //             equal(dfd2.state(), 'resolved');
-    //             start();
-    //         });
-    //     });
-    // });
+            dfd1.then(function() {
+                var dfd2 = m.destroy();
+                ok(true, 'first destroy succeeded');
+                ok(dfd1 === dfd2, 'second deferred is the same as the first');
+                equal(dfd2.state(), 'resolved',
+                    'second deferred state is resolved');
+                start();
+            });
+        });
+    });
 
     asyncTest('calling delete after failed delete returns new promise', function() {
         setup().then(function(c) {
@@ -556,33 +558,48 @@ define([
         });
     });
 
-    // asyncTest('calling delete and then save', function() {
-    //     setup().then(function(c) {
-    //         Example.mockDelay(10);
-    //         var m = c.first(),
-    //             dfd1 = m.destroy();
+    asyncTest('calling delete and then save and then delete', function() {
+        setup().then(function(c) {
+            Example.mockDelay(10);
+            var m = c.currentPage()[1],
+                originalId = c.get('id'),
+                dfd1 = m.destroy();
 
-    //         equal(dfd1.state(), 'pending');
+            equal(dfd1.state(), 'pending', 'delete request is pending');
 
-    //         dfd1.then(function() {
-    //             Example.models.clear();
-    //             var c = Example.collection();
-    //             c.load().then(function() {
-    //                 ok(!c.where({id: m.get('id')}));
-    //                 m.save().then(function() {
-    //                     c.load().then(function() {
-    //                         var newM = c.where({id: m.get('id')});
-    //                         ok(newM);
-    //                         if (newM) {
-    //                             equal(newM.get('text_field'), m.get('text_field'));
-    //                         }
-    //                         start();
-    //                     });
-    //                 });
-    //             });
-    //         });
-    //     });
-    // });
+            dfd1.then(function() {
+                var persisted = Example.mockGetPersistedData();
+                ok(!_.find(persisted, function(d) {
+                    return d.id === originalId;
+                }), 'the model is not in the persisted data');
+                Example.models.clear();
+                var c = Example.collection();
+                c.load().then(function() {
+                    ok(!c.where({id: originalId}),
+                        'the model is not loaded from the persisted data');
+                    m.save().then(function() {
+                        c.load({reload: true}).then(function() {
+                            var newM = c.where({id: m.get('id')}), dfd2;
+                            ok(newM,
+                                'after re-loading the collection, the model is back');
+                            if (newM) {
+                                equal(newM.get('text_field'), m.get('text_field'));
+                            }
+
+                            dfd2 = m.destroy();
+                            ok(dfd1 !== dfd2, 'a new delete request is executed');
+
+                            dfd2.then(function() {
+                                equal(m._inFlight.destroy.length, 1,
+                                    'cleaning up state');
+                                start();
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    });
 
     start();
 });

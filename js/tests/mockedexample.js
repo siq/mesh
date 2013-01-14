@@ -48,7 +48,7 @@ define([
                 params.success({
                     resources: resources,
                     total: exampleFixtures.length
-                }, 200, {});
+                }, 200, Xhr());
             }
         }, delay);
         return dfd;
@@ -85,14 +85,13 @@ define([
     Example.prototype.__requests__['delete'].ajax = function(params) {
         var obj, which = +_.last(params.url.split('/')), shouldFail = fail;
 
-        exampleFixtures = _.filter(exampleFixtures, function(f) {
-            return f.id !== which;
-        });
-
         setTimeout(function() {
             if (shouldFail) {
                 params.error(Xhr(406));
             } else {
+                exampleFixtures = _.filter(exampleFixtures, function(f) {
+                    return f.id !== which;
+                });
                 params.success({id: which}, 200, Xhr());
             }
         }, delay);
@@ -136,7 +135,9 @@ define([
     };
 
     Example.mockGetPersistedData = function() {
-        return $.extend(true, {}, exampleFixtures);
+        return _.map(exampleFixtures, function(f) {
+            return $.extend(true, {}, f);
+        });
     };
 
     return Example;
