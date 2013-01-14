@@ -147,7 +147,7 @@ define([
             return this._httpStatus;
         },
 
-        destroy: function(params) {
+        destroy: function() {
             var self = this;
             if (self.id == null) {
                 self._manager.notify(self, 'destroy').dissociate(self);
@@ -155,7 +155,7 @@ define([
                 return $.Deferred().resolve();
             }
 
-            return self._initiateRequest('delete', params).done(function(response) {
+            return self._initiateRequest('delete').done(function(response) {
                 self._manager.notify(self, 'destroy').dissociate(self);
                 self.trigger('destroy', self, response);
                 return response;
