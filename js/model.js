@@ -188,7 +188,11 @@ define([
             var dfd, self = this, conditional = options && options.conditional,
                 inFlight = self._inFlight.refresh;
 
-            if (!self.has('id') || (conditional && self._loaded)) {
+            if (self.get('id') == null) {
+                return $.Deferred().reject(self);
+            }
+
+            if (conditional && self._loaded) {
                 return inFlight.length?
                     _.last(inFlight).promise : $.Deferred().resolve(self);
             }

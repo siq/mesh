@@ -276,6 +276,23 @@ define([
         });
     });
 
+    asyncTest('refreshing a model without id returns a failed deferred', function() {
+        setup({noCollection: true}).then(function() {
+            var m = Example(), dfd = m.refresh();
+
+            ok(m.get('id') == null, 'model has no id');
+            equal(dfd.state(), 'rejected', 'deferred has been rejected');
+
+            dfd.then(function() {
+                ok(false, 'deferred should not resolve');
+                start();
+            }, function() {
+                ok(true, 'error callback should execute');
+                start();
+            });
+        });
+    });
+
     module('save');
 
     asyncTest('saving a value on an existing model works', function() {
