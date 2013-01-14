@@ -371,36 +371,65 @@ define([
         });
     });
 
-    // asyncTest('calling save with in flight create returns first dfd 2', function() {
-    //     setup({noCollection: true}).then(function() {
-    //         Example.mockDelay(10);
-    //         var m = Example(),
-    //             dfd1 = m.set('required_field', 'foo').save(),
-    //             dfd2 = m.save();
-    //         ok(dfd1 === dfd2, 'second save\'s dfd is equal to the first');
-    //         dfd1.then(function() {
-    //             start();
-    //         }, function() {
-    //             ok(false, 'should have resolved');
-    //             start();
-    //         });
-    //     });
-    // });
+    asyncTest('calling save on existing model with in flight update returns first dfd', function() {
+        setup().then(function(c) {
+            Example.mockDelay(10);
+            var dfd1 = c.first().set('required_field', 'foo').save(),
+                dfd2 = c.first().save();
+            ok(dfd1 === dfd2, 'second save\'s dfd is equal to the first');
+            dfd1.then(function() {
+                start();
+            }, function() {
+                ok(false, 'should have resolved');
+                start();
+            });
+        });
+    });
 
-    // asyncTest('calling save with in flight update returns first dfd', function() {
-    //     setup().then(function(c) {
-    //         Example.mockDelay(10);
-    //         var dfd1 = c.first().set('required_field', 'foo').save(),
-    //             dfd2 = c.first().save();
-    //         ok(dfd1 === dfd2, 'second save\'s dfd is equal to the first');
-    //         dfd1.then(function() {
-    //             start();
-    //         }, function() {
-    //             ok(false, 'should have resolved');
-    //             start();
-    //         });
-    //     });
-    // });
+    asyncTest('calling save on new model with in flight create returns first dfd', function() {
+        setup({noCollection: true}).then(function() {
+            Example.mockDelay(10);
+            var m = Example(),
+                dfd1 = m.set('required_field', 'foo').save(),
+                dfd2 = m.save();
+            ok(dfd1 === dfd2, 'second save\'s dfd is equal to the first');
+            dfd1.then(function() {
+                start();
+            }, function() {
+                ok(false, 'should have resolved');
+                start();
+            });
+        });
+    });
+
+    asyncTest('failed save restores changes to local model', function() {
+        setup().then(function(c) {
+            var m = c.first(), dfd1, dfd2;
+
+            Example.mockDelay(50).mockFailure(true);
+            dfd1 = m.set('required_field', 'foo').save(),
+            Example.mockFailure(false);
+            dfd2 = m.set('text_field', 'bar').save();
+
+            dfd1.then(function() {
+                ok(false, 'first request should have failed');
+            }, function() {
+                ok(true, 'first request failed');
+                equal(m._changes.required_field, true,
+                    'required_field property is listed as changed');
+            });
+
+            dfd2.then(function() {
+                ok(true, 'second request succeeded');
+                equal(m._changes.hasOwnProperty('text_field'), false,
+                    'text_field property is not listed as changed');
+                start();
+            }, function() {
+                ok(false, 'second request should not have failed');
+                start();
+            });
+        });
+    });
 
     // TODO: verify state of persisted data 'server-side' (i.e. w/
     // Example.mockDataChange)

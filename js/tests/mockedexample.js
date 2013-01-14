@@ -22,7 +22,8 @@ define([
         var query, dfd = $.Deferred(),
             resources = [],
             limit = params.data.limit || exampleFixtures.length,
-            offset = params.data.offset || 0;
+            offset = params.data.offset || 0,
+            shouldFail = fail;
 
         query = eval('query = ' + (params.data.query || '{}'));
 
@@ -37,7 +38,7 @@ define([
         }
 
         setTimeout(function() {
-            if (fail) {
+            if (shouldFail) {
                 params.error({
                     getResponseHeader: function() {return '';},
                     status: 406,
@@ -66,13 +67,13 @@ define([
     };
 
     Example.prototype.__requests__.update.ajax = function(params) {
-        var obj, which = +_.last(params.url.split('/'));
+        var obj, which = +_.last(params.url.split('/')), shouldFail = fail;
 
         obj = _.find(exampleFixtures, function(e) { return e.id === which; });
         $.extend(obj, JSON.parse(params.data));
 
         setTimeout(function() {
-            if (fail) {
+            if (shouldFail) {
                 params.error(Xhr(406));
             } else {
                 params.success({id: obj.id}, 200, Xhr());
@@ -81,14 +82,14 @@ define([
     };
 
     Example.prototype.__requests__['delete'].ajax = function(params) {
-        var obj, which = +_.last(params.url.split('/'));
+        var obj, which = +_.last(params.url.split('/')), shouldFail = fail;
 
         exampleFixtures = _.filter(exampleFixtures, function(f) {
             return f.id !== which;
         });
 
         setTimeout(function() {
-            if (fail) {
+            if (shouldFail) {
                 params.error(Xhr(406));
             } else {
                 params.success({id: which}, 200, Xhr());
@@ -98,13 +99,13 @@ define([
     };
 
     Example.prototype.__requests__.create.ajax = function(params) {
-        var obj, which = _.last(params.url.split('/'));
+        var obj, which = _.last(params.url.split('/')), shouldFail = fail;
 
         exampleFixtures.push(JSON.parse(params.data));
         _.last(exampleFixtures).id = id++;
 
         setTimeout(function() {
-            if (fail) {
+            if (shouldFail) {
                 params.error(Xhr(406));
             } else {
                 params.success({id: _.last(exampleFixtures).id}, 200, Xhr());

@@ -287,7 +287,15 @@ define([
                 });
             }
 
-            inFlight.push({dfd: dfd = request.initiate(self.id, data)});
+            inFlight.push({
+                dfd: dfd = request.initiate(self.id, data),
+                changes: changes
+            });
+
+            self._changes = {};
+
+            // if the request failed, re-list those properties as changed
+            dfd.fail(function() { _.extend(self._changes, changes); });
 
             return _.last(inFlight).promise = dfd.pipe(function(data, xhr) {
                 var inFlight = self._inFlight.save,
@@ -302,7 +310,6 @@ define([
                         }
                         return inFlight;
                     }, []);
-                self._changes = {};
                 self.set(data, {unchanged: true});
                 self._loaded = true;
                 self._httpStatus = request.STATUS_CODES[xhr.status];
