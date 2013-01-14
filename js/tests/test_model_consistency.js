@@ -67,7 +67,7 @@ define([
         });
     });
 
-    asyncTest('refresh doesnt overrwite changed properties', function() {
+    asyncTest('refresh doesnt overwrite changed properties', function() {
         setup().then(function(c) {
             var origValue = c.first().get('text_field'),
                 newValue = 'foo';
@@ -80,7 +80,7 @@ define([
         });
     });
 
-    asyncTest('refresh doesnt overrwite properties changed after initial request', function() {
+    asyncTest('refresh doesnt overwrite properties changed after initial request', function() {
         setup().then(function(c) {
             var dfd, origValue = c.first().get('text_field'),
                 newValue = 'foo';
@@ -431,11 +431,9 @@ define([
         });
     });
 
-    // TODO: verify state of persisted data 'server-side' (i.e. w/
-    // Example.mockDataChange)
     asyncTest('calling save with in flight create and changes returns new dfd', function() {
         setup({noCollection: true}).then(function() {
-            Example.mockDelay(10);
+            Example.mockDelay(50);
             var m = Example(),
                 dfd1 = m.set('required_field', 'foo').save(),
                 dfd2 = m.set('boolean_field', true).save();
@@ -443,15 +441,37 @@ define([
             ok(dfd1 !== dfd2, 'different deferred objects');
 
             dfd1.then(function() {
+                var persisted = Example.mockGetPersistedData(), checked = false;
                 equal(dfd2.state(), 'pending');
                 equal(m.get('required_field'), 'foo');
                 equal(m.get('boolean_field'), true);
+                _.each(persisted, function(d) {
+                    if (d.id === m.get('id')) {
+                        checked = true;
+                        equal(d.required_field, 'foo',
+                            'required_field has been persisted');
+                        ok(d.boolean_field == null,
+                            'boolean_field has not been persisted');
+                    }
+                });
+                ok(checked, 'successfully checked persisted data');
             });
 
             dfd2.then(function() {
+                var persisted = Example.mockGetPersistedData(), checked = false;
                 equal(dfd1.state(), 'resolved');
                 equal(m.get('required_field'), 'foo');
                 equal(m.get('boolean_field'), true);
+                _.each(persisted, function(d) {
+                    if (d.id === m.get('id')) {
+                        checked = true;
+                        equal(d.required_field, 'foo',
+                            'required_field has been persisted');
+                        equal(d.boolean_field, true,
+                            'boolean_field has been persisted');
+                    }
+                });
+                ok(checked, 'successfully checked persisted data');
                 start();
             });
 

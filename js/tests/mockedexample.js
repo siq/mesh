@@ -69,13 +69,14 @@ define([
     Example.prototype.__requests__.update.ajax = function(params) {
         var obj, which = +_.last(params.url.split('/')), shouldFail = fail;
 
-        obj = _.find(exampleFixtures, function(e) { return e.id === which; });
-        $.extend(obj, JSON.parse(params.data));
-
         setTimeout(function() {
             if (shouldFail) {
                 params.error(Xhr(406));
             } else {
+                obj = _.find(exampleFixtures, function(e) {
+                    return e.id === which;
+                });
+                $.extend(obj, JSON.parse(params.data));
                 params.success({id: obj.id}, 200, Xhr());
             }
         }, delay);
@@ -101,13 +102,12 @@ define([
     Example.prototype.__requests__.create.ajax = function(params) {
         var obj, which = _.last(params.url.split('/')), shouldFail = fail;
 
-        exampleFixtures.push(JSON.parse(params.data));
-        _.last(exampleFixtures).id = id++;
-
         setTimeout(function() {
             if (shouldFail) {
                 params.error(Xhr(406));
             } else {
+                exampleFixtures.push(JSON.parse(params.data));
+                _.last(exampleFixtures).id = id++;
                 params.success({id: _.last(exampleFixtures).id}, 200, Xhr());
             }
         }, delay);
@@ -133,6 +133,10 @@ define([
             change(exampleFixtures);
         }
         return Example;
+    };
+
+    Example.mockGetPersistedData = function() {
+        return $.extend(true, {}, exampleFixtures);
     };
 
     return Example;
