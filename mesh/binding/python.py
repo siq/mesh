@@ -91,7 +91,12 @@ class Model(object):
         if not request:
             raise RuntimeError()
 
-        instance = cls(**request['schema'].extract(params))
+        model_params = {}
+        for field, value in request['schema'].extract(params).iteritems():
+            if field in cls._attributes:
+                model_params[field] = value
+
+        instance = cls(**model_params)
         return instance.save(request, **params)
 
     def destroy(self, quiet=False, **params):
