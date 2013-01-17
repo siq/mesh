@@ -633,5 +633,27 @@ define([
         });
     });
 
+    module('set with validate');
+
+    // asyncTest('dont set invalid options', function() {
+    //     setup().then(function(c) {
+    //         var changeCount = 0,
+    //             managerChangeCount = 0,
+    //             m = c.models[1],
+    //             orig = m.get('integer_field');
+    //         m.on('change', function() { changeCount++; });
+    //         Example.models.on('change', function() { managerChangeCount++; });
+    //         m.set({integer_field: 'abc'}, {validate: true});
+    //         equal(changeCount, 0, 'model didnt fire change events');
+    //         equal(managerChangeCount, 0, 'manager didnt fire change events');
+    //         equal(m.get('integer_field'), orig, 'integer_field value didnt change');
+    //         start();
+    //     });
+    // });
+
+    // TODO:
+    //  - preserve original value on failed set
+    //  - when there's existing validation issue, setting other values
+
     start();
 });
