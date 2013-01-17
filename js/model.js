@@ -294,9 +294,17 @@ define([
         },
 
         validate: function() {
-            var request = this._getRequest(this._loaded? 'update' : 'create');
-            request.validate(request.extract(this));
-            return this;
+            var request = this._getRequest(this._loaded? 'update' : 'create'),
+                dfd = $.Deferred();
+            try {
+                request.validate(request.extract(this));
+            } catch (e) {
+                dfd.reject(e);
+            }
+            if (dfd.state() === 'pending') {
+                dfd.resolve();
+            }
+            return dfd;
         },
 
         _getRequest: function(name) {
