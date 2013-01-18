@@ -31,28 +31,6 @@ define([
 
     module('refresh');
 
-    // for siq/mesh #12 -- probably gonna remove this
-    // asyncTest('refresh with inflight request returns original promise', function() {
-    //     setup().then(function(c) {
-    //         var models = c.models;
-    //         Example.mockDelay(50);
-    //         var r1 = models[0].refresh(),
-    //             r2 = models[0].refresh();
-
-    //         equal(r1.state(), 'pending', 'refresh request is in-flight');
-    //         ok(r1 === r2, 'second call to refresh returned the same promise');
-
-    //         r1.then(function() {
-    //             var r3 = models[0].refresh();
-    //             ok(r1 !== r3,
-    //                 'calling refresh _after_ first request completed returns new dfd');
-    //             r3.then(function() {
-    //                 start();
-    //             });
-    //         });
-    //     });
-    // });
-
     asyncTest('conditional refresh returns same deferred', function() {
         setup().then(function(c) {
             var dfd1 = c.first().refresh(), dfd2;
