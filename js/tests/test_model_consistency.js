@@ -276,7 +276,8 @@ define([
     asyncTest('saving a value on an existing model works', function() {
         setup().then(function(c) {
             ok(c.first().get('required_field') == null);
-            c.first().set('required_field', 'foo').save().then(function() {
+            c.first().set('required_field', 'foo');
+            c.first().save().then(function() {
                 Example.models.clear();
                 Example.collection().load().then(function(models) {
                     equal(models[0].get('required_field'), 'foo');
@@ -289,7 +290,8 @@ define([
     asyncTest('saving a value on a new model works', function() {
         setup({noCollection: true}).then(function() {
             var m = Example();
-            m.set('required_field', 'foo').save().then(function() {
+            m.set('required_field', 'foo');
+            m.save().then(function() {
                 var id = m.get('id');
                 Example.models.clear();
                 Example.collection().load().then(function(models) {
@@ -326,7 +328,8 @@ define([
             var m = Example({required_field: 'foo'}), dfd1, dfd2, dfd1Failed;
             Example.mockFailure(true);
             dfd1 = m.save();
-            dfd2 = m.set('text_field', 'bar').save();
+            m.set('text_field', 'bar');
+            dfd2 = m.save();
             ok(dfd1 !== dfd2, 'second save\'s dfd is not equal to the first');
             dfd1.then(function() {
                 ok(false, 'should have failed');
@@ -358,7 +361,8 @@ define([
         setup({noCollection: true}).then(function() {
             var m = Example({required_field: 'foo'});
             m.save().then(function() {
-                m.set({required_field: 'bar'}).save().then(function() {
+                m.set({required_field: 'bar'});
+                m.save().then(function() {
                     equal(m._inFlight.save.length, 1);
                     start();
                 });
@@ -369,8 +373,10 @@ define([
     asyncTest('calling save on existing model with in flight update returns first dfd', function() {
         setup().then(function(c) {
             Example.mockDelay(10);
-            var dfd1 = c.first().set('required_field', 'foo').save(),
-                dfd2 = c.first().save();
+            var dfd1, dfd2;
+            c.first().set('required_field', 'foo');
+            dfd1 = c.first().save();
+            dfd2 = c.first().save();
             ok(dfd1 === dfd2, 'second save\'s dfd is equal to the first');
             dfd1.then(function() {
                 start();
@@ -384,9 +390,13 @@ define([
     asyncTest('calling save on new model with in flight create returns first dfd', function() {
         setup({noCollection: true}).then(function() {
             Example.mockDelay(10);
-            var m = Example(),
-                dfd1 = m.set('required_field', 'foo').save(),
-                dfd2 = m.save();
+            var m = Example(), dfd1, dfd2;
+
+            m.set('required_field', 'foo');
+
+            dfd1 = m.save();
+            dfd2 = m.save();
+
             ok(dfd1 === dfd2, 'second save\'s dfd is equal to the first');
             dfd1.then(function() {
                 start();
@@ -402,9 +412,11 @@ define([
             var m = c.first(), dfd1, dfd2;
 
             Example.mockDelay(50).mockFailure(true);
-            dfd1 = m.set('required_field', 'foo').save(),
+            m.set('required_field', 'foo');
+            dfd1 = m.save();
             Example.mockFailure(false);
-            dfd2 = m.set('text_field', 'bar').save();
+            m.set('text_field', 'bar');
+            dfd2 = m.save();
 
             dfd1.then(function() {
                 ok(false, 'first request should have failed');
@@ -429,9 +441,12 @@ define([
     asyncTest('calling save with in flight create and changes returns new dfd', function() {
         setup({noCollection: true}).then(function() {
             Example.mockDelay(50);
-            var m = Example(),
-                dfd1 = m.set('required_field', 'foo').save(),
-                dfd2 = m.set('boolean_field', true).save();
+            var m = Example(), dfd1, dfd2;
+
+            m.set('required_field', 'foo');
+            dfd1 = m.save(),
+            m.set('boolean_field', true);
+            dfd2 = m.save();
 
             ok(dfd1 !== dfd2, 'different deferred objects');
 
@@ -476,8 +491,12 @@ define([
     asyncTest('calling save with in flight update and changes returns new dfd', function() {
         setup().then(function(c) {
             Example.mockDelay(10);
-            var dfd1 = c.first().set('required_field', 'foo').save(),
-                dfd2 = c.first().set('boolean_field', true).save();
+            var dfd1, dfd2;
+
+            c.first().set('required_field', 'foo');
+            dfd1 = c.first().save(),
+            c.first().set('boolean_field', true);
+            dfd2 = c.first().save();
 
             ok(dfd1 !== dfd2, 'different deferred objects');
 

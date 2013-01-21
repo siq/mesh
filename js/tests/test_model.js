@@ -211,7 +211,8 @@ define([
                 params.success(params.data, 200, {});
             });
 
-            models[0].set('required_field', 'new value').save().done(function() {
+            models[0].set('required_field', 'new value');
+            models[0].save().done(function() {
                 equal(self.secondAjaxFired, true);
                 Request.ajax(oldAjax);
                 start();
@@ -369,12 +370,15 @@ define([
                 },
                 __bundle__: 'example2-1.0'
             }).extend(),
-            m = MyModel({id: 1}).set('foo.bar.baz', 2);
+            m = MyModel({id: 1});
+
+        m.set('foo.bar.baz', 2);
 
         m.save().then(function() {
             equal(created.length, 1);
             deepEqual(created[0], [1, {foo: {bar: {baz: 2}}, id: 1}]);
-            m.set('foo.bar.baz', 3).save().then(function() {
+            m.set('foo.bar.baz', 3);
+            m.save().then(function() {
                 equal(created.length, 2);
 
                 // i don't know if this is right, but model changes are tracked

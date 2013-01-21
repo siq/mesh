@@ -32,7 +32,8 @@ define([
     asyncTest('saving a local model', function() {
         setup();
         var up = UserPreferences.models.get(0);
-        up.set('foo', 'bar').save().then(function() {
+        up.set('foo', 'bar');
+        up.save().then(function() {
             var saved = getFromLocalStorage(0);
             equal(saved.id, 0);
             equal(saved.foo, 'bar');
@@ -43,7 +44,8 @@ define([
     asyncTest('retrieving a local model', function() {
         setup();
         var up = UserPreferences.models.get(1);
-        up.set('foo', 'barz').save().then(function() {
+        up.set('foo', 'barz');
+        up.save().then(function() {
             UserPreferences.models.clear();
             var fetched = UserPreferences.models.get(1);
             fetched.refresh().then(function() {
@@ -69,11 +71,13 @@ define([
     asyncTest('updating a local model', function() {
         setup();
         var up = UserPreferences.models.get(1);
-        up.set('foo', 'barz').save().then(function() {
+        up.set('foo', 'barz');
+        up.save().then(function() {
             UserPreferences.models.clear();
             var fetched = UserPreferences.models.get(1);
             fetched.refresh().then(function() {
-                fetched.set('foo', 'baz').save().then(function() {
+                fetched.set('foo', 'baz');
+                fetched.save().then(function() {
                     UserPreferences.models.clear();
                     var fetchedAgain = UserPreferences.models.get(1);
                     fetchedAgain.refresh().done(function() {
@@ -89,7 +93,8 @@ define([
     asyncTest('deleting a local model', function() {
         setup();
         var up = UserPreferences.models.get(0);
-        up.set('foo', 'bar').save().then(function() {
+        up.set('foo', 'bar');
+        up.save().then(function() {
             up.destroy().then(function() {
                 equal(getFromLocalStorage(0), null);
                 start();
