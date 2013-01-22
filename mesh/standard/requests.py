@@ -254,7 +254,7 @@ def construct_create_request(resource, declaration=None):
         auto_constructed = True,
         resource = resource,
         title = 'Creating a new %s' % resource.title.lower(),
-        schema = Structure(resource_schema),
+        schema = Structure(resource_schema, name='resource'),
         responses = {
             OK: Response(Structure(response_schema)),
             INVALID: Response(Errors),

@@ -11,6 +11,7 @@ class ClientShell(Task):
         'context': Map(Text()),
         'context_header_prefix': Text(),
         'bundle': Text(required=True),
+        'mixins': Text(),
         'url': Text(required=True),
         'version': Text(default='1.0'),
         'introspect': Boolean(default=False),
@@ -26,12 +27,12 @@ class ClientShell(Task):
             CLIENT = HttpClient(%(url)r, bundle=%(bundle)r, context=%(context)r,
                 context_header_prefix=%(context_header_prefix)r).register()
             SPECIFICATION = CLIENT.specification
-            API = bind(SPECIFICATION, %(bundle)r + '/' + %(version)r)
+            API = bind(SPECIFICATION, %(bundle)r + '/' + %(version)r, %(mixins)r)
         else:
             SPECIFICATION = import_object(%(bundle)r).specify()
             CLIENT = HttpClient(%(url)r, SPECIFICATION, context=%(context)r,
                 context_header_prefix=%(context_header_prefix)r).register()
-            API = bind(SPECIFICATION, SPECIFICATION.name + '/' + %(version)r)
+            API = bind(SPECIFICATION, SPECIFICATION.name + '/' + %(version)r, %(mixins)r)
     """
 
     ipython_source = """
