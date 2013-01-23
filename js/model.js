@@ -11,8 +11,10 @@ define([
     var ret,
         $models = $('head script[type="application/json"][data-models=true]'),
         isArray = _.isArray, isBoolean = _.isBoolean, isEmpty = _.isEmpty,
-        isEqual = _.isEqual, isString = _.isString;
+        isEqual = _.isEqual, isString = _.isString,
+        SettableObject = Class.extend();
 
+    asSettable.call(SettableObject.prototype, {propName: null});
 
     var Manager = Class.extend({
         init: function(model) {
@@ -265,7 +267,7 @@ define([
             subject = self;
 
             if (!creating) {
-                subject = {};
+                subject = SettableObject();
                 var i, l, changeArray = [], isBaseProp, thisChange;
                 for (name in changes) {
                     if (changes.hasOwnProperty(name)) {
@@ -283,7 +285,7 @@ define([
                             }
                         }
                         if (!isBaseProp) {
-                            subject[name] = self.get(name);
+                            subject.set(name, self.get(name));
                         }
                     }
                 }

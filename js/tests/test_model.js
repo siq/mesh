@@ -375,31 +375,12 @@ define([
         m.set('foo.bar.baz', 2);
 
         m.save().then(function() {
-            equal(created.length, 1);
-            deepEqual(created[0], [1, {foo: {bar: {baz: 2}}, id: 1}]);
+            equal(created.length, 1, 'created one');
+            deepEqual(created[0], [1, {foo: {bar: {baz: 2}}, id: 1}], 'created sturcture');
             m.set('foo.bar.baz', 3);
             m.save().then(function() {
-                equal(created.length, 2);
-
-                // i don't know if this is right, but model changes are tracked
-                // in a flat object. so if you set 'foo.bar', you'll have set
-                // the nested property `model.foo.bar`, but
-                // `model._changes['foo.bar'] === true`
-                //
-                // this would be a problem in the case of an update, but not a
-                // create, since on creation we just copy everything, not just
-                // the stuff in _changes.
-                //
-                // AFAIK this hasnt been an issue b/c we've never had writable
-                // nested properties, all of our nested properties have been
-                // read-only
-
-                // this seems like it should hold, but it doesnt because the
-                // 'bar' object is a reference to the actual property on the
-                // model... this is probably incorrect, but largely innocuous
-                // deepEqual(created[0], [1, {foo: {bar: {baz: 2}}, id: 1}]);
-
-                deepEqual(created[1], [1, {'foo.bar.baz': 3}]);
+                equal(created.length, 2, 'created two');
+                deepEqual(created[1], [1, {foo: {bar: {baz: 3}}}]);
             });
             start();
         });
