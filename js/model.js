@@ -241,9 +241,25 @@ define([
             subject = self;
             if (!creating && !include_all_attrs) {
                 subject = {};
+                var i, l, changeArray = [], isBaseProp, thisChange;
                 for (name in changes) {
                     if (changes.hasOwnProperty(name)) {
-                        subject[name] = self.get(name);
+                        changeArray.push(name);
+                    }
+                }
+                for (name in changes) {
+                    if (changes.hasOwnProperty(name)) {
+                        isBaseProp = false;
+                        for (i = 0, l = changeArray.length; i < l; i++) {
+                            thisChange = changeArray[i];
+                            if (thisChange.length > name.length && thisChange.slice(0, name.length) === name) {
+                                isBaseProp = true;
+                                break;
+                            }
+                        }
+                        if (!isBaseProp) {
+                            subject[name] = self.get(name);
+                        }
                     }
                 }
             }
