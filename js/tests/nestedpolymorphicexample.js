@@ -6,14 +6,14 @@ define([
 ], function(Request, fields, model, collection) {
     var preloadedRaw, resource = model.Model.extend({
         __bundle__: "primary",
-        __name__: "example",
+        __name__: "nestedpolymorphicexample",
         __requests__: {
             create: Request({
                 bundle: "primary",
                 method: "POST",
                 mimetype: "application/json",
                 name: "create",
-                path: "/primary/1.0/example",
+                path: "/primary/1.0/nestedpolymorphicexample",
                 responses: {
                     200: {
                         mimetype: "application/json",
@@ -24,10 +24,12 @@ define([
                             required: false,
                             strict: true,
                             structure: {
-                                id: fields.IntegerField({
+                                id: fields.UUIDField({
                                     is_identifier: true,
                                     name: "id",
                                     nonnull: true,
+                                    oncreate: true,
+                                    operators: "equal",
                                     required: true
                                 })
                             }
@@ -73,6 +75,76 @@ define([
                             nonnull: false,
                             required: false
                         }),
+                        composition: fields.StructureField({
+                            name: "composition",
+                            nonnull: true,
+                            required: false,
+                            strict: true,
+                            polymorphic_on: fields.EnumerationField({
+                                enumeration: ["attribute-filter", "datasource-list", "extant"],
+                                name: "type",
+                                nonnull: true,
+                                representation: "'attribute-filter', 'datasource-list', 'extant'",
+                                required: true
+                            }),
+                            structure: {
+                                "attribute-filter": {
+                                    expression: fields.TextField({
+                                        min_length: 1,
+                                        name: "expression",
+                                        nonnull: true,
+                                        required: true,
+                                        strip: true
+                                    }),
+                                    type: fields.EnumerationField({
+                                        constant: "attribute-filter",
+                                        enumeration: ["attribute-filter", "datasource-list", "extant"],
+                                        name: "type",
+                                        nonnull: true,
+                                        representation: "'attribute-filter', 'datasource-list', 'extant'",
+                                        required: true
+                                    })
+                                },
+                                "datasource-list": {
+                                    datasources: fields.SequenceField({
+                                        name: "datasources",
+                                        nonnull: true,
+                                        required: true,
+                                        unique: false,
+                                        item: fields.StructureField({
+                                            nonnull: true,
+                                            required: false,
+                                            strict: true,
+                                            structure: {
+                                                id: fields.UUIDField({
+                                                    name: "id",
+                                                    nonnull: true,
+                                                    required: true
+                                                })
+                                            }
+                                        })
+                                    }),
+                                    type: fields.EnumerationField({
+                                        constant: "datasource-list",
+                                        enumeration: ["attribute-filter", "datasource-list", "extant"],
+                                        name: "type",
+                                        nonnull: true,
+                                        representation: "'attribute-filter', 'datasource-list', 'extant'",
+                                        required: true
+                                    })
+                                },
+                                extant: {
+                                    type: fields.EnumerationField({
+                                        constant: "extant",
+                                        enumeration: ["attribute-filter", "datasource-list", "extant"],
+                                        name: "type",
+                                        nonnull: true,
+                                        representation: "'attribute-filter', 'datasource-list', 'extant'",
+                                        required: true
+                                    })
+                                }
+                            }
+                        }),
                         constrained_field: fields.IntegerField({
                             maximum: 4,
                             minimum: 2,
@@ -115,6 +187,13 @@ define([
                             nonnull: false,
                             required: false
                         }),
+                        id: fields.UUIDField({
+                            name: "id",
+                            nonnull: true,
+                            oncreate: true,
+                            operators: "equal",
+                            required: true
+                        }),
                         integer_field: fields.IntegerField({
                             name: "integer_field",
                             nonnull: false,
@@ -122,14 +201,12 @@ define([
                             required: false,
                             sortable: true
                         }),
-                        map_field: fields.MapField({
-                            name: "map_field",
-                            nonnull: false,
-                            required: false,
-                            value: fields.IntegerField({
-                                nonnull: false,
-                                required: false
-                            })
+                        name: fields.TextField({
+                            name: "name",
+                            nonnull: true,
+                            required: true,
+                            sortable: true,
+                            strip: true
                         }),
                         required_field: fields.TextField({
                             name: "required_field",
@@ -139,20 +216,10 @@ define([
                             sortable: true,
                             strip: true
                         }),
-                        sequence_field: fields.SequenceField({
-                            name: "sequence_field",
-                            nonnull: false,
-                            required: false,
-                            unique: false,
-                            item: fields.IntegerField({
-                                nonnull: false,
-                                required: false
-                            })
-                        }),
                         structure_field: fields.StructureField({
                             name: "structure_field",
                             nonnull: false,
-                            required: false,
+                            required: true,
                             strict: true,
                             structure: {
                                 optional_field: fields.IntegerField({
@@ -164,6 +231,24 @@ define([
                                     name: "required_field",
                                     nonnull: false,
                                     required: true
+                                }),
+                                structure_field: fields.StructureField({
+                                    name: "structure_field",
+                                    nonnull: false,
+                                    required: false,
+                                    strict: true,
+                                    structure: {
+                                        optional_field: fields.IntegerField({
+                                            name: "optional_field",
+                                            nonnull: false,
+                                            required: false
+                                        }),
+                                        required_field: fields.IntegerField({
+                                            name: "required_field",
+                                            nonnull: false,
+                                            required: true
+                                        })
+                                    }
                                 })
                             }
                         }),
@@ -173,82 +258,12 @@ define([
                             required: false,
                             strip: true
                         }),
-                        time_field: fields.TimeField({
-                            name: "time_field",
-                            nonnull: false,
-                            required: false
-                        }),
-                        tuple_field: fields.TupleField({
-                            name: "tuple_field",
-                            nonnull: false,
-                            required: false,
-                            values: [
-                                fields.TextField({
-                                    nonnull: false,
-                                    required: false,
-                                    strip: true
-                                }),
-                                fields.IntegerField({
-                                    nonnull: false,
-                                    required: false
-                                })
-                            ]
-                        }),
-                        union_field: fields.UnionField({
-                            name: "union_field",
-                            nonnull: false,
-                            required: false,
-                            fields: [
-                                fields.TextField({
-                                    nonnull: false,
-                                    required: false,
-                                    strip: true
-                                }),
-                                fields.IntegerField({
-                                    nonnull: false,
-                                    required: false
-                                })
-                            ]
-                        })
-                    }
-                })
-            }),
-            custom: Request({
-                bundle: "primary",
-                method: "POST",
-                mimetype: "application/json",
-                name: "custom",
-                path: "/primary/1.0/example/id/custom",
-                responses: {
-                    200: {
-                        mimetype: "application/json",
-                        status: "OK",
-                        schema: fields.StructureField({
-                            name: "response",
-                            nonnull: false,
-                            required: false,
-                            strict: true,
-                            structure: {
-                                id: fields.IntegerField({
-                                    name: "id",
-                                    nonnull: true,
-                                    required: true
-                                })
-                            }
-                        })
-                    }
-                },
-                schema: fields.StructureField({
-                    name: "request",
-                    nonnull: false,
-                    required: false,
-                    strict: true,
-                    structure: {
-                        optional_field: fields.TextField({
-                            name: "optional_field",
-                            nonnull: false,
-                            required: false,
-                            strip: true
+                        type: fields.EnumerationField({
+                            enumeration: ["immutable", "mutable"],
+                            name: "type",
+                            nonnull: true,
+                            onupdate: false,
+                            required: true
                         })
                     }
                 })
@@ -258,7 +273,7 @@ define([
                 method: "DELETE",
                 mimetype: "application/json",
                 name: "delete",
-                path: "/primary/1.0/example/id",
+                path: "/primary/1.0/nestedpolymorphicexample/id",
                 schema: null,
                 responses: {
                     200: {
@@ -270,10 +285,12 @@ define([
                             required: false,
                             strict: true,
                             structure: {
-                                id: fields.IntegerField({
+                                id: fields.UUIDField({
                                     is_identifier: true,
                                     name: "id",
                                     nonnull: true,
+                                    oncreate: true,
+                                    operators: "equal",
                                     required: true
                                 })
                             }
@@ -310,53 +327,12 @@ define([
                     }
                 }
             }),
-            filtered_update: Request({
-                bundle: "primary",
-                method: "POST",
-                mimetype: "application/json",
-                name: "filtered_update",
-                path: "/primary/1.0/example/id",
-                responses: {
-                    200: {
-                        mimetype: "application/json",
-                        status: "OK",
-                        schema: fields.StructureField({
-                            name: "response",
-                            nonnull: false,
-                            required: false,
-                            strict: true,
-                            structure: {
-                                id: fields.IntegerField({
-                                    name: "id",
-                                    nonnull: true,
-                                    required: true
-                                })
-                            }
-                        })
-                    }
-                },
-                schema: fields.StructureField({
-                    name: "request",
-                    nonnull: false,
-                    required: false,
-                    strict: true,
-                    structure: {
-                        operation: fields.TextField({
-                            constant: "filter",
-                            name: "operation",
-                            nonnull: false,
-                            required: true,
-                            strip: true
-                        })
-                    }
-                })
-            }),
             get: Request({
                 bundle: "primary",
                 method: "GET",
                 mimetype: "application/x-www-form-urlencoded",
                 name: "get",
-                path: "/primary/1.0/example/id",
+                path: "/primary/1.0/nestedpolymorphicexample/id",
                 responses: {
                     200: {
                         mimetype: "application/json",
@@ -371,6 +347,83 @@ define([
                                     name: "boolean_field",
                                     nonnull: false,
                                     required: false
+                                }),
+                                composition: fields.StructureField({
+                                    name: "composition",
+                                    nonnull: true,
+                                    required: false,
+                                    strict: true,
+                                    polymorphic_on: fields.EnumerationField({
+                                        enumeration: ["attribute-filter", "datasource-list", "extant"],
+                                        name: "type",
+                                        nonnull: true,
+                                        representation: "'attribute-filter', 'datasource-list', 'extant'",
+                                        required: true
+                                    }),
+                                    structure: {
+                                        "attribute-filter": {
+                                            expression: fields.TextField({
+                                                min_length: 1,
+                                                name: "expression",
+                                                nonnull: true,
+                                                required: true,
+                                                strip: true
+                                            }),
+                                            type: fields.EnumerationField({
+                                                constant: "attribute-filter",
+                                                enumeration: ["attribute-filter", "datasource-list", "extant"],
+                                                name: "type",
+                                                nonnull: true,
+                                                representation: "'attribute-filter', 'datasource-list', 'extant'",
+                                                required: true
+                                            })
+                                        },
+                                        "datasource-list": {
+                                            datasources: fields.SequenceField({
+                                                name: "datasources",
+                                                nonnull: true,
+                                                required: true,
+                                                unique: false,
+                                                item: fields.StructureField({
+                                                    nonnull: true,
+                                                    required: false,
+                                                    strict: true,
+                                                    structure: {
+                                                        id: fields.UUIDField({
+                                                            name: "id",
+                                                            nonnull: true,
+                                                            required: true
+                                                        }),
+                                                        name: fields.TextField({
+                                                            name: "name",
+                                                            nonnull: false,
+                                                            readonly: true,
+                                                            required: false,
+                                                            strip: true
+                                                        })
+                                                    }
+                                                })
+                                            }),
+                                            type: fields.EnumerationField({
+                                                constant: "datasource-list",
+                                                enumeration: ["attribute-filter", "datasource-list", "extant"],
+                                                name: "type",
+                                                nonnull: true,
+                                                representation: "'attribute-filter', 'datasource-list', 'extant'",
+                                                required: true
+                                            })
+                                        },
+                                        extant: {
+                                            type: fields.EnumerationField({
+                                                constant: "extant",
+                                                enumeration: ["attribute-filter", "datasource-list", "extant"],
+                                                name: "type",
+                                                nonnull: true,
+                                                representation: "'attribute-filter', 'datasource-list', 'extant'",
+                                                required: true
+                                            })
+                                        }
+                                    }
                                 }),
                                 constrained_field: fields.IntegerField({
                                     maximum: 4,
@@ -414,10 +467,12 @@ define([
                                     nonnull: false,
                                     required: false
                                 }),
-                                id: fields.IntegerField({
+                                id: fields.UUIDField({
                                     is_identifier: true,
                                     name: "id",
                                     nonnull: true,
+                                    oncreate: true,
+                                    operators: "equal",
                                     required: true
                                 }),
                                 integer_field: fields.IntegerField({
@@ -427,14 +482,12 @@ define([
                                     required: false,
                                     sortable: true
                                 }),
-                                map_field: fields.MapField({
-                                    name: "map_field",
-                                    nonnull: false,
+                                name: fields.TextField({
+                                    name: "name",
+                                    nonnull: true,
                                     required: false,
-                                    value: fields.IntegerField({
-                                        nonnull: false,
-                                        required: false
-                                    })
+                                    sortable: true,
+                                    strip: true
                                 }),
                                 readonly_field: fields.IntegerField({
                                     name: "readonly_field",
@@ -449,16 +502,6 @@ define([
                                     required: false,
                                     sortable: true,
                                     strip: true
-                                }),
-                                sequence_field: fields.SequenceField({
-                                    name: "sequence_field",
-                                    nonnull: false,
-                                    required: false,
-                                    unique: false,
-                                    item: fields.IntegerField({
-                                        nonnull: false,
-                                        required: false
-                                    })
                                 }),
                                 structure_field: fields.StructureField({
                                     name: "structure_field",
@@ -475,6 +518,24 @@ define([
                                             name: "required_field",
                                             nonnull: false,
                                             required: true
+                                        }),
+                                        structure_field: fields.StructureField({
+                                            name: "structure_field",
+                                            nonnull: false,
+                                            required: false,
+                                            strict: true,
+                                            structure: {
+                                                optional_field: fields.IntegerField({
+                                                    name: "optional_field",
+                                                    nonnull: false,
+                                                    required: false
+                                                }),
+                                                required_field: fields.IntegerField({
+                                                    name: "required_field",
+                                                    nonnull: false,
+                                                    required: true
+                                                })
+                                            }
                                         })
                                     }
                                 }),
@@ -484,42 +545,13 @@ define([
                                     required: false,
                                     strip: true
                                 }),
-                                time_field: fields.TimeField({
-                                    name: "time_field",
-                                    nonnull: false,
+                                type: fields.EnumerationField({
+                                    enumeration: ["immutable", "mutable"],
+                                    name: "type",
+                                    nonnull: true,
+                                    onupdate: false,
+                                    representation: "'immutable', 'mutable'",
                                     required: false
-                                }),
-                                tuple_field: fields.TupleField({
-                                    name: "tuple_field",
-                                    nonnull: false,
-                                    required: false,
-                                    values: [
-                                        fields.TextField({
-                                            nonnull: false,
-                                            required: false,
-                                            strip: true
-                                        }),
-                                        fields.IntegerField({
-                                            nonnull: false,
-                                            required: false
-                                        })
-                                    ]
-                                }),
-                                union_field: fields.UnionField({
-                                    name: "union_field",
-                                    nonnull: false,
-                                    required: false,
-                                    fields: [
-                                        fields.TextField({
-                                            nonnull: false,
-                                            required: false,
-                                            strip: true
-                                        }),
-                                        fields.IntegerField({
-                                            nonnull: false,
-                                            required: false
-                                        })
-                                    ]
                                 })
                             }
                         })
@@ -569,6 +601,7 @@ define([
                                 required: false,
                                 enumeration: [
                                     "boolean_field",
+                                    "composition",
                                     "constrained_field",
                                     "date_field",
                                     "datetime_field",
@@ -576,15 +609,12 @@ define([
                                     "enumeration_field",
                                     "float_field",
                                     "integer_field",
-                                    "map_field",
+                                    "name",
                                     "readonly_field",
                                     "required_field",
-                                    "sequence_field",
                                     "structure_field",
                                     "text_field",
-                                    "time_field",
-                                    "tuple_field",
-                                    "union_field"
+                                    "type"
                                 ]
                             })
                         }),
@@ -607,7 +637,7 @@ define([
                 method: "PUT",
                 mimetype: "application/json",
                 name: "put",
-                path: "/primary/1.0/example/id",
+                path: "/primary/1.0/nestedpolymorphicexample/id",
                 responses: {
                     200: {
                         mimetype: "application/json",
@@ -618,10 +648,12 @@ define([
                             required: false,
                             strict: true,
                             structure: {
-                                id: fields.IntegerField({
+                                id: fields.UUIDField({
                                     is_identifier: true,
                                     name: "id",
                                     nonnull: true,
+                                    oncreate: true,
+                                    operators: "equal",
                                     required: true
                                 })
                             }
@@ -666,6 +698,76 @@ define([
                             name: "boolean_field",
                             nonnull: false,
                             required: false
+                        }),
+                        composition: fields.StructureField({
+                            name: "composition",
+                            nonnull: true,
+                            required: false,
+                            strict: true,
+                            polymorphic_on: fields.EnumerationField({
+                                enumeration: ["attribute-filter", "datasource-list", "extant"],
+                                name: "type",
+                                nonnull: true,
+                                representation: "'attribute-filter', 'datasource-list', 'extant'",
+                                required: true
+                            }),
+                            structure: {
+                                "attribute-filter": {
+                                    expression: fields.TextField({
+                                        min_length: 1,
+                                        name: "expression",
+                                        nonnull: true,
+                                        required: true,
+                                        strip: true
+                                    }),
+                                    type: fields.EnumerationField({
+                                        constant: "attribute-filter",
+                                        enumeration: ["attribute-filter", "datasource-list", "extant"],
+                                        name: "type",
+                                        nonnull: true,
+                                        representation: "'attribute-filter', 'datasource-list', 'extant'",
+                                        required: true
+                                    })
+                                },
+                                "datasource-list": {
+                                    datasources: fields.SequenceField({
+                                        name: "datasources",
+                                        nonnull: true,
+                                        required: true,
+                                        unique: false,
+                                        item: fields.StructureField({
+                                            nonnull: true,
+                                            required: false,
+                                            strict: true,
+                                            structure: {
+                                                id: fields.UUIDField({
+                                                    name: "id",
+                                                    nonnull: true,
+                                                    required: true
+                                                })
+                                            }
+                                        })
+                                    }),
+                                    type: fields.EnumerationField({
+                                        constant: "datasource-list",
+                                        enumeration: ["attribute-filter", "datasource-list", "extant"],
+                                        name: "type",
+                                        nonnull: true,
+                                        representation: "'attribute-filter', 'datasource-list', 'extant'",
+                                        required: true
+                                    })
+                                },
+                                extant: {
+                                    type: fields.EnumerationField({
+                                        constant: "extant",
+                                        enumeration: ["attribute-filter", "datasource-list", "extant"],
+                                        name: "type",
+                                        nonnull: true,
+                                        representation: "'attribute-filter', 'datasource-list', 'extant'",
+                                        required: true
+                                    })
+                                }
+                            }
                         }),
                         constrained_field: fields.IntegerField({
                             maximum: 4,
@@ -716,14 +818,12 @@ define([
                             required: false,
                             sortable: true
                         }),
-                        map_field: fields.MapField({
-                            name: "map_field",
-                            nonnull: false,
-                            required: false,
-                            value: fields.IntegerField({
-                                nonnull: false,
-                                required: false
-                            })
+                        name: fields.TextField({
+                            name: "name",
+                            nonnull: true,
+                            required: true,
+                            sortable: true,
+                            strip: true
                         }),
                         required_field: fields.TextField({
                             name: "required_field",
@@ -733,20 +833,10 @@ define([
                             sortable: true,
                             strip: true
                         }),
-                        sequence_field: fields.SequenceField({
-                            name: "sequence_field",
-                            nonnull: false,
-                            required: false,
-                            unique: false,
-                            item: fields.IntegerField({
-                                nonnull: false,
-                                required: false
-                            })
-                        }),
                         structure_field: fields.StructureField({
                             name: "structure_field",
                             nonnull: false,
-                            required: false,
+                            required: true,
                             strict: true,
                             structure: {
                                 optional_field: fields.IntegerField({
@@ -758,6 +848,24 @@ define([
                                     name: "required_field",
                                     nonnull: false,
                                     required: true
+                                }),
+                                structure_field: fields.StructureField({
+                                    name: "structure_field",
+                                    nonnull: false,
+                                    required: false,
+                                    strict: true,
+                                    structure: {
+                                        optional_field: fields.IntegerField({
+                                            name: "optional_field",
+                                            nonnull: false,
+                                            required: false
+                                        }),
+                                        required_field: fields.IntegerField({
+                                            name: "required_field",
+                                            nonnull: false,
+                                            required: true
+                                        })
+                                    }
                                 })
                             }
                         }),
@@ -767,42 +875,12 @@ define([
                             required: false,
                             strip: true
                         }),
-                        time_field: fields.TimeField({
-                            name: "time_field",
-                            nonnull: false,
-                            required: false
-                        }),
-                        tuple_field: fields.TupleField({
-                            name: "tuple_field",
-                            nonnull: false,
-                            required: false,
-                            values: [
-                                fields.TextField({
-                                    nonnull: false,
-                                    required: false,
-                                    strip: true
-                                }),
-                                fields.IntegerField({
-                                    nonnull: false,
-                                    required: false
-                                })
-                            ]
-                        }),
-                        union_field: fields.UnionField({
-                            name: "union_field",
-                            nonnull: false,
-                            required: false,
-                            fields: [
-                                fields.TextField({
-                                    nonnull: false,
-                                    required: false,
-                                    strip: true
-                                }),
-                                fields.IntegerField({
-                                    nonnull: false,
-                                    required: false
-                                })
-                            ]
+                        type: fields.EnumerationField({
+                            enumeration: ["immutable", "mutable"],
+                            name: "type",
+                            nonnull: true,
+                            onupdate: false,
+                            required: true
                         })
                     }
                 })
@@ -812,7 +890,7 @@ define([
                 method: "GET",
                 mimetype: "application/x-www-form-urlencoded",
                 name: "query",
-                path: "/primary/1.0/example",
+                path: "/primary/1.0/nestedpolymorphicexample",
                 responses: {
                     200: {
                         mimetype: "application/json",
@@ -837,6 +915,83 @@ define([
                                                 name: "boolean_field",
                                                 nonnull: false,
                                                 required: false
+                                            }),
+                                            composition: fields.StructureField({
+                                                name: "composition",
+                                                nonnull: true,
+                                                required: false,
+                                                strict: true,
+                                                polymorphic_on: fields.EnumerationField({
+                                                    enumeration: ["attribute-filter", "datasource-list", "extant"],
+                                                    name: "type",
+                                                    nonnull: true,
+                                                    representation: "'attribute-filter', 'datasource-list', 'extant'",
+                                                    required: true
+                                                }),
+                                                structure: {
+                                                    "attribute-filter": {
+                                                        expression: fields.TextField({
+                                                            min_length: 1,
+                                                            name: "expression",
+                                                            nonnull: true,
+                                                            required: true,
+                                                            strip: true
+                                                        }),
+                                                        type: fields.EnumerationField({
+                                                            constant: "attribute-filter",
+                                                            enumeration: ["attribute-filter", "datasource-list", "extant"],
+                                                            name: "type",
+                                                            nonnull: true,
+                                                            representation: "'attribute-filter', 'datasource-list', 'extant'",
+                                                            required: true
+                                                        })
+                                                    },
+                                                    "datasource-list": {
+                                                        datasources: fields.SequenceField({
+                                                            name: "datasources",
+                                                            nonnull: true,
+                                                            required: true,
+                                                            unique: false,
+                                                            item: fields.StructureField({
+                                                                nonnull: true,
+                                                                required: false,
+                                                                strict: true,
+                                                                structure: {
+                                                                    id: fields.UUIDField({
+                                                                        name: "id",
+                                                                        nonnull: true,
+                                                                        required: true
+                                                                    }),
+                                                                    name: fields.TextField({
+                                                                        name: "name",
+                                                                        nonnull: false,
+                                                                        readonly: true,
+                                                                        required: false,
+                                                                        strip: true
+                                                                    })
+                                                                }
+                                                            })
+                                                        }),
+                                                        type: fields.EnumerationField({
+                                                            constant: "datasource-list",
+                                                            enumeration: ["attribute-filter", "datasource-list", "extant"],
+                                                            name: "type",
+                                                            nonnull: true,
+                                                            representation: "'attribute-filter', 'datasource-list', 'extant'",
+                                                            required: true
+                                                        })
+                                                    },
+                                                    extant: {
+                                                        type: fields.EnumerationField({
+                                                            constant: "extant",
+                                                            enumeration: ["attribute-filter", "datasource-list", "extant"],
+                                                            name: "type",
+                                                            nonnull: true,
+                                                            representation: "'attribute-filter', 'datasource-list', 'extant'",
+                                                            required: true
+                                                        })
+                                                    }
+                                                }
                                             }),
                                             constrained_field: fields.IntegerField({
                                                 maximum: 4,
@@ -880,10 +1035,12 @@ define([
                                                 nonnull: false,
                                                 required: false
                                             }),
-                                            id: fields.IntegerField({
+                                            id: fields.UUIDField({
                                                 is_identifier: true,
                                                 name: "id",
                                                 nonnull: true,
+                                                oncreate: true,
+                                                operators: "equal",
                                                 required: true
                                             }),
                                             integer_field: fields.IntegerField({
@@ -893,14 +1050,12 @@ define([
                                                 required: false,
                                                 sortable: true
                                             }),
-                                            map_field: fields.MapField({
-                                                name: "map_field",
-                                                nonnull: false,
+                                            name: fields.TextField({
+                                                name: "name",
+                                                nonnull: true,
                                                 required: false,
-                                                value: fields.IntegerField({
-                                                    nonnull: false,
-                                                    required: false
-                                                })
+                                                sortable: true,
+                                                strip: true
                                             }),
                                             readonly_field: fields.IntegerField({
                                                 name: "readonly_field",
@@ -915,16 +1070,6 @@ define([
                                                 required: false,
                                                 sortable: true,
                                                 strip: true
-                                            }),
-                                            sequence_field: fields.SequenceField({
-                                                name: "sequence_field",
-                                                nonnull: false,
-                                                required: false,
-                                                unique: false,
-                                                item: fields.IntegerField({
-                                                    nonnull: false,
-                                                    required: false
-                                                })
                                             }),
                                             structure_field: fields.StructureField({
                                                 name: "structure_field",
@@ -941,6 +1086,24 @@ define([
                                                         name: "required_field",
                                                         nonnull: false,
                                                         required: true
+                                                    }),
+                                                    structure_field: fields.StructureField({
+                                                        name: "structure_field",
+                                                        nonnull: false,
+                                                        required: false,
+                                                        strict: true,
+                                                        structure: {
+                                                            optional_field: fields.IntegerField({
+                                                                name: "optional_field",
+                                                                nonnull: false,
+                                                                required: false
+                                                            }),
+                                                            required_field: fields.IntegerField({
+                                                                name: "required_field",
+                                                                nonnull: false,
+                                                                required: true
+                                                            })
+                                                        }
                                                     })
                                                 }
                                             }),
@@ -950,42 +1113,13 @@ define([
                                                 required: false,
                                                 strip: true
                                             }),
-                                            time_field: fields.TimeField({
-                                                name: "time_field",
-                                                nonnull: false,
+                                            type: fields.EnumerationField({
+                                                enumeration: ["immutable", "mutable"],
+                                                name: "type",
+                                                nonnull: true,
+                                                onupdate: false,
+                                                representation: "'immutable', 'mutable'",
                                                 required: false
-                                            }),
-                                            tuple_field: fields.TupleField({
-                                                name: "tuple_field",
-                                                nonnull: false,
-                                                required: false,
-                                                values: [
-                                                    fields.TextField({
-                                                        nonnull: false,
-                                                        required: false,
-                                                        strip: true
-                                                    }),
-                                                    fields.IntegerField({
-                                                        nonnull: false,
-                                                        required: false
-                                                    })
-                                                ]
-                                            }),
-                                            union_field: fields.UnionField({
-                                                name: "union_field",
-                                                nonnull: false,
-                                                required: false,
-                                                fields: [
-                                                    fields.TextField({
-                                                        nonnull: false,
-                                                        required: false,
-                                                        strip: true
-                                                    }),
-                                                    fields.IntegerField({
-                                                        nonnull: false,
-                                                        required: false
-                                                    })
-                                                ]
                                             })
                                         }
                                     })
@@ -1044,6 +1178,7 @@ define([
                                 required: false,
                                 enumeration: [
                                     "boolean_field",
+                                    "composition",
                                     "constrained_field",
                                     "date_field",
                                     "datetime_field",
@@ -1051,15 +1186,12 @@ define([
                                     "enumeration_field",
                                     "float_field",
                                     "integer_field",
-                                    "map_field",
+                                    "name",
                                     "readonly_field",
                                     "required_field",
-                                    "sequence_field",
                                     "structure_field",
                                     "text_field",
-                                    "time_field",
-                                    "tuple_field",
-                                    "union_field"
+                                    "type"
                                 ]
                             })
                         }),
@@ -1093,6 +1225,17 @@ define([
                             required: false,
                             strict: true,
                             structure: {
+                                id: fields.UUIDField({
+                                    deferred: false,
+                                    is_identifier: true,
+                                    name: "id",
+                                    nonnull: true,
+                                    oncreate: true,
+                                    operators: "equal",
+                                    readonly: false,
+                                    required: false,
+                                    sortable: false
+                                }),
                                 integer_field__gt: fields.IntegerField({
                                     deferred: false,
                                     name: "integer_field__gt",
@@ -1157,6 +1300,9 @@ define([
                                     "integer_field",
                                     "integer_field+",
                                     "integer_field-",
+                                    "name",
+                                    "name+",
+                                    "name-",
                                     "required_field",
                                     "required_field+",
                                     "required_field-"
@@ -1177,7 +1323,7 @@ define([
                 method: "POST",
                 mimetype: "application/json",
                 name: "update",
-                path: "/primary/1.0/example/id",
+                path: "/primary/1.0/nestedpolymorphicexample/id",
                 responses: {
                     200: {
                         mimetype: "application/json",
@@ -1188,10 +1334,12 @@ define([
                             required: false,
                             strict: true,
                             structure: {
-                                id: fields.IntegerField({
+                                id: fields.UUIDField({
                                     is_identifier: true,
                                     name: "id",
                                     nonnull: true,
+                                    oncreate: true,
+                                    operators: "equal",
                                     required: true
                                 })
                             }
@@ -1236,6 +1384,76 @@ define([
                             name: "boolean_field",
                             nonnull: false,
                             required: false
+                        }),
+                        composition: fields.StructureField({
+                            name: "composition",
+                            nonnull: true,
+                            required: false,
+                            strict: true,
+                            polymorphic_on: fields.EnumerationField({
+                                enumeration: ["attribute-filter", "datasource-list", "extant"],
+                                name: "type",
+                                nonnull: true,
+                                representation: "'attribute-filter', 'datasource-list', 'extant'",
+                                required: true
+                            }),
+                            structure: {
+                                "attribute-filter": {
+                                    expression: fields.TextField({
+                                        min_length: 1,
+                                        name: "expression",
+                                        nonnull: true,
+                                        required: true,
+                                        strip: true
+                                    }),
+                                    type: fields.EnumerationField({
+                                        constant: "attribute-filter",
+                                        enumeration: ["attribute-filter", "datasource-list", "extant"],
+                                        name: "type",
+                                        nonnull: true,
+                                        representation: "'attribute-filter', 'datasource-list', 'extant'",
+                                        required: true
+                                    })
+                                },
+                                "datasource-list": {
+                                    datasources: fields.SequenceField({
+                                        name: "datasources",
+                                        nonnull: true,
+                                        required: true,
+                                        unique: false,
+                                        item: fields.StructureField({
+                                            nonnull: true,
+                                            required: false,
+                                            strict: true,
+                                            structure: {
+                                                id: fields.UUIDField({
+                                                    name: "id",
+                                                    nonnull: true,
+                                                    required: true
+                                                })
+                                            }
+                                        })
+                                    }),
+                                    type: fields.EnumerationField({
+                                        constant: "datasource-list",
+                                        enumeration: ["attribute-filter", "datasource-list", "extant"],
+                                        name: "type",
+                                        nonnull: true,
+                                        representation: "'attribute-filter', 'datasource-list', 'extant'",
+                                        required: true
+                                    })
+                                },
+                                extant: {
+                                    type: fields.EnumerationField({
+                                        constant: "extant",
+                                        enumeration: ["attribute-filter", "datasource-list", "extant"],
+                                        name: "type",
+                                        nonnull: true,
+                                        representation: "'attribute-filter', 'datasource-list', 'extant'",
+                                        required: true
+                                    })
+                                }
+                            }
                         }),
                         constrained_field: fields.IntegerField({
                             maximum: 4,
@@ -1286,14 +1504,12 @@ define([
                             required: false,
                             sortable: true
                         }),
-                        map_field: fields.MapField({
-                            name: "map_field",
-                            nonnull: false,
+                        name: fields.TextField({
+                            name: "name",
+                            nonnull: true,
                             required: false,
-                            value: fields.IntegerField({
-                                nonnull: false,
-                                required: false
-                            })
+                            sortable: true,
+                            strip: true
                         }),
                         required_field: fields.TextField({
                             name: "required_field",
@@ -1302,16 +1518,6 @@ define([
                             required: false,
                             sortable: true,
                             strip: true
-                        }),
-                        sequence_field: fields.SequenceField({
-                            name: "sequence_field",
-                            nonnull: false,
-                            required: false,
-                            unique: false,
-                            item: fields.IntegerField({
-                                nonnull: false,
-                                required: false
-                            })
                         }),
                         structure_field: fields.StructureField({
                             name: "structure_field",
@@ -1328,6 +1534,24 @@ define([
                                     name: "required_field",
                                     nonnull: false,
                                     required: true
+                                }),
+                                structure_field: fields.StructureField({
+                                    name: "structure_field",
+                                    nonnull: false,
+                                    required: false,
+                                    strict: true,
+                                    structure: {
+                                        optional_field: fields.IntegerField({
+                                            name: "optional_field",
+                                            nonnull: false,
+                                            required: false
+                                        }),
+                                        required_field: fields.IntegerField({
+                                            name: "required_field",
+                                            nonnull: false,
+                                            required: true
+                                        })
+                                    }
                                 })
                             }
                         }),
@@ -1336,43 +1560,6 @@ define([
                             nonnull: false,
                             required: false,
                             strip: true
-                        }),
-                        time_field: fields.TimeField({
-                            name: "time_field",
-                            nonnull: false,
-                            required: false
-                        }),
-                        tuple_field: fields.TupleField({
-                            name: "tuple_field",
-                            nonnull: false,
-                            required: false,
-                            values: [
-                                fields.TextField({
-                                    nonnull: false,
-                                    required: false,
-                                    strip: true
-                                }),
-                                fields.IntegerField({
-                                    nonnull: false,
-                                    required: false
-                                })
-                            ]
-                        }),
-                        union_field: fields.UnionField({
-                            name: "union_field",
-                            nonnull: false,
-                            required: false,
-                            fields: [
-                                fields.TextField({
-                                    nonnull: false,
-                                    required: false,
-                                    strip: true
-                                }),
-                                fields.IntegerField({
-                                    nonnull: false,
-                                    required: false
-                                })
-                            ]
                         })
                     }
                 })
@@ -1383,6 +1570,82 @@ define([
                 name: "boolean_field",
                 nonnull: false,
                 required: false
+            }),
+            composition: fields.StructureField({
+                name: "composition",
+                nonnull: true,
+                required: false,
+                strict: true,
+                polymorphic_on: fields.EnumerationField({
+                    enumeration: ["attribute-filter", "datasource-list", "extant"],
+                    name: "type",
+                    nonnull: true,
+                    required: true
+                }),
+                structure: {
+                    "attribute-filter": {
+                        expression: fields.TextField({
+                            min_length: 1,
+                            name: "expression",
+                            nonnull: true,
+                            required: true,
+                            strip: true
+                        }),
+                        type: fields.EnumerationField({
+                            constant: "attribute-filter",
+                            enumeration: ["attribute-filter", "datasource-list", "extant"],
+                            name: "type",
+                            nonnull: true,
+                            representation: "'attribute-filter', 'datasource-list', 'extant'",
+                            required: true
+                        })
+                    },
+                    "datasource-list": {
+                        datasources: fields.SequenceField({
+                            name: "datasources",
+                            nonnull: true,
+                            required: true,
+                            unique: false,
+                            item: fields.StructureField({
+                                nonnull: true,
+                                required: false,
+                                strict: true,
+                                structure: {
+                                    id: fields.UUIDField({
+                                        name: "id",
+                                        nonnull: true,
+                                        required: true
+                                    }),
+                                    name: fields.TextField({
+                                        name: "name",
+                                        nonnull: false,
+                                        readonly: true,
+                                        required: false,
+                                        strip: true
+                                    })
+                                }
+                            })
+                        }),
+                        type: fields.EnumerationField({
+                            constant: "datasource-list",
+                            enumeration: ["attribute-filter", "datasource-list", "extant"],
+                            name: "type",
+                            nonnull: true,
+                            representation: "'attribute-filter', 'datasource-list', 'extant'",
+                            required: true
+                        })
+                    },
+                    extant: {
+                        type: fields.EnumerationField({
+                            constant: "extant",
+                            enumeration: ["attribute-filter", "datasource-list", "extant"],
+                            name: "type",
+                            nonnull: true,
+                            representation: "'attribute-filter', 'datasource-list', 'extant'",
+                            required: true
+                        })
+                    }
+                }
             }),
             constrained_field: fields.IntegerField({
                 maximum: 4,
@@ -1426,11 +1689,12 @@ define([
                 nonnull: false,
                 required: false
             }),
-            id: fields.IntegerField({
-                is_identifier: true,
+            id: fields.UUIDField({
                 name: "id",
                 nonnull: true,
-                required: false
+                oncreate: true,
+                operators: "equal",
+                required: true
             }),
             integer_field: fields.IntegerField({
                 name: "integer_field",
@@ -1439,14 +1703,12 @@ define([
                 required: false,
                 sortable: true
             }),
-            map_field: fields.MapField({
-                name: "map_field",
-                nonnull: false,
-                required: false,
-                value: fields.IntegerField({
-                    nonnull: false,
-                    required: false
-                })
+            name: fields.TextField({
+                name: "name",
+                nonnull: true,
+                required: true,
+                sortable: true,
+                strip: true
             }),
             readonly_field: fields.IntegerField({
                 name: "readonly_field",
@@ -1462,20 +1724,10 @@ define([
                 sortable: true,
                 strip: true
             }),
-            sequence_field: fields.SequenceField({
-                name: "sequence_field",
-                nonnull: false,
-                required: false,
-                unique: false,
-                item: fields.IntegerField({
-                    nonnull: false,
-                    required: false
-                })
-            }),
             structure_field: fields.StructureField({
                 name: "structure_field",
                 nonnull: false,
-                required: false,
+                required: true,
                 strict: true,
                 structure: {
                     optional_field: fields.IntegerField({
@@ -1487,6 +1739,24 @@ define([
                         name: "required_field",
                         nonnull: false,
                         required: true
+                    }),
+                    structure_field: fields.StructureField({
+                        name: "structure_field",
+                        nonnull: false,
+                        required: false,
+                        strict: true,
+                        structure: {
+                            optional_field: fields.IntegerField({
+                                name: "optional_field",
+                                nonnull: false,
+                                required: false
+                            }),
+                            required_field: fields.IntegerField({
+                                name: "required_field",
+                                nonnull: false,
+                                required: true
+                            })
+                        }
                     })
                 }
             }),
@@ -1496,42 +1766,12 @@ define([
                 required: false,
                 strip: true
             }),
-            time_field: fields.TimeField({
-                name: "time_field",
-                nonnull: false,
-                required: false
-            }),
-            tuple_field: fields.TupleField({
-                name: "tuple_field",
-                nonnull: false,
-                required: false,
-                values: [
-                    fields.TextField({
-                        nonnull: false,
-                        required: false,
-                        strip: true
-                    }),
-                    fields.IntegerField({
-                        nonnull: false,
-                        required: false
-                    })
-                ]
-            }),
-            union_field: fields.UnionField({
-                name: "union_field",
-                nonnull: false,
-                required: false,
-                fields: [
-                    fields.TextField({
-                        nonnull: false,
-                        required: false,
-                        strip: true
-                    }),
-                    fields.IntegerField({
-                        nonnull: false,
-                        required: false
-                    })
-                ]
+            type: fields.EnumerationField({
+                enumeration: ["immutable", "mutable"],
+                name: "type",
+                nonnull: true,
+                onupdate: false,
+                required: true
             })
         }
     });

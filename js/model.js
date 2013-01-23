@@ -260,7 +260,7 @@ define([
                 args = Array.prototype.slice(0),
                 changes = self._changes,
                 inFlight = self._inFlight.save,
-                creating = !self._loaded && inFlight.length === 0;
+                creating = self._creating();
 
             request = self._getRequest(creating ? 'create' : 'update');
 
@@ -342,9 +342,14 @@ define([
             if (!opts.unchanged) {
                 _.extend(this._changes, changed);
             }
+            this._lastSettableChanges = changed;
             this.construct({silent: true});
             this._manager.notify(this, 'change', changed);
             this.trigger('change', this, changed);
+        },
+
+        onSettableError: function(errors, opts) {
+            this._lastSettableError = errors;
         },
 
         validate: function() {
@@ -361,6 +366,28 @@ define([
             return dfd;
         },
 
+        _creating: function() {
+            return !this._loaded && this._inFlight.save.length === 0;
+        },
+
+        // this translate something like 'foo.bar' into the corresponding Field
+        // instance. it assumes that the only nested structures it will find
+        // are instances of StructureField, so in the case of 'foo.bar', the
+        // 'foo' part corresponds to a StructureField instance, and 'bar' is
+        // some non-structure field within that structure. this would probably
+        // choke on things like TupleField.
+        _fieldFromPropName: function(prop) {
+            var field, name = this._creating()? 'create' : 'update',
+                request = this._getRequest(name),
+                schema = request.schema;
+            prop = prop.split('.');
+            field = schema;
+            while (prop.length > 1) {
+                field = field.structure[prop.unshift()];
+            }
+            return field.structure[prop[0]];
+        },
+
         _getRequest: function(name) {
             return this.__requests__[name];
         },
@@ -372,13 +399,14 @@ define([
 
     asSettable.call(Model.prototype, {
         onChange: 'onChange',
+        onError: 'onSettableError',
         areEqual: _.isEqual,
         propName: null
     });
 
     Model.prototype._set = _.wrap(Model.prototype._set,
         function(f, newProps, opts) {
-            var args = Array.prototype.slice.call(arguments, 2),
+            var method, args = Array.prototype.slice.call(arguments, 2),
                 _changes = this._changes,
                 props = opts.noclobber?
                     _.reduce(newProps, function(memo, val, key) {
@@ -389,7 +417,25 @@ define([
                     }, {}) :
                     newProps;
 
-            return f.apply(this, [props].concat(args));
+            this._lastSettableChanges = this._lastSettableError = null;
+            f.apply(this, [props].concat(args));
+            method = this._lastSettableError? 'reject' : 'resolve';
+            return $.Deferred()[method](
+                this._lastSettableChanges, this._lastSettableError);
+        });
+
+    Model.prototype._setOne = _.wrap(Model.prototype._setOne,
+        function(f, prop, newValue, currentValue, opts) {
+            var args = Array.prototype.slice.call(arguments, 1);
+            if (opts.validate) {
+                var field = this._fieldFromPropName(prop);
+                try {
+                    field.validate(newValue);
+                } catch (e) {
+                    return e;
+                }
+            }
+            return f.apply(this, args);
         });
 
     ret = {Manager: Manager, Model: Model};

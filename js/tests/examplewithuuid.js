@@ -4,11 +4,12 @@ define([
     './../model',
     './../collection'
 ], function(Request, fields, model, collection) {
-    return model.Model.extend({
+    var preloadedRaw, resource = model.Model.extend({
+        __bundle__: "primary",
         __name__: "examplewithuuid",
         __requests__: {
             create: Request({
-                bundle: "primary-1.0",
+                bundle: "primary",
                 method: "POST",
                 mimetype: "application/json",
                 name: "create",
@@ -24,8 +25,10 @@ define([
                             strict: true,
                             structure: {
                                 id: fields.UUIDField({
+                                    is_identifier: true,
                                     name: "id",
                                     nonnull: true,
+                                    oncreate: true,
                                     operators: "equal",
                                     required: true
                                 })
@@ -49,7 +52,8 @@ define([
                                         required: false,
                                         value: fields.TextField({
                                             nonnull: true,
-                                            required: false
+                                            required: false,
+                                            strip: true
                                         })
                                     })
                                 }),
@@ -86,7 +90,8 @@ define([
                         datetime_field: fields.DateTimeField({
                             name: "datetime_field",
                             nonnull: false,
-                            required: false
+                            required: false,
+                            utc: false
                         }),
                         default_field: fields.IntegerField({
                             "default": 1,
@@ -98,7 +103,8 @@ define([
                             deferred: true,
                             name: "deferred_field",
                             nonnull: false,
-                            required: false
+                            required: false,
+                            strip: true
                         }),
                         enumeration_field: fields.EnumerationField({
                             enumeration: [1, 2, 3],
@@ -114,6 +120,7 @@ define([
                         id: fields.UUIDField({
                             name: "id",
                             nonnull: true,
+                            oncreate: true,
                             operators: "equal",
                             required: true
                         }),
@@ -138,7 +145,8 @@ define([
                             nonnull: true,
                             operators: ["eq", "ne", "pre", "suf", "cnt"],
                             required: true,
-                            sortable: true
+                            sortable: true,
+                            strip: true
                         }),
                         sequence_field: fields.SequenceField({
                             name: "sequence_field",
@@ -171,7 +179,8 @@ define([
                         text_field: fields.TextField({
                             name: "text_field",
                             nonnull: false,
-                            required: false
+                            required: false,
+                            strip: true
                         }),
                         time_field: fields.TimeField({
                             name: "time_field",
@@ -185,7 +194,8 @@ define([
                             values: [
                                 fields.TextField({
                                     nonnull: false,
-                                    required: false
+                                    required: false,
+                                    strip: true
                                 }),
                                 fields.IntegerField({
                                     nonnull: false,
@@ -200,7 +210,8 @@ define([
                             fields: [
                                 fields.TextField({
                                     nonnull: false,
-                                    required: false
+                                    required: false,
+                                    strip: true
                                 }),
                                 fields.IntegerField({
                                     nonnull: false,
@@ -212,7 +223,7 @@ define([
                 })
             }),
             "delete": Request({
-                bundle: "primary-1.0",
+                bundle: "primary",
                 method: "DELETE",
                 mimetype: "application/json",
                 name: "delete",
@@ -229,18 +240,49 @@ define([
                             strict: true,
                             structure: {
                                 id: fields.UUIDField({
+                                    is_identifier: true,
                                     name: "id",
                                     nonnull: true,
+                                    oncreate: true,
                                     operators: "equal",
                                     required: true
                                 })
                             }
                         })
+                    },
+                    406: {
+                        mimetype: "application/json",
+                        status: "INVALID",
+                        schema: fields.TupleField({
+                            name: "response",
+                            nonnull: false,
+                            required: false,
+                            values: [
+                                fields.SequenceField({
+                                    nonnull: false,
+                                    required: false,
+                                    unique: false,
+                                    item: fields.MapField({
+                                        nonnull: false,
+                                        required: false,
+                                        value: fields.TextField({
+                                            nonnull: true,
+                                            required: false,
+                                            strip: true
+                                        })
+                                    })
+                                }),
+                                fields.Field({
+                                    nonnull: false,
+                                    required: false
+                                })
+                            ]
+                        })
                     }
                 }
             }),
             get: Request({
-                bundle: "primary-1.0",
+                bundle: "primary",
                 method: "GET",
                 mimetype: "application/x-www-form-urlencoded",
                 name: "get",
@@ -275,7 +317,8 @@ define([
                                 datetime_field: fields.DateTimeField({
                                     name: "datetime_field",
                                     nonnull: false,
-                                    required: false
+                                    required: false,
+                                    utc: false
                                 }),
                                 default_field: fields.IntegerField({
                                     "default": 1,
@@ -287,7 +330,8 @@ define([
                                     deferred: true,
                                     name: "deferred_field",
                                     nonnull: false,
-                                    required: false
+                                    required: false,
+                                    strip: true
                                 }),
                                 enumeration_field: fields.EnumerationField({
                                     enumeration: [1, 2, 3],
@@ -301,8 +345,10 @@ define([
                                     required: false
                                 }),
                                 id: fields.UUIDField({
+                                    is_identifier: true,
                                     name: "id",
                                     nonnull: true,
+                                    oncreate: true,
                                     operators: "equal",
                                     required: true
                                 }),
@@ -333,7 +379,8 @@ define([
                                     nonnull: true,
                                     operators: ["eq", "ne", "pre", "suf", "cnt"],
                                     required: false,
-                                    sortable: true
+                                    sortable: true,
+                                    strip: true
                                 }),
                                 sequence_field: fields.SequenceField({
                                     name: "sequence_field",
@@ -366,7 +413,8 @@ define([
                                 text_field: fields.TextField({
                                     name: "text_field",
                                     nonnull: false,
-                                    required: false
+                                    required: false,
+                                    strip: true
                                 }),
                                 time_field: fields.TimeField({
                                     name: "time_field",
@@ -380,7 +428,8 @@ define([
                                     values: [
                                         fields.TextField({
                                             nonnull: false,
-                                            required: false
+                                            required: false,
+                                            strip: true
                                         }),
                                         fields.IntegerField({
                                             nonnull: false,
@@ -395,7 +444,8 @@ define([
                                     fields: [
                                         fields.TextField({
                                             nonnull: false,
-                                            required: false
+                                            required: false,
+                                            strip: true
                                         }),
                                         fields.IntegerField({
                                             nonnull: false,
@@ -423,7 +473,8 @@ define([
                                         required: false,
                                         value: fields.TextField({
                                             nonnull: true,
-                                            required: false
+                                            required: false,
+                                            strip: true
                                         })
                                     })
                                 }),
@@ -484,7 +535,7 @@ define([
                 })
             }),
             put: Request({
-                bundle: "primary-1.0",
+                bundle: "primary",
                 method: "PUT",
                 mimetype: "application/json",
                 name: "put",
@@ -500,8 +551,10 @@ define([
                             strict: true,
                             structure: {
                                 id: fields.UUIDField({
+                                    is_identifier: true,
                                     name: "id",
                                     nonnull: true,
+                                    oncreate: true,
                                     operators: "equal",
                                     required: true
                                 })
@@ -525,7 +578,8 @@ define([
                                         required: false,
                                         value: fields.TextField({
                                             nonnull: true,
-                                            required: false
+                                            required: false,
+                                            strip: true
                                         })
                                     })
                                 }),
@@ -562,7 +616,8 @@ define([
                         datetime_field: fields.DateTimeField({
                             name: "datetime_field",
                             nonnull: false,
-                            required: false
+                            required: false,
+                            utc: false
                         }),
                         default_field: fields.IntegerField({
                             "default": 1,
@@ -574,7 +629,8 @@ define([
                             deferred: true,
                             name: "deferred_field",
                             nonnull: false,
-                            required: false
+                            required: false,
+                            strip: true
                         }),
                         enumeration_field: fields.EnumerationField({
                             enumeration: [1, 2, 3],
@@ -608,7 +664,8 @@ define([
                             nonnull: true,
                             operators: ["eq", "ne", "pre", "suf", "cnt"],
                             required: true,
-                            sortable: true
+                            sortable: true,
+                            strip: true
                         }),
                         sequence_field: fields.SequenceField({
                             name: "sequence_field",
@@ -641,7 +698,8 @@ define([
                         text_field: fields.TextField({
                             name: "text_field",
                             nonnull: false,
-                            required: false
+                            required: false,
+                            strip: true
                         }),
                         time_field: fields.TimeField({
                             name: "time_field",
@@ -655,7 +713,8 @@ define([
                             values: [
                                 fields.TextField({
                                     nonnull: false,
-                                    required: false
+                                    required: false,
+                                    strip: true
                                 }),
                                 fields.IntegerField({
                                     nonnull: false,
@@ -670,7 +729,8 @@ define([
                             fields: [
                                 fields.TextField({
                                     nonnull: false,
-                                    required: false
+                                    required: false,
+                                    strip: true
                                 }),
                                 fields.IntegerField({
                                     nonnull: false,
@@ -682,7 +742,7 @@ define([
                 })
             }),
             query: Request({
-                bundle: "primary-1.0",
+                bundle: "primary",
                 method: "GET",
                 mimetype: "application/x-www-form-urlencoded",
                 name: "query",
@@ -727,7 +787,8 @@ define([
                                             datetime_field: fields.DateTimeField({
                                                 name: "datetime_field",
                                                 nonnull: false,
-                                                required: false
+                                                required: false,
+                                                utc: false
                                             }),
                                             default_field: fields.IntegerField({
                                                 "default": 1,
@@ -739,7 +800,8 @@ define([
                                                 deferred: true,
                                                 name: "deferred_field",
                                                 nonnull: false,
-                                                required: false
+                                                required: false,
+                                                strip: true
                                             }),
                                             enumeration_field: fields.EnumerationField({
                                                 enumeration: [1, 2, 3],
@@ -753,8 +815,10 @@ define([
                                                 required: false
                                             }),
                                             id: fields.UUIDField({
+                                                is_identifier: true,
                                                 name: "id",
                                                 nonnull: true,
+                                                oncreate: true,
                                                 operators: "equal",
                                                 required: true
                                             }),
@@ -785,7 +849,8 @@ define([
                                                 nonnull: true,
                                                 operators: ["eq", "ne", "pre", "suf", "cnt"],
                                                 required: false,
-                                                sortable: true
+                                                sortable: true,
+                                                strip: true
                                             }),
                                             sequence_field: fields.SequenceField({
                                                 name: "sequence_field",
@@ -818,7 +883,8 @@ define([
                                             text_field: fields.TextField({
                                                 name: "text_field",
                                                 nonnull: false,
-                                                required: false
+                                                required: false,
+                                                strip: true
                                             }),
                                             time_field: fields.TimeField({
                                                 name: "time_field",
@@ -832,7 +898,8 @@ define([
                                                 values: [
                                                     fields.TextField({
                                                         nonnull: false,
-                                                        required: false
+                                                        required: false,
+                                                        strip: true
                                                     }),
                                                     fields.IntegerField({
                                                         nonnull: false,
@@ -847,7 +914,8 @@ define([
                                                 fields: [
                                                     fields.TextField({
                                                         nonnull: false,
-                                                        required: false
+                                                        required: false,
+                                                        strip: true
                                                     }),
                                                     fields.IntegerField({
                                                         nonnull: false,
@@ -884,7 +952,8 @@ define([
                                         required: false,
                                         value: fields.TextField({
                                             nonnull: true,
-                                            required: false
+                                            required: false,
+                                            strip: true
                                         })
                                     })
                                 }),
@@ -962,8 +1031,11 @@ define([
                             structure: {
                                 id: fields.UUIDField({
                                     deferred: false,
+                                    is_identifier: true,
                                     name: "id",
                                     nonnull: true,
+                                    oncreate: true,
+                                    operators: "equal",
                                     readonly: false,
                                     required: false,
                                     sortable: false
@@ -972,6 +1044,7 @@ define([
                                     deferred: false,
                                     name: "integer_field__gt",
                                     nonnull: true,
+                                    operators: ["eq", "in", "gte", "lt", "lte", "gt"],
                                     readonly: false,
                                     required: false,
                                     sortable: false
@@ -980,6 +1053,7 @@ define([
                                     deferred: false,
                                     name: "integer_field__gte",
                                     nonnull: true,
+                                    operators: ["eq", "in", "gte", "lt", "lte", "gt"],
                                     readonly: false,
                                     required: false,
                                     sortable: false
@@ -992,6 +1066,7 @@ define([
                                     item: fields.IntegerField({
                                         deferred: false,
                                         nonnull: true,
+                                        operators: ["eq", "in", "gte", "lt", "lte", "gt"],
                                         readonly: false,
                                         required: false,
                                         sortable: false
@@ -1001,6 +1076,7 @@ define([
                                     deferred: false,
                                     name: "integer_field__lt",
                                     nonnull: true,
+                                    operators: ["eq", "in", "gte", "lt", "lte", "gt"],
                                     readonly: false,
                                     required: false,
                                     sortable: false
@@ -1009,6 +1085,7 @@ define([
                                     deferred: false,
                                     name: "integer_field__lte",
                                     nonnull: true,
+                                    operators: ["eq", "in", "gte", "lt", "lte", "gt"],
                                     readonly: false,
                                     required: false,
                                     sortable: false
@@ -1043,7 +1120,7 @@ define([
                 })
             }),
             update: Request({
-                bundle: "primary-1.0",
+                bundle: "primary",
                 method: "POST",
                 mimetype: "application/json",
                 name: "update",
@@ -1059,8 +1136,10 @@ define([
                             strict: true,
                             structure: {
                                 id: fields.UUIDField({
+                                    is_identifier: true,
                                     name: "id",
                                     nonnull: true,
+                                    oncreate: true,
                                     operators: "equal",
                                     required: true
                                 })
@@ -1084,7 +1163,8 @@ define([
                                         required: false,
                                         value: fields.TextField({
                                             nonnull: true,
-                                            required: false
+                                            required: false,
+                                            strip: true
                                         })
                                     })
                                 }),
@@ -1121,7 +1201,8 @@ define([
                         datetime_field: fields.DateTimeField({
                             name: "datetime_field",
                             nonnull: false,
-                            required: false
+                            required: false,
+                            utc: false
                         }),
                         default_field: fields.IntegerField({
                             "default": 1,
@@ -1133,7 +1214,8 @@ define([
                             deferred: true,
                             name: "deferred_field",
                             nonnull: false,
-                            required: false
+                            required: false,
+                            strip: true
                         }),
                         enumeration_field: fields.EnumerationField({
                             enumeration: [1, 2, 3],
@@ -1167,7 +1249,8 @@ define([
                             nonnull: true,
                             operators: ["eq", "ne", "pre", "suf", "cnt"],
                             required: false,
-                            sortable: true
+                            sortable: true,
+                            strip: true
                         }),
                         sequence_field: fields.SequenceField({
                             name: "sequence_field",
@@ -1200,7 +1283,8 @@ define([
                         text_field: fields.TextField({
                             name: "text_field",
                             nonnull: false,
-                            required: false
+                            required: false,
+                            strip: true
                         }),
                         time_field: fields.TimeField({
                             name: "time_field",
@@ -1214,7 +1298,8 @@ define([
                             values: [
                                 fields.TextField({
                                     nonnull: false,
-                                    required: false
+                                    required: false,
+                                    strip: true
                                 }),
                                 fields.IntegerField({
                                     nonnull: false,
@@ -1229,7 +1314,8 @@ define([
                             fields: [
                                 fields.TextField({
                                     nonnull: false,
-                                    required: false
+                                    required: false,
+                                    strip: true
                                 }),
                                 fields.IntegerField({
                                     nonnull: false,
@@ -1262,7 +1348,8 @@ define([
             datetime_field: fields.DateTimeField({
                 name: "datetime_field",
                 nonnull: false,
-                required: false
+                required: false,
+                utc: false
             }),
             default_field: fields.IntegerField({
                 "default": 1,
@@ -1274,7 +1361,8 @@ define([
                 deferred: true,
                 name: "deferred_field",
                 nonnull: false,
-                required: false
+                required: false,
+                strip: true
             }),
             enumeration_field: fields.EnumerationField({
                 enumeration: [1, 2, 3],
@@ -1290,6 +1378,7 @@ define([
             id: fields.UUIDField({
                 name: "id",
                 nonnull: true,
+                oncreate: true,
                 operators: "equal",
                 required: true
             }),
@@ -1320,7 +1409,8 @@ define([
                 nonnull: true,
                 operators: ["eq", "ne", "pre", "suf", "cnt"],
                 required: true,
-                sortable: true
+                sortable: true,
+                strip: true
             }),
             sequence_field: fields.SequenceField({
                 name: "sequence_field",
@@ -1353,7 +1443,8 @@ define([
             text_field: fields.TextField({
                 name: "text_field",
                 nonnull: false,
-                required: false
+                required: false,
+                strip: true
             }),
             time_field: fields.TimeField({
                 name: "time_field",
@@ -1367,7 +1458,8 @@ define([
                 values: [
                     fields.TextField({
                         nonnull: false,
-                        required: false
+                        required: false,
+                        strip: true
                     }),
                     fields.IntegerField({
                         nonnull: false,
@@ -1382,7 +1474,8 @@ define([
                 fields: [
                     fields.TextField({
                         nonnull: false,
-                        required: false
+                        required: false,
+                        strip: true
                     }),
                     fields.IntegerField({
                         nonnull: false,
@@ -1392,4 +1485,16 @@ define([
             })
         }
     });
+
+    if (model.preloaded) {
+        preloadedRaw = model.preloaded[resource.prototype.__bundle__];
+        if (preloadedRaw) {
+            resource.preloaded = resource.collection();
+            for (var i = 0; i < preloadedRaw.length; i++) {
+                resource.preloaded.add(resource.models.instantiate(preloadedRaw[i]));
+            }
+        }
+    }
+
+    return resource;
 });

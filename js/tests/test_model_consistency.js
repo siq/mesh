@@ -630,6 +630,12 @@ define([
         });
     });
 
+    // module('_fieldFromPropName');
+
+    // test('correctly translates nested property to field', function() {
+
+    // });
+
     module('set with validate');
 
     // asyncTest('dont set invalid options', function() {

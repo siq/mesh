@@ -105,6 +105,57 @@ class ExampleWithUuidController(HarnessController):
     resource = ExampleWithUuid
     version = (1, 0)
 
+class NestedPolymorphicExample(Resource):
+    name = 'nestedpolymorphicexample'
+    version = 1
+    requests = 'create delete get put query update'
+
+    class schema:
+        id = UUID(nonempty=True, operators='equal', oncreate=True)
+        name = Text(required=True, nonnull=True, sortable=True)
+        required_field = Text(required=True, nonnull=True, sortable=True,
+            operators=['eq', 'ne', 'pre', 'suf', 'cnt'])
+        deferred_field = Text(deferred=True)
+        default_field = Integer(default=1)
+        constrained_field = Integer(minimum=2, maximum=4)
+        readonly_field = Integer(readonly=True)
+        boolean_field = Boolean()
+        date_field = Date()
+        datetime_field = DateTime()
+        enumeration_field = Enumeration([1, 2, 3])
+        float_field = Float()
+        integer_field = Integer(sortable=True, operators=['eq', 'in', 'gte', 'lt', 'lte', 'gt'])
+        structure_field = Structure(required=True, structure={
+            'required_field': Integer(required=True),
+            'optional_field': Integer(),
+            'structure_field': Structure({
+                'required_field': Integer(required=True),
+                'optional_field': Integer(),
+            })
+        })
+        text_field = Text()
+        type = Enumeration('immutable mutable', nonempty=True, onupdate=False)
+        composition = Structure(
+            structure={
+                'attribute-filter': {
+                    'expression': Text(nonempty=True),
+                },
+                'datasource-list': {
+                    'datasources': Sequence(Structure({
+                        'id': UUID(nonempty=True),
+                        'name': Text(readonly=True),
+                    }, nonnull=True), nonempty=True),
+                },
+                'extant': {}
+            },
+            polymorphic_on=Enumeration('attribute-filter datasource-list extant', name='type', nonempty=True),
+            nonnull=True,
+        )
+
+class NestedPolymorphicExampleController(HarnessController):
+    resource = NestedPolymorphicExample
+    version = (1, 0)
+
 
 class Alpha(Resource):
     name = 'alpha'
@@ -117,6 +168,7 @@ class Alpha(Resource):
 primary_bundle = Bundle('primary',
     mount(Example, ExampleController),
     mount(ExampleWithUuid, ExampleWithUuidController),
+    mount(NestedPolymorphicExample, NestedPolymorphicExampleController),
 )
 
 

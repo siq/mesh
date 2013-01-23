@@ -37,7 +37,7 @@ define([
         ok(!model.has('integer_field'));
 
         var retval = model.set('integer_field', 2);
-        ok(retval === model);
+        ok(retval.promise);
 
         ok(model.has('integer_field'));
         ok(model.integer_field === 2);
