@@ -256,7 +256,8 @@ define([
         },
 
         save: function() {
-            var request, subject, data, name, dfd, self = this,
+            var changeArray, isBaseProp, request, subject, data, name, dfd,
+                self = this,
                 args = Array.prototype.slice(0),
                 changes = self._changes,
                 inFlight = self._inFlight.save,
@@ -267,23 +268,23 @@ define([
             subject = self;
 
             if (!creating) {
+                // here we want to pull out just the properties that have
+                // changed and store them on subject. this is tricky because
+                // if only foo.bar changed, then `changes` will look like:
+                //
+                //     {foo: true, 'foo.bar': true}
+                //
+                // but we want `subject` to be like `{foo: {bar: ...}}`, so we
+                // iterate through the changeArray before setting each property
+                // on subject to weed out base properties like 'foo'
                 subject = SettableObject();
-                var i, l, changeArray = [], isBaseProp, thisChange;
+                changeArray = _.keys(changes);
                 for (name in changes) {
                     if (changes.hasOwnProperty(name)) {
-                        changeArray.push(name);
-                    }
-                }
-                for (name in changes) {
-                    if (changes.hasOwnProperty(name)) {
-                        isBaseProp = false;
-                        for (i = 0, l = changeArray.length; i < l; i++) {
-                            thisChange = changeArray[i];
-                            if (thisChange.length > name.length && thisChange.slice(0, name.length) === name) {
-                                isBaseProp = true;
-                                break;
-                            }
-                        }
+                        isBaseProp = !!_.find(changeArray, function(k) {
+                            return  k.length > name.length &&
+                                    k.slice(0, name.length) === name;
+                        });
                         if (!isBaseProp) {
                             subject.set(name, self.get(name));
                         }
