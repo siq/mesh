@@ -386,5 +386,27 @@ define([
         });
     });
 
+    test('different ways of setting with noclobber', function() {
+        var m = Example();
+        m.set('foo.bar', 123);
+        m.set({foo: {bar: 456}}, {noclobber: true});
+        equal(m.get('foo.bar'), 123);
+
+        m = Example();
+        m.set({foo: {bar: 123}});
+        m.set('foo.bar', 456, {noclobber: true});
+        equal(m.get('foo.bar'), 123);
+
+        m = Example({foo: {bar: 123}}, null, true);
+        m.set({foo: {baz: 456, bar: 789}}, {noclobber: true});
+        deepEqual(m.foo, {bar: 789, baz: 456});
+
+        m = Example();
+        m.set({foo: {bar: 123}});
+        m.set({foo: {baz: 456, bar: 789}}, {noclobber: true});
+        deepEqual(m.foo, {bar: 123, baz: 456});
+
+    });
+
     start();
 });

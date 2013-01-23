@@ -16,6 +16,36 @@ define([
 
     asSettable.call(SettableObject.prototype, {propName: null});
 
+    // if a nested property is changed like 'foo.bar', then the chnanges object
+    // will look like:
+    //
+    //     {foo: true, 'foo.bar': true}
+    //
+    // since model change tracking is at the property granularity, we generally
+    // want something with the 'foo' removed like this:
+    //
+    //     {'foo.bar': true}
+    //
+    // this function makes that translation
+    function removeBaseProperties(o) {
+        var result = {}, isBaseProp, name, changeArray = _.keys(o);
+        if (!o) {
+            return o;
+        }
+        for (name in o) {
+            if (o.hasOwnProperty(name)) {
+                isBaseProp = !!_.find(changeArray, function(k) {
+                    return  k.length > name.length &&
+                            k.slice(0, name.length) === name;
+                });
+                if (!isBaseProp) {
+                    result[name] = true;
+                }
+            }
+        }
+        return result;
+    }
+
     var Manager = Class.extend({
         init: function(model) {
             this.model = model;
@@ -268,26 +298,10 @@ define([
             subject = self;
 
             if (!creating) {
-                // here we want to pull out just the properties that have
-                // changed and store them on subject. this is tricky because
-                // if only foo.bar changed, then `changes` will look like:
-                //
-                //     {foo: true, 'foo.bar': true}
-                //
-                // but we want `subject` to be like `{foo: {bar: ...}}`, so we
-                // iterate through the changeArray before setting each property
-                // on subject to weed out base properties like 'foo'
                 subject = SettableObject();
-                changeArray = _.keys(changes);
                 for (name in changes) {
                     if (changes.hasOwnProperty(name)) {
-                        isBaseProp = !!_.find(changeArray, function(k) {
-                            return  k.length > name.length &&
-                                    k.slice(0, name.length) === name;
-                        });
-                        if (!isBaseProp) {
-                            subject.set(name, self.get(name));
-                        }
+                        subject.set(name, self.get(name));
                     }
                 }
             }
@@ -341,7 +355,7 @@ define([
 
         onChange: function(changed, opts) {
             if (!opts.unchanged) {
-                _.extend(this._changes, changed);
+                _.extend(this._changes, removeBaseProperties(changed));
             }
             this._lastSettableChanges = changed;
             this.construct({silent: true});
@@ -407,19 +421,9 @@ define([
 
     Model.prototype._set = _.wrap(Model.prototype._set,
         function(f, newProps, opts) {
-            var method, args = Array.prototype.slice.call(arguments, 2),
-                _changes = this._changes,
-                props = opts.noclobber?
-                    _.reduce(newProps, function(memo, val, key) {
-                        if (!_changes.hasOwnProperty(key)) {
-                            memo[key] = val;
-                        }
-                        return memo;
-                    }, {}) :
-                    newProps;
-
+            var method, args = Array.prototype.slice.call(arguments, 2);
             this._lastSettableChanges = this._lastSettableError = null;
-            f.apply(this, [props].concat(args));
+            f.apply(this, [newProps].concat(args));
             method = this._lastSettableError? 'reject' : 'resolve';
             return $.Deferred()[method](
                 this._lastSettableChanges, this._lastSettableError);
@@ -428,6 +432,9 @@ define([
     Model.prototype._setOne = _.wrap(Model.prototype._setOne,
         function(f, prop, newValue, currentValue, opts) {
             var args = Array.prototype.slice.call(arguments, 1);
+            if (opts.noclobber && this._changes[prop]) {
+                return;
+            }
             if (opts.validate) {
                 var field = this._fieldFromPropName(prop);
                 try {
