@@ -252,7 +252,8 @@ class TestRequest(TestCase):
         req, resp = ServerRequest(None, data={'id': 2}), ServerResponse()
         request.process(controller, req, resp)
         self.assertEqual(resp.status, INVALID)
-        self.assertEqual(resp.content, (None, {'id': [{'token': 'maximum', 'message': 'id must be less then or equal to 1'}]}))
+        self.assertEqual(resp.content, (None, {'id': [{'token': 'maximum', 'title': 'maximum value',
+            'message': 'id must be less then or equal to 1'}]}))
 
     def test_response_validation(self):
         request = construct_example_request(object(), ok={'id': Integer(required=True)})

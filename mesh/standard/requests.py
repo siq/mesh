@@ -28,6 +28,114 @@ sortable (boolean)
     If True, this field can be specified as a sort parameter in query requests.
 """
 
+class OperatorConstructor(object):
+    operators = {
+        'equal': 'Equals',
+        'iequal': 'Case-insensitive equals.',
+        'not': 'Not equal.',
+        'inot': 'Case-insensitive not equal.',
+        'prefix': 'Prefix search.',
+        'iprefix': 'Case-insensitive prefix search.',
+        'suffix': 'Suffix search.',
+        'isuffix': 'Case-insensitive suffix search.',
+        'contains': 'Contains.',
+        'icontains': 'Case-insensitive contains.',
+        'gt': 'Greater then.',
+        'gte': 'Greater then or equal to.',
+        'lt': 'Less then.',
+        'lte': 'Less then or equal to.',
+        'null': 'Is null.',
+        'in': 'In given values.',
+        'notin': 'Not in given values.',
+    }
+
+    @classmethod
+    def construct(cls, operators, field):
+        supported = field.operators
+        if isinstance(supported, basestring):
+            supported = supported.split(' ')
+
+        for operator in supported:
+            description = cls.operators.get(operator)
+            if description:
+                constructor = getattr(cls, '_construct_%s_operator' % operator, None)
+                if constructor:
+                    operator_field = constructor(field, description)
+                else:
+                    name = '%s__%s' % (field.name, operator)
+                    operator_field = clone_field(field, name, description)
+                operators[operator_field.name] = operator_field
+
+        return operators
+
+    @classmethod
+    def _construct_equal_operator(cls, field, description):
+        return clone_field(field, field.name, description)
+
+    @classmethod
+    def _construct_in_operator(cls, field, description):
+        return Sequence(clone_field(field), name='%s__in' % field.name,
+            description=description, nonnull=True)
+
+    @classmethod
+    def _construct_notin_operator(cls, field, description):
+        return Sequence(clone_field(field), name='%s__notin' % field.name,
+            description=description, nonnull=True)
+
+    @classmethod
+    def _construct_null_operator(cls, field, description):
+        return Boolean(name='%s__null' % field.name, description=description, nonnull=True)
+
+def add_schema_field(resource, field):
+    resource.schema[field.name] = field
+    if 'get' in resource.requests:
+        resource.requests['get'].responses[OK].schema.insert(field)
+    if 'query' in resource.requests:
+        request = resource.requests['query']
+        request.responses[OK].schema.structure['resources'].item.insert(field)
+
+        if field.operators:
+            for operator in OperatorConstructor.construct({}, field).itervalues():
+                request.schema.structure['query'].insert(operator)
+
+    if field.readonly:
+        return
+
+    if 'create' in resource.requests and field.oncreate is not False:
+        resource.requests['create'].schema.insert(field)
+    if 'update' in resource.requests and field.onupdate is not False:
+        resource.requests['update'].schema.insert(field.clone(required=False))
+    if 'put' in resource.requests and field.onput is not False:
+        resource.requests['put'].schema.insert(field)
+
+def clone_field(field, name=None, description=None):
+    return field.clone(name=name, description=description, nonnull=True, default=None,
+        required=False, notes=None, readonly=False, deferred=False, sortable=False,
+        operators=None)
+
+def construct_exclude_field(id_field, fields):
+    tokens = []
+    for name, field in fields.iteritems():
+        if name != id_field.name and not field.deferred:
+            tokens.append(name)
+
+    if tokens:
+        return Sequence(Enumeration(sorted(tokens), nonnull=True),
+            description='Fields which should not be returned for this query.')
+
+def construct_include_field(fields):
+    tokens = []
+    for name, field in fields.iteritems():
+        if field.deferred:
+            tokens.append(name)
+
+    if tokens:
+        return Sequence(Enumeration(sorted(tokens), nonnull=True),
+            description='Deferred fields which should be returned for this query.')
+
+def construct_returning(resource):
+    return Sequence(Enumeration(sorted(resource.schema.keys()), nonnull=True))
+
 def filter_schema_for_response(resource):
     id_field = resource.id_field
     schema = {}
@@ -56,177 +164,99 @@ def is_returning_supported(resource, declaration):
             raise Exception('cannot support returning for this resource')
     return supported
 
-def construct_returning(resource):
-    return Sequence(Enumeration(sorted(resource.schema.keys()), nonnull=True))
-
-class construct_model_request(object):
-    def _construct_exclude_field(self, id_field, fields):
-        tokens = []
-        for name, field in fields.iteritems():
-            if name != id_field.name and not field.deferred:
-                tokens.append(name)
-        if tokens:
-            return Sequence(Enumeration(sorted(tokens), nonnull=True),
-                description='Fields which should not be returned for this query.')
-
-    def _construct_include_field(self, fields):
-        tokens = []
-        for name, field in fields.iteritems():
-            if field.deferred:
-                tokens.append(name)
-        if tokens:
-            return Sequence(Enumeration(sorted(tokens), nonnull=True),
-                description='Deferred fields which should be returned for this query.')
-
-class construct_query_request(construct_model_request):
-    operators = {
-        'equal': 'Equals',
-        'iequal': 'Case-insensitive equals.',
-        'not': 'Not equal.',
-        'inot': 'Case-insensitive not equal.',
-        'prefix': 'Prefix search.',
-        'iprefix': 'Case-insensitive prefix search.',
-        'suffix': 'Suffix search.',
-        'isuffix': 'Case-insensitive suffix search.',
-        'contains': 'Contains.',
-        'icontains': 'Case-insensitive contains.',
-        'gt': 'Greater then.',
-        'gte': 'Greater then or equal to.',
-        'lt': 'Less then.',
-        'lte': 'Less then or equal to.',
-        'null': 'Is null.',
-        'in': 'In given values.',
-        'notin': 'Not in given values.',
+def construct_query_request(resource, declaration=None):
+    fields = filter_schema_for_response(resource)
+    schema = {
+        'offset': Integer(minimum=0, default=0,
+            description='The offset into the result set of this query.'),
+        'limit': Integer(minimum=0,
+            description='The maximum number of resources to return for this query.'),
+        'total': Boolean(default=False, nonnull=True,
+            description='If true, only return the total for this query.'),
     }
 
-    def __call__(self, resource, declaration=None):
-        fields = filter_schema_for_response(resource)
-        schema = {
-            'offset': Integer(minimum=0, default=0,
-                description='The offset into the result set of this query.'),
-            'limit': Integer(minimum=0,
-                description='The maximum number of resources to return for this query.'),
-            'total': Boolean(default=False, nonnull=True,
-                description='If true, only return the total for this query.'),
+    include_field = construct_include_field(fields)
+    if include_field:
+        schema['include'] = include_field
+
+    exclude_field = construct_exclude_field(resource.id_field, fields)
+    if exclude_field:
+        schema['exclude'] = exclude_field
+
+    tokens = []
+    for name, field in fields.iteritems():
+        if field.sortable:
+            for suffix in ('', '+', '-'):
+                tokens.append(name + suffix)
+
+    if tokens:
+        schema['sort'] = Sequence(Enumeration(sorted(tokens), nonnull=True),
+            description='The sort order for this query.')
+
+    operators = {}
+    for name, field in fields.iteritems():
+        if field.operators:
+            OperatorConstructor.construct(operators, field)
+
+    if declaration:
+        additions = getattr(declaration, 'operators', None)
+        if additions:
+            operators.update(additions)
+
+    if operators:
+        schema['query'] = Structure(operators,
+            description='The query to filter resources by.')
+
+    response_schema = Structure({
+        'total': Integer(nonnull=True, minimum=0,
+            description='The total number of resources in the result set for this query.'),
+        'resources': Sequence(Structure(fields), nonnull=True),
+    })
+
+    valid_responses = [OK]
+    if declaration:
+        valid_responses = getattr(declaration, 'valid_responses', valid_responses)
+
+    responses = {INVALID: Response(Errors)}
+    for response_code in valid_responses:
+        responses[response_code] = Response(response_schema)
+
+    return Request(
+        name = 'query',
+        endpoint = (GET, resource.name),
+        auto_constructed = True,
+        resource = resource,
+        title = 'Querying %s' % pluralize(resource.title.lower()),
+        schema = Structure(schema),
+        responses = responses,
+    )
+
+def construct_get_request(resource, declaration=None):
+    fields = filter_schema_for_response(resource)
+    schema = {}
+
+    include_field = construct_include_field(fields)
+    if include_field:
+        schema['include'] = include_field
+
+    exclude_field = construct_exclude_field(resource.id_field, fields)
+    if exclude_field:
+        schema['exclude'] = exclude_field
+
+    response_schema = Structure(fields)
+    return Request(
+        name = 'get',
+        endpoint = (GET, resource.name + '/id'),
+        specific = True,
+        auto_constructed = True,
+        resource = resource,
+        title = 'Getting a specific %s' % resource.title.lower(),
+        schema = schema and Structure(schema) or None,
+        responses = {
+            OK: Response(response_schema),
+            INVALID: Response(Errors),
         }
-
-        include_field = self._construct_include_field(fields)
-        if include_field:
-            schema['include'] = include_field
-
-        exclude_field = self._construct_exclude_field(resource.id_field, fields)
-        if exclude_field:
-            schema['exclude'] = exclude_field
-
-        sort_field = self._construct_sort_field(fields)
-        if sort_field:
-            schema['sort'] = sort_field
-
-        operators = {}
-        for name, field in fields.iteritems():
-            if field.operators:
-                self._construct_operator_fields(operators, field)
-
-        if operators:
-            schema['query'] = Structure(operators,
-                description='The query to filter resources by.')
-
-        response_schema = Structure({
-            'total': Integer(nonnull=True, minimum=0,
-                description='The total number of resources in the result set for this query.'),
-            'resources': Sequence(Structure(fields), nonnull=True),
-        })
-
-        valid_responses = [OK]
-        if declaration:
-            valid_responses = getattr(declaration, 'valid_responses', valid_responses)
-
-        responses = {INVALID: Response(Errors)}
-        for response_code in valid_responses:
-            responses[response_code] = Response(response_schema)
-
-        return Request(
-            name = 'query',
-            endpoint = (GET, resource.name),
-            auto_constructed = True,
-            resource = resource,
-            title = 'Querying %s' % pluralize(resource.title.lower()),
-            schema = Structure(schema),
-            responses = responses,
-        )
-
-    def _clone_field(self, field, name=None, description=None):
-        return field.clone(name=name, description=description, nonnull=True, default=None,
-            required=False, notes=None, readonly=False, deferred=False, sortable=False,
-            operators=None)
-
-    def _construct_sort_field(self, fields):
-        tokens = []
-        for name, field in fields.iteritems():
-            if field.sortable:
-                for suffix in ('', '+', '-'):
-                    tokens.append(name + suffix)
-        if tokens:
-            return Sequence(Enumeration(sorted(tokens), nonnull=True),
-                description='The sort order for this query.')
-
-    def _construct_operator_fields(self, operators, field):
-        supported = field.operators
-        if isinstance(supported, basestring):
-            supported = supported.split(' ')
-
-        for operator in supported:
-            description = self.operators.get(operator)
-            if description:
-                constructor = getattr(self, '_construct_%s_operator' % operator, None)
-                if constructor:
-                    operator_field = constructor(field, description)
-                else:
-                    name = '%s__%s' % (field.name, operator)
-                    operator_field = self._clone_field(field, name, description)
-                operators[operator_field.name] = operator_field
-
-    def _construct_equal_operator(self, field, description):
-        return self._clone_field(field, field.name, description)
-
-    def _construct_in_operator(self, field, description):
-        return Sequence(self._clone_field(field), name='%s__in' % field.name,
-            description=description, nonnull=True)
-
-    def _construct_notin_operator(self, field, description):
-        return Sequence(self._clone_field(field), name='%s__notin' % field.name,
-            description=description, nonnull=True)
-
-    def _construct_null_operator(self, field, description):
-        return Boolean(name='%s__null' % field.name, description=description, nonnull=True)
-
-class construct_get_request(construct_model_request):
-    def __call__(self, resource, declaration=None):
-        fields = filter_schema_for_response(resource)
-        schema = {}
-
-        include_field = self._construct_include_field(fields)
-        if include_field:
-            schema['include'] = include_field
-
-        exclude_field = self._construct_exclude_field(resource.id_field, fields)
-        if exclude_field:
-            schema['exclude'] = exclude_field
-
-        response_schema = Structure(fields)
-        return Request(
-            name = 'get',
-            endpoint = (GET, resource.name + '/id'),
-            specific = True,
-            auto_constructed = True,
-            resource = resource,
-            title = 'Getting a specific %s' % resource.title.lower(),
-            schema = schema and Structure(schema) or None,
-            responses = {
-                OK: Response(response_schema),
-                INVALID: Response(Errors),
-            }
-        )
+    )
 
 def construct_create_request(resource, declaration=None):
     resource_schema = {}
@@ -409,10 +439,10 @@ STANDARD_REQUESTS = {
     'create': construct_create_request,
     'create_update': construct_create_update_request,
     'delete': construct_delete_request,
-    'get': construct_get_request(),
+    'get': construct_get_request,
     'load': construct_load_request,
     'put': construct_put_request,
-    'query': construct_query_request(),
+    'query': construct_query_request,
     'update': construct_update_request,
 }
 VALIDATED_REQUESTS = ['create', 'put', 'update']

@@ -8,7 +8,7 @@ from mesh.request import *
 from mesh.util import identify_class, import_object, pull_class_dict, set_function_attr
 from scheme import *
 
-__all__ = ('Configuration', 'Controller', 'Resource')
+__all__ = ('Configuration', 'Controller', 'Resource', 'Subresource')
 
 class Configuration(object):
     """A resource configuration scheme.
@@ -50,37 +50,54 @@ class Configuration(object):
             'version': (resource.version, 0),
         })
 
+def associate_resource_version(resource):
+    if resource.version is None:
+        return
+    elif resource.version == 1:
+        resource.versions = {1: resource}
+        return
+    elif resource.version not in resource.versions:
+        resource.versions[resource.version] = resource
+    else:
+        raise SpecificationError('cannot declare duplicate version of %r' % resource)
+
 class ResourceMeta(type):
-    ATTRS = ('configuration', 'name', 'version')
+    ATTRS = ('abstract', 'configuration', 'name', 'version')
 
     def __new__(metatype, name, bases, namespace):
-        def _associate_versions(resource):
-            versions = getattr(resource, 'versions', None)
-            if versions is None:
-                versions = resource.versions = {}
-            if resource.version not in versions:
-                versions[resource.version] = resource
-            else:
-                raise SpecificationError('duplicate version')
-
-        candidates = [getattr(base, 'configuration', None) for base in bases]
-        candidates.append(namespace.get('configuration', None))
-
-        configuration = None
-        for candidate in candidates:
-            if isinstance(candidate, Configuration):
-                if not configuration or candidate == configuration:
-                    configuration = candidate
-                else:
-                    raise SpecificationError('conflicting mesh configurations')
-        if not configuration:
-            return type.__new__(metatype, name, bases, namespace)
-
         asis = namespace.pop('__asis__', False)
         if asis:
             resource = type.__new__(metatype, name, bases, namespace)
-            _associate_versions(resource)
+            associate_resource_version(resource)
             return resource
+
+        base_class = None
+        if namespace.get('abstract', False):
+            base_class = bases[0]
+            if len(bases) > 1 or base_class.name is not None:
+                raise SpecificationError('abstract resource %r may only inherit from a single'
+                    ' abstract base resource' % name)
+        else:
+            for candidate in bases:
+                if getattr(candidate, 'abstract', False):
+                    continue
+                elif base_class is None:
+                    base_class = candidate
+                else:
+                    raise SpecificationError('concrete resource %r must inherit from only one'
+                        'concrete resource' % name)
+
+        if not base_class:
+            raise SpecificationError('resource %r must inherit from exactly one non-abstract '
+                'base resource' % name)
+
+        configuration = getattr(base_class, 'configuration', None)
+        if not configuration:
+            configuration = namespace.get('configuration', None)
+        if not configuration:
+            return type.__new__(metatype, name, (base_class,), namespace)
+        elif not isinstance(configuration, Configuration):
+            raise SpecificationError('invalid configuration')
 
         schema = namespace.pop('schema', {})
         if isinstance(schema, (type, ClassType)):
@@ -114,21 +131,21 @@ class ResourceMeta(type):
                     removed_attrs.add(attr)
                     namespace.pop(attr)
 
-        resource = type.__new__(metatype, name, bases, namespace)
-        if resource.name is not None:
+        resource = type.__new__(metatype, name, (base_class,), namespace)
+        if resource.version is not None:
             if not (isinstance(resource.version, int) and resource.version >= 1):
                 raise SpecificationError('resource %r declares an invalid version' % name)
-        elif resource.version is not None:
-            raise SpecificationError('abstract resource %r must not declare a version' % name)
 
         resource.requests = {}
         resource.schema = {}
+        resource.subresources = {}
         resource.validators = {}
 
         inherited_requests = set()
         for base in reversed(bases):
             if hasattr(base, 'schema'):
                 resource.schema.update(base.schema)
+                resource.subresources.update(base.subresources)
                 resource.validators.update(base.validators)
                 for name, request in base.requests.iteritems():
                     inherited_requests.add(request)
@@ -150,7 +167,10 @@ class ResourceMeta(type):
             resource.requests[name] = Request.construct(resource, request)
 
         for attr, value in namespace.iteritems():
-            if isinstance(value, classmethod):
+            if isinstance(value, Subresource):
+                value.name = attr
+                resource.subresources[attr] = value
+            elif isinstance(value, classmethod):
                 value = getattr(resource, attr)
                 if getattr(value, '__validates__', False):
                     resource.validators[value.__name__] = value
@@ -158,6 +178,7 @@ class ResourceMeta(type):
 
         resource.description = dedent(resource.__doc__ or '')
         if resource.name is None:
+            associate_resource_version(resource)
             return resource
 
         if requested_requests:
@@ -187,7 +208,7 @@ class ResourceMeta(type):
                 if request_name in resource.requests:
                     resource.requests[request_name].validators.append(validator)
 
-        _associate_versions(resource)
+        associate_resource_version(resource)
         return resource
 
     def __getattr__(resource, name):
@@ -320,6 +341,7 @@ class Resource(object):
     __metaclass__ = ResourceMeta
     configuration = None
 
+    abstract = False
     name = None
     version = None
 
@@ -413,3 +435,14 @@ class Controller(object):
         content = implementation(self, request, response, subject, data)
         if content and content is not response:
             response(content)
+
+class Subresource(object):
+    """A subresource."""
+
+    def __init__(self, resource, requests=None, name=None):
+        if isinstance(requests, basestring):
+            requests = requests.split(' ')
+
+        self.name = name
+        self.requests = requests
+        self.resource = resource
