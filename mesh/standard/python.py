@@ -33,6 +33,13 @@ class Query(Query):
             fields.update(self.params['exclude'])
         return self.clone(exclude=list(fields))
 
+    def fields(self, *fields):
+        if 'exclude' in self.params:
+            del self.params['exclude']
+        if 'include' in self.params:
+            del self.params['include']
+        return self.clone(fields=list(fields))
+
     def filter(self, **params):
         if 'query' in self.params:
             query = deepcopy(self.params['query'])

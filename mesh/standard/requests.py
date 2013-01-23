@@ -113,6 +113,10 @@ def clone_field(field, name=None, description=None):
         required=False, notes=None, readonly=False, deferred=False, sortable=False,
         operators=None)
 
+def construct_fields_field(fields):
+    return Sequence(Enumeration(sorted(fields.keys()), nonnull=True), unique=True,
+        description='The exact fields which should be returned for this query.')
+
 def construct_exclude_field(id_field, fields):
     tokens = []
     for name, field in fields.iteritems():
@@ -167,10 +171,11 @@ def is_returning_supported(resource, declaration):
 def construct_query_request(resource, declaration=None):
     fields = filter_schema_for_response(resource)
     schema = {
-        'offset': Integer(minimum=0, default=0,
-            description='The offset into the result set of this query.'),
+        'fields': construct_fields_field(fields),
         'limit': Integer(minimum=0,
             description='The maximum number of resources to return for this query.'),
+        'offset': Integer(minimum=0, default=0,
+            description='The offset into the result set of this query.'),
         'total': Boolean(default=False, nonnull=True,
             description='If true, only return the total for this query.'),
     }
@@ -233,7 +238,7 @@ def construct_query_request(resource, declaration=None):
 
 def construct_get_request(resource, declaration=None):
     fields = filter_schema_for_response(resource)
-    schema = {}
+    schema = {'fields': construct_fields_field(fields)}
 
     include_field = construct_include_field(fields)
     if include_field:
@@ -296,7 +301,7 @@ def construct_load_request(resource, declaration=None):
     response_schema = Sequence(Structure(fields), nonnull=True)
 
     schema = {
-        'attrs': Sequence(Text(nonempty=True), nonnull=True),
+        'fields': construct_fields_field(fields),
         'identifiers': Sequence(resource.id_field.clone(), nonempty=True),
     }
 
