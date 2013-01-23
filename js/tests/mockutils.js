@@ -1,18 +1,24 @@
 define([
     'vendor/jquery',
     'vendor/underscore',
-    'bedrock/class'
-], function($, _, Class) {
+    'vendor/uuid',
+    'bedrock/class',
+    'mesh/fields'
+], function($, _, uuid, Class, fields) {
     var Xhr = Class.extend({
             init:               function(stat) { this.status = stat || 200; },
             getResponseHeader:  function() { return 'application/json'; }
         });
 
     function mockResource(name, Resource, defaultResourceFixtures) {
-        var id, defaultDelay = 0, delay = defaultDelay, fail = false,
+        var hasUuid, id, defaultDelay = 0, delay = defaultDelay, fail = false,
             resourceFixtures = _.map(defaultResourceFixtures, function(f) {
                 return $.extend(true, {}, f);
             });
+
+        if (Resource.prototype.__schema__.id instanceof fields.UUIDField) {
+            hasUuid = true;
+        }
 
         id = resourceFixtures.length + 1;
 
@@ -55,7 +61,11 @@ define([
         };
 
         Resource.prototype.__requests__.get.ajax = function(params) {
-            var obj, which = +_.last(params.url.split('/'));
+            var obj, which = _.last(params.url.split('/'));
+
+            if (!hasUuid) {
+                which = +which;
+            }
 
             obj = $.extend(true, {}, _.find(resourceFixtures, function(e) {
                 return e.id === which;
@@ -67,7 +77,11 @@ define([
         };
 
         Resource.prototype.__requests__.update.ajax = function(params) {
-            var obj, which = +_.last(params.url.split('/')), shouldFail = fail;
+            var obj, which = _.last(params.url.split('/')), shouldFail = fail;
+
+            if (!hasUuid) {
+                which = +which;
+            }
 
             setTimeout(function() {
                 if (shouldFail) {
@@ -83,7 +97,11 @@ define([
         };
 
         Resource.prototype.__requests__['delete'].ajax = function(params) {
-            var obj, which = +_.last(params.url.split('/')), shouldFail = fail;
+            var obj, which = _.last(params.url.split('/')), shouldFail = fail;
+
+            if (!hasUuid) {
+                which = +which;
+            }
 
             setTimeout(function() {
                 if (shouldFail) {
@@ -106,7 +124,11 @@ define([
                     params.error(Xhr(406));
                 } else {
                     resourceFixtures.push(JSON.parse(params.data));
-                    _.last(resourceFixtures).id = id++;
+                    if (hasUuid) {
+                        _.last(resourceFixtures).id = uuid();
+                    } else {
+                        _.last(resourceFixtures).id = id++;
+                    }
                     params.success({id: _.last(resourceFixtures).id}, 200, Xhr());
                 }
             }, delay);

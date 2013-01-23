@@ -6,23 +6,31 @@
 define([
     'vendor/jquery',
     'vendor/underscore',
-    './mockedexample'
-], function($, _, Example) {
+    './mockedexample',
+    './mockednestedpolymorphicexample'
+], function($, _, Example, NestedPolymorphicExample) {
     var setup = function(options) {
-        var c, dfd = $.Deferred();
+        var c, dfd = $.Deferred(),
+            Resource = options && options.resource? options.resource : Example;
 
         // clear all of the current models
         Example.models.clear();
+        NestedPolymorphicExample.models.clear();
         // reset the example mocking settings to defaults
         Example.mockDelay().mockFailure().mockDataChange();
+        NestedPolymorphicExample.mockDelay().mockFailure().mockDataChange();
 
         if (options && options.noCollection) {
             dfd.resolve();
         } else {
-            c = Example.collection();
+            c = Resource.collection();
 
             c.load().then(function() {
                 dfd.resolve(c);
+            }, function(e) {
+                console.log('died loading collection:',e);
+                ok(false, 'died loading colleciton');
+                throw e;
             });
         }
 
@@ -513,6 +521,31 @@ define([
                 start();
             });
 
+        });
+    });
+
+    asyncTest('updating a nested property', function() {
+        setup({resource: NestedPolymorphicExample}).then(function(c) {
+            var data, m = c.first();
+            data = _.find(NestedPolymorphicExample.mockGetPersistedData(),
+                function(d) {
+                    return d.id === m.get('id');
+                });
+            ok(data);
+            m.set('structure_field.required_field', 1335);
+            equal(data.structure_field.required_field, 0);
+            m.save().then(function() {
+                var newData = _.find(NestedPolymorphicExample.mockGetPersistedData(),
+                    function(d) {
+                        return d.id === m.get('id');
+                    });
+                ok(newData);
+                equal(newData.structure_field.required_field, 1335);
+                start();
+            }, function(e) {
+                ok(false, 'save failed');
+                throw e;
+            });
         });
     });
 

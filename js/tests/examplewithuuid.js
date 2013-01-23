@@ -66,6 +66,7 @@ define([
                     }
                 },
                 schema: fields.StructureField({
+                    name: "resource",
                     nonnull: false,
                     required: false,
                     strict: true,
@@ -507,6 +508,37 @@ define([
                                     "default_field",
                                     "enumeration_field",
                                     "float_field",
+                                    "integer_field",
+                                    "map_field",
+                                    "readonly_field",
+                                    "required_field",
+                                    "sequence_field",
+                                    "structure_field",
+                                    "text_field",
+                                    "time_field",
+                                    "tuple_field",
+                                    "union_field"
+                                ]
+                            })
+                        }),
+                        fields: fields.SequenceField({
+                            name: "fields",
+                            nonnull: false,
+                            required: false,
+                            unique: true,
+                            item: fields.EnumerationField({
+                                nonnull: true,
+                                required: false,
+                                enumeration: [
+                                    "boolean_field",
+                                    "constrained_field",
+                                    "date_field",
+                                    "datetime_field",
+                                    "default_field",
+                                    "deferred_field",
+                                    "enumeration_field",
+                                    "float_field",
+                                    "id",
                                     "integer_field",
                                     "map_field",
                                     "readonly_field",
@@ -986,6 +1018,37 @@ define([
                                     "default_field",
                                     "enumeration_field",
                                     "float_field",
+                                    "integer_field",
+                                    "map_field",
+                                    "readonly_field",
+                                    "required_field",
+                                    "sequence_field",
+                                    "structure_field",
+                                    "text_field",
+                                    "time_field",
+                                    "tuple_field",
+                                    "union_field"
+                                ]
+                            })
+                        }),
+                        fields: fields.SequenceField({
+                            name: "fields",
+                            nonnull: false,
+                            required: false,
+                            unique: true,
+                            item: fields.EnumerationField({
+                                nonnull: true,
+                                required: false,
+                                enumeration: [
+                                    "boolean_field",
+                                    "constrained_field",
+                                    "date_field",
+                                    "datetime_field",
+                                    "default_field",
+                                    "deferred_field",
+                                    "enumeration_field",
+                                    "float_field",
+                                    "id",
                                     "integer_field",
                                     "map_field",
                                     "readonly_field",

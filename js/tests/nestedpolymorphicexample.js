@@ -66,6 +66,7 @@ define([
                     }
                 },
                 schema: fields.StructureField({
+                    name: "resource",
                     nonnull: false,
                     required: false,
                     strict: true,
@@ -242,11 +243,6 @@ define([
                                             name: "optional_field",
                                             nonnull: false,
                                             required: false
-                                        }),
-                                        required_field: fields.IntegerField({
-                                            name: "required_field",
-                                            nonnull: false,
-                                            required: true
                                         })
                                     }
                                 })
@@ -533,6 +529,7 @@ define([
                                                 required_field: fields.IntegerField({
                                                     name: "required_field",
                                                     nonnull: false,
+                                                    readonly: true,
                                                     required: true
                                                 })
                                             }
@@ -608,6 +605,35 @@ define([
                                     "default_field",
                                     "enumeration_field",
                                     "float_field",
+                                    "integer_field",
+                                    "name",
+                                    "readonly_field",
+                                    "required_field",
+                                    "structure_field",
+                                    "text_field",
+                                    "type"
+                                ]
+                            })
+                        }),
+                        fields: fields.SequenceField({
+                            name: "fields",
+                            nonnull: false,
+                            required: false,
+                            unique: true,
+                            item: fields.EnumerationField({
+                                nonnull: true,
+                                required: false,
+                                enumeration: [
+                                    "boolean_field",
+                                    "composition",
+                                    "constrained_field",
+                                    "date_field",
+                                    "datetime_field",
+                                    "default_field",
+                                    "deferred_field",
+                                    "enumeration_field",
+                                    "float_field",
+                                    "id",
                                     "integer_field",
                                     "name",
                                     "readonly_field",
@@ -859,11 +885,6 @@ define([
                                             name: "optional_field",
                                             nonnull: false,
                                             required: false
-                                        }),
-                                        required_field: fields.IntegerField({
-                                            name: "required_field",
-                                            nonnull: false,
-                                            required: true
                                         })
                                     }
                                 })
@@ -1101,6 +1122,7 @@ define([
                                                             required_field: fields.IntegerField({
                                                                 name: "required_field",
                                                                 nonnull: false,
+                                                                readonly: true,
                                                                 required: true
                                                             })
                                                         }
@@ -1185,6 +1207,35 @@ define([
                                     "default_field",
                                     "enumeration_field",
                                     "float_field",
+                                    "integer_field",
+                                    "name",
+                                    "readonly_field",
+                                    "required_field",
+                                    "structure_field",
+                                    "text_field",
+                                    "type"
+                                ]
+                            })
+                        }),
+                        fields: fields.SequenceField({
+                            name: "fields",
+                            nonnull: false,
+                            required: false,
+                            unique: true,
+                            item: fields.EnumerationField({
+                                nonnull: true,
+                                required: false,
+                                enumeration: [
+                                    "boolean_field",
+                                    "composition",
+                                    "constrained_field",
+                                    "date_field",
+                                    "datetime_field",
+                                    "default_field",
+                                    "deferred_field",
+                                    "enumeration_field",
+                                    "float_field",
+                                    "id",
                                     "integer_field",
                                     "name",
                                     "readonly_field",
@@ -1545,11 +1596,6 @@ define([
                                             name: "optional_field",
                                             nonnull: false,
                                             required: false
-                                        }),
-                                        required_field: fields.IntegerField({
-                                            name: "required_field",
-                                            nonnull: false,
-                                            required: true
                                         })
                                     }
                                 })
@@ -1754,6 +1800,7 @@ define([
                             required_field: fields.IntegerField({
                                 name: "required_field",
                                 nonnull: false,
+                                readonly: true,
                                 required: true
                             })
                         }
