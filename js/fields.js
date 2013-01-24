@@ -250,6 +250,14 @@ define([
         }
     });
 
+    fields.EmailField = Field.extend({
+        _validateType: function(value) {
+            if (!isString(value)) {
+                throw InvalidTypeError();
+            }
+        }
+    });
+
     fields.EnumerationField = Field.extend({
         _normalizeValue: function(value) {
             return (value === '' ? null : value);

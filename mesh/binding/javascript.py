@@ -99,6 +99,7 @@ class Generator(object):
         'boolean': 'fields.BooleanField',
         'date': 'fields.DateField',
         'datetime': 'fields.DateTimeField',
+        'email': 'fields.EmailField',
         'enumeration': 'fields.EnumerationField',
         'integer': 'fields.IntegerField',
         'field': 'fields.Field',
