@@ -221,7 +221,8 @@ define([
                 inFlight = self._inFlight.refresh;
 
             if (self.get('id') == null) {
-                return $.Deferred().reject(self);
+                return $.Deferred().reject(
+                        [[{token: 'cannot-refresh-without-id'}], null]);
             }
 
             if (conditional && self._loaded) {

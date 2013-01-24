@@ -272,8 +272,10 @@ define([
             dfd.then(function() {
                 ok(false, 'deferred should not resolve');
                 start();
-            }, function() {
+            }, function(errors) {
                 ok(true, 'error callback should execute');
+                deepEqual(errors,
+                    [[{token: 'cannot-refresh-without-id'}], null]);
                 start();
             });
         });
