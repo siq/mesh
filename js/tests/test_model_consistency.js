@@ -663,33 +663,192 @@ define([
         });
     });
 
-    // module('_fieldFromPropName');
+    module('_fieldFromPropName');
 
-    // test('correctly translates nested property to field', function() {
-
-    // });
+    test('correctly translates nested property to field', function() {
+        var m = NestedPolymorphicExample();
+        ok(m._fieldFromPropName('structure_field.required_field') ===
+            m.__requests__.create.schema.structure.structure_field.structure.required_field);
+        ok(m._fieldFromPropName('required_field') ===
+            m.__requests__.create.schema.structure.required_field);
+        ok(m._fieldFromPropName('structure_field.structure_field.optional_field') ===
+            m.__requests__.create.schema.structure.structure_field.structure.structure_field.structure.optional_field);
+    });
 
     module('set with validate');
 
-    // asyncTest('dont set invalid options', function() {
-    //     setup().then(function(c) {
-    //         var changeCount = 0,
-    //             managerChangeCount = 0,
-    //             m = c.models[1],
-    //             orig = m.get('integer_field');
-    //         m.on('change', function() { changeCount++; });
-    //         Example.models.on('change', function() { managerChangeCount++; });
-    //         m.set({integer_field: 'abc'}, {validate: true});
-    //         equal(changeCount, 0, 'model didnt fire change events');
-    //         equal(managerChangeCount, 0, 'manager didnt fire change events');
-    //         equal(m.get('integer_field'), orig, 'integer_field value didnt change');
-    //         start();
-    //     });
-    // });
+    asyncTest('dont set invalid options', function() {
+        setup().then(function(c) {
+            var changeCount = 0,
+                managerChangeCount = 0,
+                m = c.models[1],
+                orig = m.get('integer_field');
+            m.on('change', function() { changeCount++; });
+            Example.models.on('change', function() { managerChangeCount++; });
+            m.set({integer_field: 'abc'}, {validate: true}).then(function() {
+                ok(false, 'set should have returned failing dfd');
+                start();
+            }, function(changes, e) {
+                equal(changeCount, 0, 'model didnt fire change events');
+                equal(managerChangeCount, 0, 'manager didnt fire change events');
+                equal(m.get('integer_field'), orig, 'integer_field value didnt change');
+                m.set({integer_field: 'abc'});
+                m.validate().then(function() {
+                    ok(false, 'validation should have failed too');
+                    start();
+                }, function(validationError) {
+                    var localE = e;
+                    deepEqual(e.serialize(), validationError.serialize());
+                    start();
+                });
+            });
+        });
+    });
 
-    // TODO:
-    //  - preserve original value on failed set
-    //  - when there's existing validation issue, setting other values
+    asyncTest('nested errors for set match validate', function() {
+        setup({resource: NestedPolymorphicExample}).then(function(c) {
+            var m = c.first(),
+                prop = 'structure_field.structure_field.optional_field';
+
+            m.set(prop, 'foo', {validate: true}).then(function() {
+                ok(false, 'set should have failed');
+                start();
+            }, function(changes, setError) {
+                m.set(prop, 'foo');
+                m.validate().then(function() {
+                    ok(false, 'validation should have failed');
+                    start();
+                }, function(validationError) {
+                    deepEqual(
+                        setError.serialize(),
+                        validationError.serialize(),
+                        'errors from validate and set match');
+                    start();
+                });
+            });
+        });
+    });
+
+    asyncTest('multiple nested errors for set match validate', function() {
+        setup({resource: NestedPolymorphicExample}).then(function(c) {
+            var m = c.first(), value = {
+                structure_field: {
+                    structure_field: {
+                        required_field: 'foo',
+                        optional_field: 'foo'
+                    }
+                }
+            };
+
+            m.set(value, {validate: true}).then(function() {
+                ok(false, 'set should have failed');
+                start();
+            }, function(changes, setError) {
+                m.set(value);
+                m.validate().then(function() {
+                    ok(false, 'validation should have failed');
+                    start();
+                }, function(validationError) {
+                    deepEqual(
+                        setError.serialize(),
+                        validationError.serialize(),
+                        'errors from validate and set match');
+                    start();
+                });
+            });
+        });
+    });
+
+    asyncTest('preserve previous values on failed set', function() {
+        setup({resource: NestedPolymorphicExample}).then(function(c) {
+            var m = c.first();
+            m.set('name', 'first');
+            m.set('name', 'second');
+            m.set('name', 3, {validate: true}).then(function() {
+                ok(false, 'set should have failed');
+                start();
+            }, function(changes, errors) {
+                ok(true, 'set failed');
+                deepEqual(errors.serialize(), {
+                    name: [{token: 'invalidtypeerror'}]
+                });
+                equal(m.previous('name'), 'first');
+                equal(m.get('name'), 'second');
+                start();
+            });
+        });
+    });
+
+    asyncTest('allow validated set when there are existing errors', function() {
+        setup({resource: NestedPolymorphicExample}).then(function(c) {
+            var m = c.first();
+            m.validate().then(function() {
+                ok(true, 'initially ok');
+                m.set('name', 123);
+                m.validate().then(function() {
+                    ok(false, 'should fail validation after first set');
+                    start();
+                }, function(e) {
+                    ok(true, 'should fail validation after first set');
+                    m.set('required_field', 'foobar', {validate: true})
+                        .then(function(changes) {
+                            ok(true, 'set should have worked');
+                            start();
+                        }, function(changes, errors) {
+                            ok(false, 'set should have worked');
+                            start();
+                        });
+                });
+            }, function() {
+                ok(false, 'should be ok initially');
+                start();
+            });
+        });
+    });
+
+    asyncTest('partial set works when only one field fails validation', function() {
+        setup({resource: NestedPolymorphicExample}).then(function(c) {
+            var m = c.first(), value = {
+                    structure_field: {
+                        structure_field: {
+                            required_field: 'foo',
+                            optional_field: 123
+                        }
+                    }
+                },
+                origRequiredValue =
+                    m.get('structure_field.structure_field.required_field'),
+                origOptionalValue =
+                    m.get('structure_field.structure_field.optional_field');
+
+            m.set(value, {validate: true}).then(function() {
+                ok(false, 'required_field should have failed validation');
+                start();
+            }, function(changes, errors) {
+                deepEqual(changes, {
+                    structure_field: true,
+                    'structure_field.structure_field': true,
+                    'structure_field.structure_field.optional_field': true
+                });
+                deepEqual(errors.serialize(), {
+                    structure_field: [{
+                        structure_field: [{
+                            required_field: [{
+                                token: 'invalidtypeerror'
+                            }]
+                        }]
+                    }]
+                });
+                equal(m.get('structure_field.structure_field.optional_field'),
+                    123);
+                equal(m.previous('structure_field.structure_field.optional_field'),
+                    origOptionalValue);
+                equal(m.get('structure_field.structure_field.required_field'),
+                    origRequiredValue);
+                start();
+            });
+        });
+    });
 
     start();
 });

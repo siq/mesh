@@ -243,6 +243,11 @@ define([
                                             name: "optional_field",
                                             nonnull: false,
                                             required: false
+                                        }),
+                                        required_field: fields.IntegerField({
+                                            name: "required_field",
+                                            nonnull: false,
+                                            required: true
                                         })
                                     }
                                 })
@@ -529,7 +534,6 @@ define([
                                                 required_field: fields.IntegerField({
                                                     name: "required_field",
                                                     nonnull: false,
-                                                    readonly: true,
                                                     required: true
                                                 })
                                             }
@@ -885,6 +889,11 @@ define([
                                             name: "optional_field",
                                             nonnull: false,
                                             required: false
+                                        }),
+                                        required_field: fields.IntegerField({
+                                            name: "required_field",
+                                            nonnull: false,
+                                            required: true
                                         })
                                     }
                                 })
@@ -1122,7 +1131,6 @@ define([
                                                             required_field: fields.IntegerField({
                                                                 name: "required_field",
                                                                 nonnull: false,
-                                                                readonly: true,
                                                                 required: true
                                                             })
                                                         }
@@ -1596,6 +1604,11 @@ define([
                                             name: "optional_field",
                                             nonnull: false,
                                             required: false
+                                        }),
+                                        required_field: fields.IntegerField({
+                                            name: "required_field",
+                                            nonnull: false,
+                                            required: true
                                         })
                                     }
                                 })
@@ -1800,7 +1813,6 @@ define([
                             required_field: fields.IntegerField({
                                 name: "required_field",
                                 nonnull: false,
-                                readonly: true,
                                 required: true
                             })
                         }

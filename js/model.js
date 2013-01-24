@@ -398,7 +398,7 @@ define([
             prop = prop.split('.');
             field = schema;
             while (prop.length > 1) {
-                field = field.structure[prop.unshift()];
+                field = field.structure[prop.shift()];
             }
             return field.structure[prop[0]];
         },
@@ -421,12 +421,34 @@ define([
 
     Model.prototype._set = _.wrap(Model.prototype._set,
         function(f, newProps, opts) {
-            var method, args = Array.prototype.slice.call(arguments, 2);
+            var e, method, args = Array.prototype.slice.call(arguments, 2);
             this._lastSettableChanges = this._lastSettableError = null;
             f.apply(this, [newProps].concat(args));
             method = this._lastSettableError? 'reject' : 'resolve';
-            return $.Deferred()[method](
-                this._lastSettableChanges, this._lastSettableError);
+            if (method === 'reject') {
+                e = fields.CompoundError(null, {
+                    structure: _.reduce(this._lastSettableError,
+                        function(memo, fieldError, k) {
+                            var split = k.split('.'), cur = memo;
+                            while (split.length > 1) {
+                                if (!cur[split[0]]) {
+                                    cur[split[0]] = [
+                                        fields.CompoundError(null,
+                                            {structure: {}})
+                                    ];
+                                }
+                                cur = cur[split.shift()][0].structure;
+                            }
+                            if (cur[split[0]]) {
+                                cur[split.shift()].push(fieldError);
+                            } else {
+                                cur[split.shift()] = [fieldError];
+                            }
+                            return memo;
+                        }, {})
+                });
+            }
+            return $.Deferred()[method](this._lastSettableChanges, e);
         });
 
     Model.prototype._setOne = _.wrap(Model.prototype._setOne,

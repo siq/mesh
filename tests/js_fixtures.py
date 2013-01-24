@@ -129,7 +129,7 @@ class NestedPolymorphicExample(Resource):
             'required_field': Integer(required=True),
             'optional_field': Integer(),
             'structure_field': Structure({
-                'required_field': Integer(required=True, readonly=True),
+                'required_field': Integer(required=True),
                 'optional_field': Integer(),
             })
         })
