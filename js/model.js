@@ -158,8 +158,9 @@ define([
         init: function(attrs, manager, loaded, options) {
             this.cid = null;
             this.id = null;
-            this._changes = {};
             this._loaded = loaded;
+            this._changes = {};
+            this._inFlight = {refresh: [], save: [], destroy: []};
             this._manager = manager || this.__models__;
             if (attrs != null) {
                 this.set(attrs, {silent: true, unchanged: true});
@@ -170,7 +171,6 @@ define([
             this._options = $.extend(true, this.defaults, options);
             this._manager.associate(this);
             this._httpStatus = null;
-            this._inFlight = {refresh: [], save: [], destroy: []};
         },
 
         construct: function() {},
@@ -330,10 +330,7 @@ define([
 
             self._changes = {};
 
-            // if the request failed, re-list those properties as changed
-            dfd.fail(function() { _.extend(self._changes, changes); });
-
-            return _.last(inFlight).promise = dfd.pipe(function(data, xhr) {
+            _.last(inFlight).promise = dfd.pipe(function(data, xhr) {
                 var inFlight = self._inFlight.save,
                     idx = _.indexOf(_.pluck(inFlight, 'dfd'), dfd);
                 if (creating) {
@@ -352,6 +349,29 @@ define([
                 self._httpStatus = request.STATUS_CODES[xhr.status];
                 return self;
             });
+
+            // if the request failed, re-list those properties as changed
+            _.last(inFlight).promise.fail(function() {
+                var stillInFlight, otherInFlight,
+                    otherInFlights = self._inFlight.save;
+                for (var inFlightChange in changes) {
+                    if (changes.hasOwnProperty(inFlightChange)) {
+                        stillInFlight = false;
+                        for (var i = 0, l = otherInFlights.length; i < l; i++) {
+                            otherInFlight = otherInFlights[i];
+                            if (otherInFlight.dfd !== dfd &&
+                                otherInFlight.changes[inFlightChange]) {
+                                stillInFlight = true;
+                            }
+                        }
+                        if (!stillInFlight) {
+                            self._changes[inFlightChange] = true;
+                        }
+                    }
+                }
+            });
+
+            return _.last(inFlight).promise;
         },
 
         onChange: function(changed, opts) {
@@ -454,9 +474,17 @@ define([
 
     Model.prototype._setOne = _.wrap(Model.prototype._setOne,
         function(f, prop, newValue, currentValue, opts) {
-            var args = Array.prototype.slice.call(arguments, 1);
-            if (opts.noclobber && this._changes[prop]) {
-                return;
+            var i, l, args = Array.prototype.slice.call(arguments, 1),
+                inFlight = this._inFlight.save;
+            if (opts.noclobber) {
+                if (this._changes[prop]) {
+                    return;
+                }
+                for (i = 0, l = inFlight.length; i < l; i++) {
+                    if (inFlight[i].changes[prop]) {
+                        return;
+                    }
+                }
             }
             if (opts.validate) {
                 var field = this._fieldFromPropName(prop);

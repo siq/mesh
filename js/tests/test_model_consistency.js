@@ -13,12 +13,16 @@ define([
         var c, dfd = $.Deferred(),
             Resource = options && options.resource? options.resource : Example;
 
-        // clear all of the current models
-        Example.models.clear();
-        NestedPolymorphicExample.models.clear();
-        // reset the example mocking settings to defaults
-        Example.mockDelay().mockFailure().mockDataChange();
-        NestedPolymorphicExample.mockDelay().mockFailure().mockDataChange();
+        // clear all of the current models and reset the example mocking
+        // settings to defaults
+        _.each([Example, NestedPolymorphicExample], function(Resource) {
+            Resource
+                .mockDelay()
+                .mockFailure()
+                .mockDataChange()
+                .mockUnwrapRequestHandlers()
+                .models.clear();
+        });
 
         if (options && options.noCollection) {
             dfd.resolve();
@@ -547,6 +551,203 @@ define([
             }, function(e) {
                 ok(false, 'save failed');
                 throw e;
+            });
+        });
+    });
+
+    asyncTest('calling refresh that goes out and comes back during save', function() {
+        setup().then(function(c) {
+            var saveDfd, saved, refreshDfd, refreshed,
+                m = c.first(),
+                orig = m.get('text_field');
+            Example.mockDelay(100);
+            m.set('text_field', 'foo');
+            saveDfd = m.save();
+            Example.mockDelay(0);
+            refreshDfd = m.refresh();
+
+            refreshDfd.then(function() {
+                ok(!saved);
+                refreshed = true;
+                equal(m.get('text_field'), 'foo');
+                equal(m.previous('text_field'), orig);
+            });
+
+            saveDfd.then(function() {
+                ok(refreshed);
+                saved = true;
+                equal(m.get('text_field'), 'foo');
+                equal(m.previous('text_field'), orig);
+                start();
+            });
+        });
+    });
+
+    // this is a bit complicated, the timeline is like this:
+    //
+    //      -------------------- set text_field ---------------------
+    //      save                |--------| fail
+    //      ----------------- set required_field --------------------
+    //      save                    |----------| success
+    //
+    //      save                            |--------| success
+    //
+    // the first and second save should send prop1 and pro2 respectively, of
+    // course. but since the third save happens after the first failure
+    // returns, it should be smart enough to re-send that un-saved property.
+    asyncTest('set failed save set save save', function() {
+        setup().then(function(c) {
+            var save1, save2, save3, reqs = [],
+                m = c.first(),
+                origTextField = m.get('text_field'),
+                origRequiredField = m.get('required_field');
+            Example.mockWrapRequestHandler('update', function(f, params) {
+                var args = Array.prototype.slice.call(arguments, 1);
+                reqs.push(JSON.parse(params.data));
+                return f.apply(this, args);
+            }).mockDelay(100);
+
+            m.set('text_field', 'set 1');
+            Example.mockFailure(true);
+            save1 = m.save();
+
+            setTimeout(function() {
+                Example.mockFailure();
+                equal(save1.state(), 'pending');
+                m.set('required_field', 'set 2');
+                save2 = m.save();
+
+                save2.then(function() {
+                    var currentData = _.find(Example.mockGetPersistedData(),
+                        function(d) { return d.id === m.get('id'); });
+                    equal(save1.state(), 'rejected', 'save1 failed');
+                    equal(save3.state(), 'pending', 'save3 is still in flight');
+                    equal(m.get('text_field'), 'set 1');
+                    equal(currentData.text_field, origTextField,
+                        'text_field still hasnt persisted');
+                    equal(m.get('required_field'), 'set 2');
+                    equal(currentData.required_field, 'set 2',
+                        'required_field has been persisted');
+                }, function() {
+                    var args = Array.prototype.slice.call(arguments, 0);
+                    ok(false, 'second save should have succeeded');
+                    start();
+                });
+            }, 50);
+
+            save1.then(function() {
+                ok(false, 'first request should have failed');
+                start();
+            }, function() {
+                var currentData = _.find(Example.mockGetPersistedData(),
+                    function(d) { return d.id === m.get('id'); });
+                equal(save2.state(), 'pending', 'save 2 is still in flight');
+                save3 = m.save();
+                equal(m.get('text_field'), 'set 1');
+                equal(currentData.text_field, origTextField,
+                    'text_field failed to persist');
+                equal(m.get('required_field'), 'set 2');
+                equal(currentData.required_field, origRequiredField,
+                    'required_field has not been persisted yet');
+
+                save3.then(function() {
+                    var currentData = _.find(Example.mockGetPersistedData(),
+                        function(d) { return d.id === m.get('id'); });
+                    equal(m.get('text_field'), 'set 1');
+                    equal(currentData.text_field, 'set 1',
+                        'text_field still hasnt persisted');
+                    equal(m.get('required_field'), 'set 2');
+                    equal(currentData.required_field, 'set 2',
+                        'required_field has been persisted');
+                    deepEqual(reqs, [
+                        {text_field: 'set 1'},
+                        {required_field: 'set 2'},
+                        {text_field: 'set 1'}
+                    ], 'requests were correct');
+                    start();
+                }, function() {
+                    ok(false, 'save3 should have succeeded');
+                    start();
+                });
+            });
+        });
+    });
+
+    // same as above, but set the same property each time
+    //
+    //      -------------------- set text_field ---------------------
+    //      save                |--------| fail
+    //      -------------------- set text_field ---------------------
+    //      save                    |----------| success
+    //
+    //      save                            |--| success (same dfd as save #2)
+    //
+    asyncTest('same property set failed save set save save', function() {
+        setup().then(function(c) {
+            var save1, save2, save2Finished, save3, save3Finished, reqs = [],
+                m = c.first(),
+                origTextField = m.get('text_field');
+            Example.mockWrapRequestHandler('update', function(f, params) {
+                var args = Array.prototype.slice.call(arguments, 1);
+                reqs.push(JSON.parse(params.data));
+                return f.apply(this, args);
+            }).mockDelay(100);
+
+            m.set('text_field', 'set 1');
+            Example.mockFailure(true);
+            save1 = m.save();
+
+            setTimeout(function() {
+                Example.mockFailure();
+                equal(save1.state(), 'pending');
+                m.set('text_field', 'set 2');
+                save2 = m.save();
+
+                save2.then(function() {
+                    var currentData = _.find(Example.mockGetPersistedData(),
+                        function(d) { return d.id === m.get('id'); });
+                    ok(!save3Finished);
+                    save2Finished = true;
+                    equal(save1.state(), 'rejected', 'save1 failed');
+                    equal(m.get('text_field'), 'set 2');
+                    equal(currentData.text_field, 'set 2',
+                        'text_field has been persisted');
+                }, function() {
+                    var args = Array.prototype.slice.call(arguments, 0);
+                    ok(false, 'second save should have succeeded');
+                    start();
+                });
+            }, 50);
+
+            save1.then(function() {
+                ok(false, 'first request should have failed');
+                start();
+            }, function() {
+                var currentData = _.find(Example.mockGetPersistedData(),
+                    function(d) { return d.id === m.get('id'); });
+                equal(save2.state(), 'pending', 'save 2 is still in flight');
+                save3 = m.save();
+                equal(m.get('text_field'), 'set 2');
+                equal(currentData.text_field, origTextField,
+                    'text_field has not been persisted yet');
+
+                save3.then(function() {
+                    var currentData = _.find(Example.mockGetPersistedData(),
+                        function(d) { return d.id === m.get('id'); });
+                    ok(save2Finished);
+                    save3Finished = true;
+                    equal(m.get('text_field'), 'set 2');
+                    equal(currentData.text_field, 'set 2',
+                        'text_field has been persisted');
+                    deepEqual(reqs, [
+                        {text_field: 'set 1'},
+                        {text_field: 'set 2'}
+                    ], 'requests were correct');
+                    start();
+                }, function() {
+                    ok(false, 'save3 should have succeeded');
+                    start();
+                });
             });
         });
     });

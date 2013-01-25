@@ -14,7 +14,8 @@ define([
         var hasUuid, id, defaultDelay = 0, delay = defaultDelay, fail = false,
             resourceFixtures = _.map(defaultResourceFixtures, function(f) {
                 return $.extend(true, {}, f);
-            });
+            }),
+            reqHandlers = {};
 
         if (Resource.prototype.__schema__.id instanceof fields.UUIDField) {
             hasUuid = true;
@@ -24,7 +25,7 @@ define([
 
         window[name] = Resource;
 
-        Resource.prototype.__requests__.query.ajax = function(params) {
+        Resource.prototype.__requests__.query.ajax = reqHandlers.query = function(params) {
             var query, dfd = $.Deferred(),
                 resources = [],
                 limit = params.data.limit || resourceFixtures.length,
@@ -60,7 +61,7 @@ define([
             return dfd;
         };
 
-        Resource.prototype.__requests__.get.ajax = function(params) {
+        Resource.prototype.__requests__.get.ajax = reqHandlers.get = function(params) {
             var obj, which = _.last(params.url.split('/'));
 
             if (!hasUuid) {
@@ -76,7 +77,7 @@ define([
             }, delay);
         };
 
-        Resource.prototype.__requests__.update.ajax = function(params) {
+        Resource.prototype.__requests__.update.ajax = reqHandlers.update = function(params) {
             var obj, which = _.last(params.url.split('/')), shouldFail = fail;
 
             if (!hasUuid) {
@@ -96,7 +97,7 @@ define([
             }, delay);
         };
 
-        Resource.prototype.__requests__['delete'].ajax = function(params) {
+        Resource.prototype.__requests__['delete'].ajax = reqHandlers['delete'] = function(params) {
             var obj, which = _.last(params.url.split('/')), shouldFail = fail;
 
             if (!hasUuid) {
@@ -116,7 +117,7 @@ define([
 
         };
 
-        Resource.prototype.__requests__.create.ajax = function(params) {
+        Resource.prototype.__requests__.create.ajax = reqHandlers.create = function(params) {
             var obj, which = _.last(params.url.split('/')), shouldFail = fail;
 
             setTimeout(function() {
@@ -160,6 +161,19 @@ define([
             return _.map(resourceFixtures, function(f) {
                 return $.extend(true, {}, f);
             });
+        };
+
+        Resource.mockWrapRequestHandler = function(req, f) {
+            Resource.prototype.__requests__[req].ajax =
+                _.wrap(reqHandlers[req], f);
+            return Resource;
+        };
+
+        Resource.mockUnwrapRequestHandlers = function() {
+            _.each(reqHandlers, function(f, req) {
+                Resource.prototype.__requests__[req].ajax = f;
+            });
+            return Resource;
         };
 
         return Resource;
