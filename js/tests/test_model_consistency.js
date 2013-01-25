@@ -384,6 +384,23 @@ define([
         });
     });
 
+    asyncTest('cleaning up state after failed save', function() {
+        setup({noCollection: true}).then(function() {
+            var m = Example({required_field: 'foo'});
+            m.save().then(function() {
+                Example.mockFailure(true);
+                m.set({required_field: 'bar'});
+                m.save().then(function() {
+                    ok(false, 'second request should have failed');
+                    start();
+                }, function() {
+                    equal(m._inFlight.save.length, 1);
+                    start();
+                });
+            });
+        });
+    });
+
     asyncTest('calling save on existing model with in flight update returns first dfd', function() {
         setup().then(function(c) {
             Example.mockDelay(10);
