@@ -425,6 +425,35 @@ define([
         });
     });
 
+    // TODO: make this pass
+    // asyncTest('failing initial create', function() {
+    //     setup({noCollection: true}).then(function() {
+    //         var save1, save2, firstSaveCompleted,
+    //             m = Example({required_field: 'foo'});
+    //         Example.mockFailure(true).mockDelay(50);
+    //         save1 = m.save();
+    //         save1.then(function() {
+    //             ok(false, 'first save should have failed');
+    //             start();
+    //         }, function() {
+    //             ok(true, 'first save failed');
+    //             firstSaveCompleted = true;
+    //         });
+    //         Example.mockFailure();
+    //         equal(save1.state(), 'pending');
+    //         save2 = m.save();
+    //         save2.then(function() {
+    //             ok(firstSaveCompleted, 'first save completed');
+    //             ok(save1.state(), 'rejected');
+    //             start();
+    //         }, function() {
+    //             ok(false, 'second save should have succeeded');
+    //             start();
+    //         });
+
+    //     });
+    // });
+
     asyncTest('calling save on existing model with in flight update returns first dfd', function() {
         setup().then(function(c) {
             Example.mockDelay(10);
