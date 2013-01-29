@@ -62,7 +62,7 @@ define([
         };
 
         Resource.prototype.__requests__.get.ajax = reqHandlers.get = function(params) {
-            var obj, which = _.last(params.url.split('/'));
+            var obj, which = _.last(params.url.split('/')), shouldFail = fail;
 
             if (!hasUuid) {
                 which = +which;
@@ -73,7 +73,11 @@ define([
             }));
 
             setTimeout(function() {
-                params.success(obj, 200, Xhr());
+                if (shouldFail) {
+                    params.error(Xhr(406));
+                } else {
+                    params.success(obj, 200, Xhr());
+                }
             }, delay);
         };
 

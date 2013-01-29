@@ -285,6 +285,30 @@ define([
         });
     });
 
+    asyncTest('cleaning up state after failed refresh', function() {
+        setup().then(function(c) {
+            var m = c.first();
+            Example.mockFailure(true);
+            m.refresh().then(function() {
+                ok(false, 'refresh 1 should have failed');
+                start();
+            }, function() {
+                m.refresh().then(function() {
+                    ok(false, 'refresh 2 should have failed');
+                    start();
+                }, function() {
+                    m.refresh().then(function() {
+                        ok(false, 'refresh 3 should have failed');
+                        start();
+                    }, function() {
+                        equal(m._inFlight.refresh.length, 1);
+                        start();
+                    });
+                });
+            });
+        });
+    });
+
     module('save');
 
     asyncTest('saving a value on an existing model works', function() {

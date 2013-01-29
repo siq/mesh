@@ -232,16 +232,29 @@ define([
 
             inFlight.push({dfd: dfd = self._initiateRequest('get', params)});
 
-            return _.last(inFlight).promise = dfd.pipe(function(data) {
+            _.last(inFlight).promise = dfd.pipe(function(data) {
                 var i = 0, prevDfd, inFlight = self._inFlight.refresh;
                 self._loaded = true;
                 self.set(data, {unchanged: true, noclobber: true});
                 while ((prevDfd = inFlight[i++].dfd) !== dfd) {
                     prevDfd.resolve(data);
                 }
-                self._inFlight.refresh = inFlight.slice(i - 1);
                 return self;
             });
+
+            _.last(inFlight).promise.always(function() {
+                var previous = self._inFlight.refresh,
+                    inFlight = self._inFlight.refresh = [],
+                    req, i, l = previous.length;
+                for (i = 0; i < l; i++) {
+                    req = previous[i];
+                    if (i + 1 >= l || req.dfd.state() === 'pending') {
+                        inFlight.push(req);
+                    }
+                }
+            });
+
+            return _.last(inFlight).promise;
         },
 
         poll: function(params) {
