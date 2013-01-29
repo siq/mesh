@@ -301,6 +301,7 @@ define([
 
         save: function() {
             var changeArray, isBaseProp, request, subject, data, name, dfd,
+                cornerCaseDfd,
                 self = this,
                 args = Array.prototype.slice(0),
                 changes = self._changes,
@@ -331,9 +332,15 @@ define([
             // can't make the 'update' call until we've got the ID the server
             // gave us from the 'create'
             if (!creating && !self._loaded) {
-                return _.last(inFlight).promise.then(function() {
-                    return self.save.apply(self, args);
+                cornerCaseDfd = $.Deferred();
+                _.last(inFlight).promise.always(function() {
+                    self.save.apply(self, args).then(function() {
+                        cornerCaseDfd.resolve.apply(cornerCaseDfd, arguments);
+                    }, function() {
+                        cornerCaseDfd.reject.apply(cornerCaseDfd, arguments);
+                    });
                 });
+                return cornerCaseDfd.promise();
             }
 
             inFlight.push({
@@ -419,7 +426,9 @@ define([
         },
 
         _creating: function() {
-            return !this._loaded && this._inFlight.save.length === 0;
+            return !this._loaded && !_.find(this._inFlight.save, function(req) {
+                return req.dfd.state() === 'pending';
+            });
         },
 
         // this translate something like 'foo.bar' into the corresponding Field
