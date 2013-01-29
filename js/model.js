@@ -331,11 +331,19 @@ define([
             self._changes = {};
 
             _.last(inFlight).promise = dfd.pipe(function(data, xhr) {
-                var inFlight = self._inFlight.save,
-                    idx = _.indexOf(_.pluck(inFlight, 'dfd'), dfd);
                 if (creating) {
                     self._manager.associate(self, data.id);
                 }
+                self._inFlight.destroy = [];
+                self.set(data, {unchanged: true});
+                self._loaded = true;
+                self._httpStatus = request.STATUS_CODES[xhr.status];
+                return self;
+            });
+
+            _.last(inFlight).promise.always(function() {
+                var inFlight = self._inFlight.save,
+                    idx = _.indexOf(_.pluck(inFlight, 'dfd'), dfd);
                 self._inFlight.save =_.reduce(inFlight,
                     function(inFlight, o, i) {
                         if (i >= idx || o.promise.state() === 'pending') {
@@ -343,11 +351,6 @@ define([
                         }
                         return inFlight;
                     }, []);
-                self._inFlight.destroy = [];
-                self.set(data, {unchanged: true});
-                self._loaded = true;
-                self._httpStatus = request.STATUS_CODES[xhr.status];
-                return self;
             });
 
             // if the request failed, re-list those properties as changed
