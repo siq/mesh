@@ -498,17 +498,20 @@ define([
         });
 
     Model.prototype._setOne = _.wrap(Model.prototype._setOne,
-        function(f, prop, newValue, currentValue, opts) {
+        function(f, prop, newValue, currentValue, opts, ctrl) {
             var i, l, args = Array.prototype.slice.call(arguments, 1),
                 inFlight = this._inFlight.save;
             if (opts.noclobber) {
                 if (this._changes[prop]) {
-                    return;
+                    ctrl.silent = true;
                 }
                 for (i = 0, l = inFlight.length; i < l; i++) {
                     if (inFlight[i].changes[prop]) {
-                        return;
+                        ctrl.silent = true;
                     }
+                }
+                if (ctrl.silent) {
+                    return;
                 }
             }
             if (opts.validate) {
@@ -516,7 +519,8 @@ define([
                 try {
                     field.validate(newValue);
                 } catch (e) {
-                    return e;
+                    ctrl.error = e;
+                    return;
                 }
             }
             return f.apply(this, args);

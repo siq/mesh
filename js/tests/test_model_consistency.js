@@ -1124,5 +1124,18 @@ define([
         });
     });
 
+    asyncTest('setting changed value with noclobber doesnt trigger change', function() {
+        setup().then(function(c) {
+            var m = c.first(), changes = [];
+            m.on('change', function(eventName, changed) {
+                changes.push(changed);
+            });
+            m.set('required_field', 'foobar');
+            m.set('required_field', m.previous('required_field'), {noclobber: true});
+            equal(changes.length, 1);
+            start();
+        });
+    });
+
     start();
 });
