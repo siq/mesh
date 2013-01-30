@@ -412,10 +412,15 @@ define([
         },
 
         validate: function() {
-            var request = this._getRequest(this._loaded? 'update' : 'create'),
+            var self = this,
+                request = self._getRequest(self._loaded? 'update' : 'create'),
                 dfd = $.Deferred();
             try {
-                request.validate(request.extract(this));
+                request.validate(request.extract(self), null, {
+                    validateField: function(fieldName, value) {
+                        self._validateOne(fieldName, value);
+                    }
+                });
             } catch (e) {
                 dfd.reject(e);
             }
@@ -455,7 +460,9 @@ define([
 
         _initiateRequest: function(name, params) {
             return this._getRequest(name).initiate(this.get('id'), params);
-        }
+        },
+
+        _validateOne: function(fieldName, value) { }
     }, {mixins: [Eventable]});
 
     asSettable.call(Model.prototype, {
@@ -500,9 +507,9 @@ define([
     Model.prototype._setOne = _.wrap(Model.prototype._setOne,
         function(f, prop, newValue, currentValue, opts, ctrl) {
             var i, l, args = Array.prototype.slice.call(arguments, 1),
-                inFlight = this._inFlight.save;
+                self = this, inFlight = self._inFlight.save;
             if (opts.noclobber) {
-                if (this._changes[prop]) {
+                if (self._changes[prop]) {
                     ctrl.silent = true;
                 }
                 for (i = 0, l = inFlight.length; i < l; i++) {
@@ -515,15 +522,19 @@ define([
                 }
             }
             if (opts.validate) {
-                var field = this._fieldFromPropName(prop);
+                var field = self._fieldFromPropName(prop);
                 try {
-                    field.validate(newValue);
+                    field.validate(newValue, null, {
+                        validateField: function(fieldName, value) {
+                            self._validateOne(prop, value);
+                        }
+                    });
                 } catch (e) {
                     ctrl.error = e;
                     return;
                 }
             }
-            return f.apply(this, args);
+            return f.apply(self, args);
         });
 
     ret = {Manager: Manager, Model: Model};

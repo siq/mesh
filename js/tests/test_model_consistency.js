@@ -6,9 +6,11 @@
 define([
     'vendor/jquery',
     'vendor/underscore',
+    'vendor/uuid',
+    'mesh/fields',
     './mockedexample',
     './mockednestedpolymorphicexample'
-], function($, _, Example, NestedPolymorphicExample) {
+], function($, _, uuid, fields, Example, NestedPolymorphicExample) {
     var setup = function(options) {
         var c, dfd = $.Deferred(),
             Resource = options && options.resource? options.resource : Example;
@@ -425,7 +427,6 @@ define([
         });
     });
 
-    // TODO: make this pass
     asyncTest('failing initial create', function() {
         setup({noCollection: true}).then(function() {
             var save1, save2, firstSaveCompleted,
@@ -1135,6 +1136,147 @@ define([
             equal(changes.length, 1);
             start();
         });
+    });
+
+    module('custom validations');
+
+    var _validateOneBase = {
+            id: uuid(),
+            name: 'name val',
+            required_field: 'required_field val',
+            structure_field: {
+                required_field: 123,
+                structure_field: {required_field: 456}
+            },
+            type: 'immutable'
+        },
+        _validateOneExpected = _.extend({
+            'null': _validateOneBase,
+            'structure_field.required_field': _validateOneBase.structure_field.required_field,
+            'structure_field.structure_field': _validateOneBase.structure_field.structure_field,
+            'structure_field.structure_field.required_field': _validateOneBase.structure_field.structure_field.required_field
+        }, _validateOneBase);
+
+    asyncTest('overriding _validateOne provides a hook for validating each field', function() {
+        setup({noCollection: true}).then(function(c) {
+            var validated, count = 0,
+                MyModel = NestedPolymorphicExample.extend({
+                    _validateOne: function(prop, value) {
+                        count++;
+                        (validated = validated || {})[prop] = value;
+                    }
+                });
+
+            MyModel(_validateOneBase).validate().then(function() {
+                deepEqual(validated, _validateOneExpected);
+                equal(count, 9);
+                start();
+            }, function(e) {
+                ok(false, 'validate should have succeeded');
+                console.log(e);
+                start();
+            });
+        });
+    });
+
+    asyncTest('throwing an error in validate one rejects validate call', function() {
+        setup({noCollection: true}).then(function() {
+            var MyModel = NestedPolymorphicExample.extend({
+                _validateOne: function(prop, value) {
+                    if (prop === 'name') {
+                        throw fields.InvalidTypeError('foobar');
+                    }
+                }
+            });
+
+            MyModel(_validateOneBase).validate().then(function() {
+                ok(false, 'should have failed');
+                start();
+            }, function(e) {
+                deepEqual(e.serialize(), {
+                    name: [{token: 'invalidtypeerror', message: 'foobar'}]
+                });
+                start();
+            });
+        });
+    });
+
+    asyncTest('polymorphic values work with _validateOne', function() {
+        setup({noCollection: true}).then(function() {
+            var m, MyModel = NestedPolymorphicExample.extend({
+                _validateOne: function(prop, value) {
+                    if (prop === 'composition.expression') {
+                        throw fields.InvalidTypeError('foobaz');
+                    }
+                }
+            });
+
+            m = MyModel(_.extend({
+                composition: {
+                    type: 'attribute-filter',
+                    'expression': 'this " wont [ work AND'
+                }
+            }, _validateOneBase))
+
+            m.validate().then(function() {
+                ok(false, 'should have failed');
+                start();
+            }, function(e) {
+                deepEqual(e.serialize(), {
+                    composition: [{
+                        expression: [
+                            {token: 'invalidtypeerror', message: 'foobaz'}
+                        ]
+                    }]
+                });
+                m.set({
+                    composition: {
+                        type: 'datasource-list',
+                        'datasources': [
+                            {id: uuid(), name: 'some effin data source'}
+                        ]
+                    }
+                });
+                m.del('composition.expression');
+
+                m.validate().then(function() {
+                    start();
+                }, function(e) {
+                    ok(false, 'should have succeeded');
+                    console.log('second error:',e);
+                    start();
+                });
+            });
+        });
+    });
+
+    asyncTest('validated set', function() {
+        setup({noCollection: true}).then(function(c) {
+            var MyModel = NestedPolymorphicExample.extend({
+                    _validateOne: function(prop, value) {
+                        if (prop === 'boolean_field') {
+                            throw fields.InvalidTypeError('three');
+                        }
+                    }
+                });
+
+            MyModel(_validateOneBase).set({
+                name: 'foobar',
+                boolean_field: true
+            }, {validate: true}).then(function() {
+                ok(false, 'should have failed');
+                start();
+            }, function(changes, errors) {
+                deepEqual(changes, {name: true});
+                deepEqual(errors.serialize(), {
+                    boolean_field: [
+                        {token: 'invalidtypeerror', message: 'three'}
+                   ]
+                });
+                start();
+            });
+        });
+
     });
 
     start();

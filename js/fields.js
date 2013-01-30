@@ -154,7 +154,7 @@ define([
             return value;
         },
 
-        validate: function(value, mimetype) {
+        validate: function(value, mimetype, options) {
             value = this._normalizeValue(value);
             if (value == null) {
                 if (this.nonnull) {
@@ -167,6 +167,9 @@ define([
             this._validateType(value);
             if (mimetype) {
                 value = this.serialize(value, mimetype, true);
+            }
+            if (options && options.validateField) {
+                options.validateField(null, value);
             }
             return value;
         },
@@ -624,7 +627,15 @@ define([
         },
 
         validate: function(value, mimetype, options) {
-            var name, field, structure, error;
+            var name, field, structure, error, ops,
+                wrapValidateFieldsFunction = function(f, name, separator) {
+                    separator = separator == null? '.' : separator;
+                    return function(fieldName) {
+                        var args = Array.prototype.slice.call(arguments, 0);
+                        args[0] = fieldName? name + separator + fieldName : name;
+                        return f.apply(this, args);
+                    };
+                };
 
             this._super.apply(this, arguments);
 
@@ -640,7 +651,13 @@ define([
                         continue;
                     }
                     try {
-                        field.validate(value[name], mimetype);
+                        ops = options && options.validateField?
+                            _.extend({}, options, {
+                                validateField: wrapValidateFieldsFunction(
+                                                   options.validateField, name)
+                            }) :
+                            options;
+                        field.validate(value[name], mimetype, ops);
                     } catch (e) {
                         error = error || CompoundError(null, {structure: {}});
                         error.structure[name] = [e];
