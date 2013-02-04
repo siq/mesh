@@ -86,7 +86,19 @@ define([
     var NonNullError = ValidationError.extend({token: 'nonnull'});
 
     // when we validate, we roll-up multiple errors into one CompoundError
-    var CompoundError = ValidationError.extend({token: 'compounderror'});
+    var CompoundError = ValidationError.extend({
+        token: 'compounderror',
+        // if you've got a myCompundError and you want to get the error object
+        // for a specific field like 'foo.bar', you can call
+        // myCompundError.forField('foo.bar')
+        forField: function(prop) {
+            var key, split = prop.split('.'), cur = this;
+            while ((key = split.splice(0, 1)[0])) {
+                cur = cur.structure[key][0]; // don't know aobut that [0]...
+            }
+            return cur;
+        }
+    });
 
     // if a TextField is set to 'nonnull: true', and its value is an empty
     // string, we consider it an error even though the value does not strictly
