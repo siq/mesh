@@ -89,10 +89,32 @@ class OperatorConstructor(object):
 def add_schema_field(resource, field):
     resource.schema[field.name] = field
     if 'get' in resource.requests:
-        resource.requests['get'].responses[OK].schema.insert(field)
+        request = resource.requests['get']
+        request.responses[OK].schema.insert(field)
+
+        request.schema.insert(construct_fields_field({field.name: field},
+            request.schema.get('fields')), overwrite=True)
+
+        if field.deferred:
+            request.schema.insert(construct_include_field({field.name: field},
+                request.schema.get('include')), overwrite=True)
+        else:
+            request.schema.insert(construct_exclude_field({field.name: field},
+                request.schema.get('exclude')), overwrite=True)
+
     if 'query' in resource.requests:
         request = resource.requests['query']
         request.responses[OK].schema.structure['resources'].item.insert(field)
+
+        request.schema.insert(construct_fields_field({field.name: field},
+            request.schema.get('fields')), overwrite=True)
+
+        if field.deferred:
+            request.schema.insert(construct_include_field({field.name: field},
+                request.schema.get('include')), overwrite=True)
+        else:
+            request.schema.insert(construct_exclude_field({field.name: field},
+                request.schema.get('exclude')), overwrite=True)
 
         if field.operators:
             for operator in OperatorConstructor.construct({}, field).itervalues():
@@ -113,28 +135,43 @@ def clone_field(field, name=None, description=None):
         required=False, notes=None, readonly=False, deferred=False, sortable=False,
         operators=None)
 
-def construct_fields_field(fields):
-    return Sequence(Enumeration(sorted(fields.keys()), nonnull=True), unique=True,
+def construct_fields_field(fields, original=None, field_name='fields'):
+    if original:
+        tokens = list(original.item.enumeration)
+    else:
+        tokens = []
+
+    tokens.extend(fields.keys())
+    return Sequence(Enumeration(sorted(tokens), nonnull=True), 
+        name=field_name, unique=True,
         description='The exact fields which should be returned for this query.')
 
-def construct_exclude_field(id_field, fields):
-    tokens = []
+def construct_exclude_field(id_field, fields, original=None, field_name='exclude'):
+    if original:
+        tokens = list(original.item.enumeration)
+    else:
+        tokens = []
+
     for name, field in fields.iteritems():
         if name != id_field.name and not field.deferred:
             tokens.append(name)
 
     if tokens:
-        return Sequence(Enumeration(sorted(tokens), nonnull=True),
+        return Sequence(Enumeration(sorted(tokens), nonnull=True), name=field_name,
             description='Fields which should not be returned for this query.')
 
-def construct_include_field(fields):
-    tokens = []
+def construct_include_field(fields, original=None, field_name='include'):
+    if original:
+        tokens = list(original.item.enumeration)
+    else:
+        tokens = []
+
     for name, field in fields.iteritems():
         if field.deferred:
             tokens.append(name)
 
     if tokens:
-        return Sequence(Enumeration(sorted(tokens), nonnull=True),
+        return Sequence(Enumeration(sorted(tokens), nonnull=True), name=field_name,
             description='Deferred fields which should be returned for this query.')
 
 def construct_returning(resource):
@@ -304,6 +341,10 @@ def construct_load_request(resource, declaration=None):
         'fields': construct_fields_field(fields),
         'identifiers': Sequence(resource.id_field.clone(), nonempty=True),
     }
+
+    include_field = construct_include_field(fields)
+    if include_field:
+        schema['include'] = include_field
 
     return Request(
         name = 'load',
