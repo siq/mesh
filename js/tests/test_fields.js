@@ -826,5 +826,17 @@ define([
 
     });
 
+    test('get error for nested property', function() {
+        var failed;
+        try {
+            bigSchema.validate({address: {number: 'foo'}});
+        } catch (e) {
+            failed = true;
+            deepEqual(e.forField('address.number').serialize(),
+                {token: 'invalidtypeerror'});
+        }
+        ok(failed);
+    });
+
     start();
 });
