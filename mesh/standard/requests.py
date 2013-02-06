@@ -99,8 +99,8 @@ def add_schema_field(resource, field):
             request.schema.insert(construct_include_field({field.name: field},
                 request.schema.get('include')), overwrite=True)
         else:
-            request.schema.insert(construct_exclude_field({field.name: field},
-                request.schema.get('exclude')), overwrite=True)
+            request.schema.insert(construct_exclude_field(resource.id_field, 
+                {field.name: field}, request.schema.get('exclude')), overwrite=True)
 
     if 'query' in resource.requests:
         request = resource.requests['query']
@@ -113,8 +113,8 @@ def add_schema_field(resource, field):
             request.schema.insert(construct_include_field({field.name: field},
                 request.schema.get('include')), overwrite=True)
         else:
-            request.schema.insert(construct_exclude_field({field.name: field},
-                request.schema.get('exclude')), overwrite=True)
+            request.schema.insert(construct_exclude_field(resource.id_field,
+                {field.name: field}, request.schema.get('exclude')), overwrite=True)
 
         if field.operators:
             for operator in OperatorConstructor.construct({}, field).itervalues():
