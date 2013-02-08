@@ -1223,7 +1223,7 @@ define([
                     type: 'attribute-filter',
                     'expression': 'this " wont [ work AND'
                 }
-            }, _validateOneBase))
+            }, _validateOneBase));
 
             m.validate().then(function() {
                 ok(false, 'should have failed');
