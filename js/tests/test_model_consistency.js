@@ -388,7 +388,7 @@ define([
         });
     });
 
-    asyncTest('calling save on already-loaded model another', function() {
+    asyncTest('calling save on already-loaded model', function() {
         setup().then(function(c) {
             c.first().save().then(function() {
                 ok(true, 'saved succeeded');
