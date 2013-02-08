@@ -798,6 +798,7 @@ define([
 
             save1.then(function() {
                 ok(false, 'first request should have failed');
+                ok(save2 === save3);
                 start();
             }, function() {
                 var currentData = _.find(Example.mockGetPersistedData(),
