@@ -493,7 +493,7 @@ define([
         });
     });
 
-    asyncTest('failed save restores changes to local model', function() {
+    asyncTest('failed save preserves list of unpersisted changes', function() {
         setup().then(function(c) {
             var m = c.first(), dfd1, dfd2;
 
