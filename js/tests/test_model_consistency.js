@@ -1,4 +1,4 @@
-/*global test, asyncTest, ok, equal, deepEqual, start, module, strictEqual */
+/*global test,asyncTest,ok,equal,deepEqual,start,module,strictEqual,notEqual */
 
 // this file exists because it's easier to mock up the Example resource for the
 // entire file, and the original test_model.js was using some weird techniques
@@ -1137,6 +1137,7 @@ define([
             m.on('change', function(eventName, changed) {
                 changes.push(changed);
             });
+            notEqual(m.get('required_field'), 'foobar');
             m.set('required_field', 'foobar');
             m.set('required_field', m.previous('required_field'), {noclobber: true});
             equal(changes.length, 1);
