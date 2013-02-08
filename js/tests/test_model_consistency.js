@@ -493,6 +493,10 @@ define([
         });
     });
 
+    // when the first call to m.save() fails, there's some un-persisted state
+    // on the client-side model. we need to make sure that when a .save()
+    // fails, we still track those properties as changed, so they'll get saved
+    // w/ the next .save() call
     asyncTest('failed save preserves list of unpersisted changes', function() {
         setup().then(function(c) {
             var m = c.first(), dfd1, dfd2;
@@ -664,9 +668,10 @@ define([
     //
     //      save                            |--------| success
     //
-    // the first and second save should send prop1 and pro2 respectively, of
-    // course. but since the third save happens after the first failure
-    // returns, it should be smart enough to re-send that un-saved property.
+    // the first and second save should send text_field and required_field
+    // respectively, of course. but since the third save happens after the
+    // first failure returns, it should be smart enough to re-send that
+    // un-saved property.
     asyncTest('set failed save set save save', function() {
         setup().then(function(c) {
             var save1, save2, save3, reqs = [],
