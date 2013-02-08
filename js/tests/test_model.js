@@ -405,7 +405,27 @@ define([
         m.set({foo: {bar: 123}});
         m.set({foo: {baz: 456, bar: 789}}, {noclobber: true});
         deepEqual(m.foo, {bar: 123, baz: 456});
+    });
 
+    test('setting with noclibber set to false', function() {
+        var m = Example();
+        m.set('foo.bar', 123);
+        m.set({foo: {bar: 456}}, {noclobber: false});
+        equal(m.get('foo.bar'), 456);
+
+        m = Example();
+        m.set({foo: {bar: 123}});
+        m.set('foo.bar', 456, {noclobber: false});
+        equal(m.get('foo.bar'), 456);
+
+        m = Example({foo: {bar: 123}}, null, true);
+        m.set({foo: {baz: 456, bar: 789}}, {noclobber: false});
+        deepEqual(m.foo, {baz: 456, bar: 789});
+
+        m = Example();
+        m.set({foo: {bar: 123}});
+        m.set({foo: {baz: 456, bar: 789}});
+        deepEqual(m.foo, {baz: 456, bar: 789});
     });
 
     start();
