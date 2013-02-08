@@ -377,7 +377,7 @@ define([
                 ok(true, 'first deferred should have failed');
                 dfd1Failed = true;
             });
-            dfd1.then(function() {
+            dfd2.then(function() {
                 ok(false, 'second deferred should have failed');
                 start();
             }, function() {
