@@ -2,16 +2,23 @@
   "name": "siq-mesh",
   "description": "a declarative RESTful API framework",
   "contributors": [
-    "Jordan McCoy",
-    "Elias Ponvert",
-    "Aaron Stacy <astacy@storediq.com>"
+    {
+      "name": "Jordan McCoy"
+    },
+    {
+      "name": "Elias Ponvert"
+    },
+    {
+      "name": "Aaron Stacy",
+      "email": "astacy@storediq.com"
+    }
   ],
   "version": "1.0.57",
   "dependencies": {
     "js-yaml": "0.3.x",
-    "csi": "git+ssh://git@github.com:siq/csi.git",
-    "siq-vendor-js": "git+ssh://git@github.com:siq/siq-vendor-js.git",
-    "bedrockjs": "git+ssh://git@github.com:siq/bedrockjs.git"
+    "csi": "git+ssh://git@github.com:siq/csi.git#release-7.2.1.0",
+    "siq-vendor-js": "git+ssh://git@github.com:siq/siq-vendor-js.git#release-7.2.1.0",
+    "bedrockjs": "git+ssh://git@github.com:siq/bedrockjs.git#release-7.2.1.0"
   },
   "csi": {
     "name": "mesh",
@@ -22,5 +29,6 @@
   "optionalDependencies": {},
   "engines": {
     "node": "*"
-  }
+  },
+  "gitHead": "6ac1f7284f2159fe119f5fc57d1f710ecb2a8d9f"
 }
