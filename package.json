@@ -2,11 +2,18 @@
   "name": "siq-mesh",
   "description": "a declarative RESTful API framework",
   "contributors": [
-    "Jordan McCoy",
-    "Elias Ponvert",
-    "Aaron Stacy <astacy@storediq.com>"
+    {
+      "name": "Jordan McCoy"
+    },
+    {
+      "name": "Elias Ponvert"
+    },
+    {
+      "name": "Aaron Stacy",
+      "email": "astacy@storediq.com"
+    }
   ],
-  "version": "1.0.57",
+  "version": "1.1.1",
   "dependencies": {
     "js-yaml": "0.3.x",
     "csi": "git+ssh://git@github.com:siq/csi.git",
@@ -22,5 +29,6 @@
   "optionalDependencies": {},
   "engines": {
     "node": "*"
-  }
+  },
+  "gitHead": "6ac1f7284f2159fe119f5fc57d1f710ecb2a8d9f"
 }
