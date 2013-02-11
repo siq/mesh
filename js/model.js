@@ -217,7 +217,11 @@ define([
         },
 
         refresh: function(params, options) {
-            var dfd, self = this, conditional = options && options.conditional,
+            var dfd, self = this,
+                // the 'conditional' paramter makes it so that if the model has
+                // already been loaded, this will just return an already-
+                // resolved dfd
+                conditional = options && options.conditional,
                 inFlight = self._inFlight.refresh;
 
             if (self.get('id') == null) {
