@@ -225,9 +225,13 @@ define([
                         [[{token: 'cannot-refresh-without-id'}], null]);
             }
 
-            if (conditional && self._loaded) {
-                return inFlight.length?
-                    _.last(inFlight).promise : $.Deferred().resolve(self);
+            if (conditional) {
+                if (inFlight && inFlight.length) {
+                    return _.last(inFlight).promise;
+                }
+                if (self._loaded) {
+                    $.Deferred().resolve(self);
+                }
             }
 
             inFlight.push({dfd: dfd = self._initiateRequest('get', params)});

@@ -311,6 +311,18 @@ define([
         });
     });
 
+    asyncTest('conditional refresh with in-flight refresh', function() {
+        setup({noCollection: true}).then(function() {
+            var m = Example.models.get(1),
+                dfd1 = m.refresh(),
+                dfd2 = m.refresh(null, {conditional: true});
+
+            ok(dfd1 === dfd2);
+            equal(dfd1.state(), 'pending');
+            dfd2.then(start);
+        });
+    });
+
     module('save');
 
     asyncTest('saving a value on an existing model works', function() {
