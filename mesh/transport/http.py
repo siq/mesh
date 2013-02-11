@@ -539,12 +539,21 @@ class HttpClient(Client):
         except (RequestError, IOError):
             return False
 
-    def prepare(self, resource, request, subject=None, data=None, format=None, context=None):
+    def prepare(self, resource, request, subject=None, data=None, format=None, context=None,
+            preparation=None):
         request, method, path, mimetype, data, headers = self._prepare_request(resource, request,
             subject, data, format, context)
 
-        return {'method': method, 'url': self.url + path, 'mimetype': mimetype,
-            'data': data, 'headers': headers}
+        preparation = preparation or {}
+        preparation.update(method=method, url=self.url + path)
+
+        if mimetype:
+            preparation['mimetype'] = mimetype
+        if data:
+            preparation['data'] = data
+        if headers:
+            preparation['headers'] = headers
+        return preparation
 
     def _introspect_bundle(self, bundle):
         response = self.connection.request(GET, '%s/_specification' % bundle,
