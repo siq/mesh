@@ -258,7 +258,7 @@ define([
                             }
                         }
                         if (!isBaseProp) {
-                            subject[name] = self.get(name);
+                            asSettable.nested(subject, name, self.get(name));
                         }
                     }
                 }
