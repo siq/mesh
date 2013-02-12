@@ -133,7 +133,7 @@ def add_schema_field(resource, field):
 def clone_field(field, name=None, description=None):
     return field.clone(name=name, description=description, nonnull=True, default=None,
         required=False, notes=None, readonly=False, deferred=False, sortable=False,
-        operators=None)
+        ignore_null=False, operators=None)
 
 def construct_fields_field(fields, original=None, field_name='fields'):
     if original:
@@ -305,7 +305,7 @@ def construct_create_request(resource, declaration=None):
     for name, field in resource.filter_schema(exclusive=False, readonly=False).iteritems():
         if field.is_identifier:
             if field.oncreate is True:
-                resource_schema[name] = field
+                resource_schema[name] = field.clone(ignore_null=True)
         elif field.oncreate is not False:
             resource_schema[name] = field
 
