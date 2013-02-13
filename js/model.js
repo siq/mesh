@@ -307,7 +307,7 @@ define([
             });
         },
 
-        save: function() {
+        save: function(params) {
             var changeArray, isBaseProp, request, subject, data, name, dfd,
                 cornerCaseDfd,
                 self = this,
@@ -320,7 +320,9 @@ define([
 
             subject = self;
 
-            if (!creating) {
+            // .save({all: true}) causes save to send every paramter,
+            // regardless of whether it changed
+            if (!creating && (!params || !params.all)) {
                 subject = SettableObject();
                 for (name in changes) {
                     if (changes.hasOwnProperty(name)) {

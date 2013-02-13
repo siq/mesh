@@ -842,6 +842,36 @@ define([
         });
     });
 
+    asyncTest('save all parameters', function() {
+        setup().then(function(c) {
+            var m = c.first(), reqs = [];
+            Example.mockWrapRequestHandler('update', function(f, params) {
+                var args = Array.prototype.slice.call(arguments, 1);
+                reqs.push(JSON.parse(params.data));
+                return f.apply(this, args);
+            });
+
+            m.set('text_field', '1');
+            m.save();
+            m.set('text_field', '2');
+            m.save({all: true}).then(function() {
+                equal(reqs.length, 2);
+                deepEqual(reqs[0], {text_field: '1'});
+                deepEqual(reqs[1], {
+                    "boolean_field": false,
+                    "datetime_field": "2012-08-29T14:10:21Z",
+                    "default_field": 560,
+                    "enumeration_field": 1,
+                    "float_field": 0.5581193703703704,
+                    "integer_field": 247,
+                    "required_field": null,
+                    "text_field": "2"
+                });
+                start();
+            });
+        });
+    });
+
     module('delete');
 
     asyncTest('calling delete with in flight requests returns current promise', function() {
