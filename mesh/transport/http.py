@@ -128,8 +128,8 @@ class HttpRequest(ServerRequest):
             aspects.append('(%s)' % self.mimetype)
         if self.context:
             aspects.append('context=%r' % self.context)
-        if self.data:
-            aspects.append('data=%r' % self.data)
+        #if self.data:
+        #    aspects.append('data=%r' % self.data)
         return 'HttpRequest(%s)' % ' '.join(aspects)
 
     def _parse_accept_header(self, headers):
