@@ -532,7 +532,7 @@ define([
             if (opts.validate) {
                 var field = self._fieldFromPropName(prop);
                 try {
-                    field.validate(newValue, null, {
+                    field && field.validate(newValue, null, {
                         validateField: function(fieldName, value) {
                             self._validateOne(prop, value);
                         }

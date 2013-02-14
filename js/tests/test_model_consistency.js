@@ -1187,6 +1187,20 @@ define([
         });
     });
 
+    asyncTest('setting value thats not in the schema', function() {
+        setup().then(function(c) {
+            var m = c.first();
+            m.set({_foobar: 123}, {validate: true}).then(function() {
+                ok(true, 'should have succeeded');
+                equal(m.get('_foobar'), 123);
+                start();
+            }, function() {
+                ok(false, 'should not have failed');
+                start();
+            });
+        });
+    });
+
     module('custom validations');
 
     var _validateOneBase = {
