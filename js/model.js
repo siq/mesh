@@ -453,9 +453,7 @@ define([
         // some non-structure field within that structure. this would probably
         // choke on things like TupleField.
         _fieldFromPropName: function(prop) {
-            var field, name = this._creating()? 'create' : 'update',
-                request = this._getRequest(name),
-                schema = request.schema;
+            var field, schema = {structure: this.__schema__};
             prop = prop.split('.');
             field = schema;
             while (prop.length > 1) {

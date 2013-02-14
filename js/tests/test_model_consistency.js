@@ -991,11 +991,11 @@ define([
     test('correctly translates nested property to field', function() {
         var m = NestedPolymorphicExample();
         ok(m._fieldFromPropName('structure_field.required_field') ===
-            m.__requests__.create.schema.structure.structure_field.structure.required_field);
+            m.__schema__.structure_field.structure.required_field);
         ok(m._fieldFromPropName('required_field') ===
-            m.__requests__.create.schema.structure.required_field);
+            m.__schema__.required_field);
         ok(m._fieldFromPropName('structure_field.structure_field.optional_field') ===
-            m.__requests__.create.schema.structure.structure_field.structure.structure_field.structure.optional_field);
+            m.__schema__.structure_field.structure.structure_field.structure.optional_field);
     });
 
     module('set with validate');
