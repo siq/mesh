@@ -123,8 +123,8 @@ class Bundle(object):
     def __init__(self, name, *mounts, **params):
         self.description = params.get('description', None)
         self.name = name
-        self.ordering = None
-        self.versions = None
+        self.ordering = []
+        self.versions = {}
 
         self.mounts = []
         if mounts:
@@ -222,7 +222,7 @@ class Bundle(object):
             ordering.update(mount.versions)
 
         self.ordering = sorted(ordering)
-        self.versions = dict()
+        self.versions = {}
 
         for mount in self.mounts:
             for version in self.ordering:
