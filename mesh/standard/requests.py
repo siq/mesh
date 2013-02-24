@@ -56,6 +56,10 @@ class OperatorConstructor(object):
             supported = supported.split(' ')
 
         for operator in supported:
+            if isinstance(operator, Field):
+                operators[operator.name] = operator
+                continue
+
             description = cls.operators.get(operator)
             if description:
                 constructor = getattr(cls, '_construct_%s_operator' % operator, None)
@@ -85,6 +89,12 @@ class OperatorConstructor(object):
     @classmethod
     def _construct_null_operator(cls, field, description):
         return Boolean(name='%s__null' % field.name, description=description, nonnull=True)
+
+def add_query_operator(resource, operator):
+    if 'query' in resource.requests:
+        resource.requests['query'].schema.structure['query'].insert(operator)
+    else:
+        raise TypeError()
 
 def add_schema_field(resource, field):
     resource.schema[field.name] = field

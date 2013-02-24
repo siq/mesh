@@ -62,7 +62,7 @@ def associate_resource_version(resource):
         raise SpecificationError('cannot declare duplicate version of %r' % resource)
 
 class ResourceMeta(type):
-    ATTRS = ('abstract', 'configuration', 'name', 'version')
+    ATTRS = ('abstract', 'composite_key', 'configuration', 'name', 'version')
 
     def __new__(metatype, name, bases, namespace):
         asis = namespace.pop('__asis__', False)
@@ -155,6 +155,9 @@ class ResourceMeta(type):
         for name in removed_fields:
             if name in resource.schema:
                 del resource.schema[name]
+
+        if isinstance(resource.composite_key, basestring):
+            resource.composite_key = resource.composite_key.split(' ')
 
         id_field = configuration.id_field
         if id_field.name in resource.schema:
@@ -271,6 +274,7 @@ class ResourceMeta(type):
             '__subject__': 'resource',
             'id': '%s/%s' % ('/'.join(path), resource.name),
             'classname': resource.__name__,
+            'composite_key': resource.composite_key,
             'controller': identify_class(controller),
             'name': resource.name,
             'title': resource.title,
@@ -312,6 +316,7 @@ class ResourceMeta(type):
     def reconstruct(resource, description):
         namespace = {
             '__asis__': True,
+            'composite_key': description.get('composite_key'),
             'name': description['name'],
             'requests': {},
             'schema': {},
@@ -342,6 +347,7 @@ class Resource(object):
     configuration = None
 
     abstract = False
+    composite_key = None
     name = None
     version = None
 
