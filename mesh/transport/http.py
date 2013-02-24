@@ -61,9 +61,9 @@ STATUS_LINES = {
 PATH_EXPR = r"""(?x)^%s
     (?P<preamble>(?:/[\w.]+/\d+[.]\d+)+)
     /(?P<resource>\w+)
-    (?:/(?P<subject>[-.:\w]+)
+    (?:/(?P<subject>[-.:;\w]+)
         (?:/(?P<subresource>\w+)
-            (?:/(?P<subsubject>[-.:\w]+))?
+            (?:/(?P<subsubject>[-.:;\w]+))?
         )?
     )?
     (?:[!](?P<format>\w+))?
@@ -253,7 +253,7 @@ class EndpointGroup(object):
         elif self.default_request is None:
             self.default_request = request
         else:
-            raise SpecificationError()
+            raise SpecificationError(request)
 
     def dispatch(self, request, response):
         definition = self.default_request
