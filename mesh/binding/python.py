@@ -30,9 +30,35 @@ class Attribute(object):
             return self
 
     def __set__(self, instance, value):
-        if self.field.readonly:
-            raise ReadOnlyError(self.name)
+        if isinstance(value, Model):
+            value = value.id
         instance._data[self.name] = value
+
+class CompositeIdentifier(object):
+    """A model attribute for composite identifiers."""
+
+    def __init__(self, name, keys):
+        self.keys = keys
+        self.name = name
+
+    def __get__(self, instance, owner):
+        if instance is not None:
+            values = []
+            for key in self.keys:
+                value = instance._data.get(key)
+                if value is not None:
+                    values.append(value)
+                else:
+                    return None
+            else:
+                return ';'.join(values)
+        else:
+            return self
+
+    def __set__(self, instance, value):
+        values = value.split(';')
+        for i, key in enumerate(self.keys):
+            instance._data[key] = values[i]
 
 class Query(object):
     """A resource query."""
@@ -64,16 +90,12 @@ class Model(object):
     repr_attrs = ('id', 'name', 'status', 'platform_id')
 
     def __init__(self, **params):
-        if not params:
-            self._data = {}
-            return
-
-        attributes = self._attributes
-        for key in params:
-            if key not in attributes:
+        self._data = {}
+        for key, value in params.iteritems():
+            if key in self._attributes:
+                setattr(self, key, value)
+            else:
                 raise AttributeError(key)
-
-        self._data = params
 
     def __repr__(self):
         attrs = []
@@ -123,21 +145,34 @@ class Model(object):
             for mixin in mixins:
                 bases.append(mixin)
 
+        composite_key = resource.get('composite_key')
         namespace = {
+            '_composite_key': composite_key,
             '_name': resource['name'],
             '_resource': resource,
             '_specification': specification,
         }
 
         attributes = namespace['_attributes'] = {}
+        if composite_key:
+            namespace['id'] = attributes['id'] = CompositeIdentifier('id', composite_key)
+
         for attr, field in resource['schema'].iteritems():
-            namespace[attr] = attributes[attr] = Attribute(attr, field)
+            if attr not in attributes:
+                namespace[attr] = attributes[attr] = Attribute(attr, field)
 
         return type(str(resource['classname']), tuple(bases), namespace)
 
     @classmethod
     def get(cls, id, **params):
-        return cls(id=id).refresh(**params)
+        if isinstance(id, (list, tuple)):
+            attrs = {}
+            for i, key in enumerate(self._composite_key):
+                attrs[key] = id[i]
+        else:
+            attrs = {'id': id}
+
+        return cls(**attrs).refresh(**params)
 
     def refresh(self, **params):
         request = self._get_request('get')
