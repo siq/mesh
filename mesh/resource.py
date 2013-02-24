@@ -285,7 +285,7 @@ class ResourceMeta(type):
 
         description['schema'] = {}
         for name, field in resource.schema.iteritems():
-            description['schema'][name] = field.describe(FIELD_PARAMETERS)
+            description['schema'][name] = field.describe()
 
         prefix = '/%s/' % '/'.join(path)
 

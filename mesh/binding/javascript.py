@@ -114,7 +114,7 @@ class Generator(object):
         'union': 'fields.UnionField',
         'uuid': 'fields.UUIDField'
     }
-    IGNORED_ATTRS = ('description', 'notes', 'structural', '__type__')
+    IGNORED_ATTRS = ('description', 'notes', 'structural', '__type__', 'operators')
     MODEL_TMPL = get_package_data('mesh.binding', 'templates/model.js.tmpl')
 
     def __init__(self, template_dir=None, mimetype=None):
