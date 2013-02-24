@@ -34,11 +34,14 @@ class Query(Query):
         return self.clone(exclude=list(fields))
 
     def fields(self, *fields):
-        if 'exclude' in self.params:
-            del self.params['exclude']
-        if 'include' in self.params:
-            del self.params['include']
-        return self.clone(fields=list(fields))
+        params = self.params.copy()
+        if 'exclude' in params:
+            del params['exclude']
+        if 'include' in params:
+            del params['include']
+
+        params['fields'] = list(fields)
+        return type(self)(self.model, **params)
 
     def filter(self, **params):
         if 'query' in self.params:
@@ -66,6 +69,9 @@ class Query(Query):
 
     def one(self):
         return self.limit(1)._execute_query()[0]
+
+    def set(self, **params):
+        return self.clone(**params)
 
     def sort(self, *fields):
         fields = list(fields)
