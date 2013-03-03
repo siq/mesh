@@ -3,11 +3,11 @@ from mesh.constants import *
 from mesh.exceptions import *
 from mesh.util import subclass_registry
 from scheme.fields import Field
-from scheme.formats import *
+from scheme import formats
 
 __all__ = ('STANDARD_FORMATS', 'Client', 'Server', 'ServerRequest', 'ServerResponse', 'Transport')
 
-STANDARD_FORMATS = (Csv, Json, UrlEncoded)
+STANDARD_FORMATS = (formats.Csv, formats.Json, formats.UrlEncoded)
 
 class ServerRequest(object):
     """An API request."""
@@ -56,6 +56,10 @@ class ServerResponse(object):
         if conditional and name in self.headers:
             return
         self.headers[name] = value
+
+    def unserialize(self):
+        if self.content:
+            return formats.unserialize(self.mimetype, self.content)
 
 class Server(object):
     """An API server."""

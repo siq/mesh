@@ -7,6 +7,15 @@ from mesh.util import construct_all_list
 
 ConnectionError = socket.error
 
+class ConnectionFailed(Exception):
+    """Raised when a connection fails."""
+
+class ConnectionRefused(ConnectionFailed):
+    """Raised when a connection is refused."""
+
+class ConnectionTimedOut(ConnectionFailed):
+    """Raised when a connection times out."""
+
 class OperationError(StructuralError):
     """An operational error."""
 

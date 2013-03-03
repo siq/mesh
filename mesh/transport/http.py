@@ -1,16 +1,18 @@
+import errno
 import re
 import socket
 from cgi import parse_header
 from httplib import HTTPConnection, HTTPSConnection
 from urlparse import urlparse
 
+from scheme import formats
+from scheme.fields import INCOMING, OUTGOING
+
 from mesh.bundle import Specification
 from mesh.constants import *
 from mesh.exceptions import *
 from mesh.transport.base import *
 from mesh.util import LogHelper
-from scheme.fields import INCOMING, OUTGOING
-from scheme.formats import *
 
 __all__ = ('HttpClient', 'HttpProxy', 'HttpRequest', 'HttpResponse', 'HttpServer')
 
@@ -87,21 +89,53 @@ class Connection(object):
         
         if self.scheme == 'https':
             self.implementation = HTTPSConnection
-        else:
+        elif self.scheme == 'http':
             self.implementation = HTTPConnection
+        else:
+            raise ValueError(url)
 
-    def request(self, method, url, body=None, headers=None):
-        if url and url[0] != '/':
-            url = '/' + url
+    def request(self, method, url=None, body=None, headers=None,
+            mimetype=None, serialize=False):
 
-        if method == GET and body:
-            url = '%s?%s' % (url, body)
-            body = None
+        if url:
+            if url[0] != '/':
+                url = '/' + url
+        else:
+            url = ''
+
+        url = self.path + url
+        if body:
+            if method == 'GET':
+                url = '%s?%s' % (url, body)
+                body = None
+            elif serialize:
+                if mimetype:
+                    body = formats.serialize(mimetype, body)
+                else:
+                    raise ValueError(mimetype)
+
+        headers = headers or {}
+        if 'Content-Type' not in headers and mimetype:
+            headers['Content-Type'] = mimetype
 
         connection = self.implementation(self.host, timeout=self.timeout)
-        connection.request(method, self.path + url, body, headers or {})
+        try:
+            connection.request(method, url, body, headers)
+        except socket.error, exception:
+            if exception.errno in (errno.EACCES, errno.EPERM, errno.ECONNREFUSED):
+                raise ConnectionRefused(url)
+            elif exception.errno == errno.ETIMEDOUT:
+                raise ConnectionTimedOut(url)
+            else:
+                raise ConnectionFailed(url)
+        except socket.timeout:
+            raise ConnectionTimedOut(url)
 
-        response = connection.getresponse()
+        try:
+            response = connection.getresponse()
+        except socket.timeout:
+            raise ConnectionTimedOut(url)
+
         headers = dict((key.title(), value) for key, value in response.getheaders())
         content = response.read() or None
 
@@ -141,7 +175,7 @@ class HttpRequest(ServerRequest):
             return
 
         mimetype = header.split(';', 1)[0]
-        if mimetype in Format.formats:
+        if mimetype in formats.Format.formats:
             return parse_header(header)
 
 class HttpResponse(ServerResponse):
@@ -271,7 +305,7 @@ class WsgiServer(Server):
     def __init__(self, default_format=None, available_formats=None, mediators=None,
             context_key=None):
 
-        super(WsgiServer, self).__init__(default_format or Json, available_formats, mediators)
+        super(WsgiServer, self).__init__(default_format or formats.Json, available_formats, mediators)
         self.context_key = context_key
 
     def __call__(self, environ, start_response):
@@ -476,7 +510,7 @@ class HttpClient(Client):
 
     DEFAULT_HEADER_PREFIX = 'X-MESH-'
 
-    def __init__(self, url, specification=None, context=None, format=Json, formats=None,
+    def __init__(self, url, specification=None, context=None, format=formats.Json, formats=None,
             context_header_prefix=None, timeout=None, bundle=None):
 
         super(HttpClient, self).__init__(context=context, format=format,
@@ -572,8 +606,8 @@ class HttpClient(Client):
         if data is not None:
             data = request['schema'].process(data, OUTGOING, True)
             if method == GET:
-                data = UrlEncoded.serialize(data)
-                mimetype = UrlEncoded.mimetype
+                data = formats.UrlEncoded.serialize(data)
+                mimetype = formats.UrlEncoded.mimetype
             else:
                 data = format.serialize(data)
                 mimetype = format.mimetype
