@@ -133,6 +133,8 @@ class Connection(object):
 
         try:
             response = connection.getresponse()
+        except socket.error, exception:
+            raise ConnectionFailed(url)
         except socket.timeout:
             raise ConnectionTimedOut(url)
 
