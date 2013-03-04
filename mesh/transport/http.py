@@ -62,9 +62,9 @@ STATUS_LINES = {
 
 PATH_EXPR = r"""(?x)^%s
     (?P<preamble>(?:/[\w.]+/\d+[.]\d+)+)
-    /(?P<resource>\w+)
+    /(?P<resource>[\w.]+)
     (?:/(?P<subject>[-.:;\w]+)
-        (?:/(?P<subresource>\w+)
+        (?:/(?P<subresource>[\w.]+)
             (?:/(?P<subsubject>[-.:;\w]+))?
         )?
     )?
