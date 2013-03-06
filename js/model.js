@@ -482,11 +482,10 @@ define([
 
     Model.prototype._set = _.wrap(Model.prototype._set,
         function(f, newProps, opts) {
-            var e, method, args = Array.prototype.slice.call(arguments, 2);
+            var e, args = Array.prototype.slice.call(arguments, 2);
             this._lastSettableChanges = this._lastSettableError = null;
             f.apply(this, [newProps].concat(args));
-            method = this._lastSettableError? 'reject' : 'resolve';
-            if (method === 'reject') {
+            if (this._lastSettableError) {
                 e = fields.CompoundError(null, {
                     structure: _.reduce(this._lastSettableError,
                         function(memo, fieldError, k) {
@@ -508,8 +507,10 @@ define([
                             return memo;
                         }, {})
                 });
+                return $.Deferred().reject(e, this._lastSettableChanges);
+            } else {
+                return $.Deferred().resolve(this._lastSettableChanges);
             }
-            return $.Deferred()[method](this._lastSettableChanges, e);
         });
 
     Model.prototype._setOne = _.wrap(Model.prototype._setOne,
