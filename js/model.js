@@ -421,18 +421,38 @@ define([
             this._lastSettableError = errors;
         },
 
-        validate: function() {
-            var self = this,
-                request = self._getRequest(self._loaded? 'update' : 'create'),
+        validate: function(which) {
+            var i, l, prop, field, errors, request, self = this,
                 dfd = $.Deferred();
-            try {
-                request.validate(request.extract(self), null, {
-                    validateField: function(fieldName, value) {
-                        self._validateOne(fieldName, value);
+            if (!which) {
+                request = self._getRequest(self._loaded? 'update' : 'create');
+                try {
+                    request.validate(request.extract(self), null, {
+                        validateField: function(fieldName, value) {
+                            self._validateOne(fieldName, value);
+                        }
+                    });
+                } catch (e) {
+                    dfd.reject(e);
+                }
+            } else {
+                which = isString(which)? [which] : which;
+                for (i = 0, l = which.length; i < l; i++) {
+                    prop = which[i];
+                    field = self._fieldFromPropName(prop);
+                    try {
+                        field && field.validate(self.get(prop), null, {
+                            validateField: function(fieldName, value) {
+                                self._validateOne(prop, value);
+                            }
+                        });
+                    } catch (e) {
+                        (errors = errors || {})[prop] = e;
                     }
-                });
-            } catch (e) {
-                dfd.reject(e);
+                }
+                if (errors) {
+                    dfd.reject(self._compoundErrorFromFlattenedKeys(errors));
+                }
             }
             if (dfd.state() === 'pending') {
                 dfd.resolve();
@@ -462,6 +482,37 @@ define([
             return field.structure[prop[0]];
         },
 
+        // when you set some nested property like {foo: {bar: 123, baz: 456}}
+        // with 'validate: true', and _setOne throws errors, asSettable puts
+        // them into a structure like {'foo.bar': <error>, 'foo.baz': <error>},
+        // since asSettable sees it all as a flat list of properties.  this
+        // needs to be converted into an instance of fields.CompoundError() so
+        // everything else knows how to handle it, and that's what this method
+        // does
+        _compoundErrorFromFlattenedKeys: function(errors) {
+            return fields.CompoundError(null, {
+                structure: _.reduce(errors,
+                    function(memo, fieldError, k) {
+                        var split = k.split('.'), cur = memo;
+                        while (split.length > 1) {
+                            if (!cur[split[0]]) {
+                                cur[split[0]] = [
+                                    fields.CompoundError(null,
+                                        {structure: {}})
+                                ];
+                            }
+                            cur = cur[split.shift()][0].structure;
+                        }
+                        if (cur[split[0]]) {
+                            cur[split.shift()].push(fieldError);
+                        } else {
+                            cur[split.shift()] = [fieldError];
+                        }
+                        return memo;
+                    }, {})
+            });
+        },
+
         _getRequest: function(name) {
             return this.__requests__[name];
         },
@@ -486,27 +537,7 @@ define([
             this._lastSettableChanges = this._lastSettableError = null;
             f.apply(this, [newProps].concat(args));
             if (this._lastSettableError) {
-                e = fields.CompoundError(null, {
-                    structure: _.reduce(this._lastSettableError,
-                        function(memo, fieldError, k) {
-                            var split = k.split('.'), cur = memo;
-                            while (split.length > 1) {
-                                if (!cur[split[0]]) {
-                                    cur[split[0]] = [
-                                        fields.CompoundError(null,
-                                            {structure: {}})
-                                    ];
-                                }
-                                cur = cur[split.shift()][0].structure;
-                            }
-                            if (cur[split[0]]) {
-                                cur[split.shift()].push(fieldError);
-                            } else {
-                                cur[split.shift()] = [fieldError];
-                            }
-                            return memo;
-                        }, {})
-                });
+                e = this._compoundErrorFromFlattenedKeys(this._lastSettableError);
                 return $.Deferred().reject(e, this._lastSettableChanges);
             } else {
                 return $.Deferred().resolve(this._lastSettableChanges);
