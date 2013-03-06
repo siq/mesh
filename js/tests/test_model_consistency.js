@@ -1011,7 +1011,7 @@ define([
             m.set({integer_field: 'abc'}, {validate: true}).then(function() {
                 ok(false, 'set should have returned failing dfd');
                 start();
-            }, function(changes, e) {
+            }, function(e, changes) {
                 equal(changeCount, 0, 'model didnt fire change events');
                 equal(managerChangeCount, 0, 'manager didnt fire change events');
                 equal(m.get('integer_field'), orig, 'integer_field value didnt change');
@@ -1036,7 +1036,7 @@ define([
             m.set(prop, 'foo', {validate: true}).then(function() {
                 ok(false, 'set should have failed');
                 start();
-            }, function(changes, setError) {
+            }, function(setError, changes) {
                 m.set(prop, 'foo');
                 m.validate().then(function() {
                     ok(false, 'validation should have failed');
@@ -1066,7 +1066,7 @@ define([
             m.set(value, {validate: true}).then(function() {
                 ok(false, 'set should have failed');
                 start();
-            }, function(changes, setError) {
+            }, function(setError, changes) {
                 m.set(value);
                 m.validate().then(function() {
                     ok(false, 'validation should have failed');
@@ -1090,7 +1090,7 @@ define([
             m.set('name', 3, {validate: true}).then(function() {
                 ok(false, 'set should have failed');
                 start();
-            }, function(changes, errors) {
+            }, function(errors, changes) {
                 ok(true, 'set failed');
                 deepEqual(errors.serialize(), {
                     name: [{token: 'invalidtypeerror'}]
@@ -1117,7 +1117,7 @@ define([
                         .then(function(changes) {
                             ok(true, 'set should have worked');
                             start();
-                        }, function(changes, errors) {
+                        }, function(errors, changes) {
                             ok(false, 'set should have worked');
                             start();
                         });
@@ -1147,7 +1147,7 @@ define([
             m.set(value, {validate: true}).then(function() {
                 ok(false, 'required_field should have failed validation');
                 start();
-            }, function(changes, errors) {
+            }, function(errors, changes) {
                 deepEqual(changes, {
                     structure_field: true,
                     'structure_field.structure_field': true,
@@ -1329,7 +1329,7 @@ define([
             }, {validate: true}).then(function() {
                 ok(false, 'should have failed');
                 start();
-            }, function(changes, errors) {
+            }, function(errors, changes) {
                 deepEqual(changes, {name: true});
                 deepEqual(errors.serialize(), {
                     boolean_field: [
