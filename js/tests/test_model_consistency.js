@@ -945,11 +945,11 @@ define([
                 Example.models.clear();
                 var c = Example.collection();
                 c.load().then(function() {
-                    ok(!c.where({id: originalId}),
+                    ok(!c.findWhere({id: originalId}),
                         'the model is not loaded from the persisted data');
                     m.save().then(function() {
                         c.load({reload: true}).then(function() {
-                            var newM = c.where({id: m.get('id')}), dfd2;
+                            var newM = c.findWhere({id: m.get('id')}), dfd2;
                             ok(newM,
                                 'after re-loading the collection, the model is back');
                             if (newM) {

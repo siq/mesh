@@ -329,14 +329,14 @@ define([
         // like:
         //
         //     // get model w/ id === 1
-        //     myCollection.where('id', '1')
+        //     myCollection.findWhere('id', '1')
         //
         //     // get the model where 'foo' === 'foo' and age === 36
-        //     myCollection.where({name: 'foo', age: 36});
+        //     myCollection.findWhere({name: 'foo', age: 36});
         //
         //     // get the model where name matches /[Ff]oo/
-        //     myCollection.where('name', /[Ff]oo/);
-        where: function(key, value) {
+        //     myCollection.findWhere('name', /[Ff]oo/);
+        findWhere: function(key, value) {
             var attrs = {};
             if (_.isString(key)) {
                 attrs[key] = value;
@@ -366,7 +366,7 @@ define([
     //     });
     _.each(['each', 'forEach', 'map', 'reduce', 'foldl', 'inject',
             'reduceRight', 'foldr', 'find', 'detect', 'filter', 'select',
-            'pluck', 'first', 'last'],
+            'pluck', 'first', 'last', 'where'],
             function(method) {
                 Collection.prototype[method] = function() {
                     var args = Array.prototype.slice.call(arguments);
