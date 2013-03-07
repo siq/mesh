@@ -998,6 +998,55 @@ define([
             m.__schema__.structure_field.structure.structure_field.structure.optional_field);
     });
 
+    module('validate');
+
+    asyncTest('validating a single field named by a string', function() {
+        var m = NestedPolymorphicExample();
+        m.validate('name').then(function() {
+            ok(false, 'should have failed');
+            start();
+        }, function(e) {
+            deepEqual(e.serialize(), {name: [{token: 'nonnull', message: 'nonnull'}]});
+            start();
+        });
+    });
+
+    asyncTest('validating a single field named by an array', function() {
+        var m = NestedPolymorphicExample();
+        m.validate(['name']).then(function() {
+            ok(false, 'should have failed');
+            start();
+        }, function(e) {
+            deepEqual(e.serialize(), {name: [{token: 'nonnull', message: 'nonnull'}]});
+            start();
+        });
+    });
+
+    asyncTest('validating a subset of fields', function() {
+        var m = NestedPolymorphicExample();
+        m.validate(['name', 'required_field']).then(function() {
+            ok(false, 'should have failed');
+            start();
+        }, function(e) {
+            deepEqual(e.serialize(), {
+                name: [{token: 'nonnull', message: 'nonnull'}],
+                required_field: [{token: 'nonnull', message: 'nonnull'}]
+            });
+            start();
+        });
+    });
+
+    asyncTest('validating a subset when there are other failing fields', function() {
+        var m = NestedPolymorphicExample();
+        m.validate('integer_field').then(function() {
+            ok(true, 'should not have failed');
+            start();
+        }, function(e) {
+            ok(false, 'should not have failed, but it failed');
+            start();
+        });
+    });
+
     module('set with validate');
 
     asyncTest('dont set invalid options', function() {
