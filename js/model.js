@@ -421,6 +421,21 @@ define([
             this._lastSettableError = errors;
         },
 
+        // validate() can be called one of 3 ways:
+        //
+        // model.validate()
+        //
+        //  -> validates everything based on either the 'create' or 'update'
+        //     request schema (determined by Model#_getRequest)
+        //
+        // model.validate('propName')
+        //
+        //  -> validates a single property
+        //
+        // model.validate(['prop1', 'prop2'])
+        //
+        //  -> validates the props listed
+        //
         validate: function(which) {
             var i, l, prop, field, errors, request, self = this,
                 dfd = $.Deferred();
