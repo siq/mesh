@@ -265,6 +265,9 @@ define([
         }
     });
 
+    fields.DefinitionField = Field.extend({
+    });
+
     fields.EmailField = Field.extend({
         _validateType: function(value) {
             if (!isString(value)) {
