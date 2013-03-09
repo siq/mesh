@@ -3,7 +3,7 @@ define([
     'vendor/jquery',
     'bedrock/class',
     'bedrock/events',
-    'bedrock/assettable',
+    'bedrock/mixins/assettable',
     './fields',
     './collection'
 
