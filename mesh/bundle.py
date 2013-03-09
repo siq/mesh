@@ -2,6 +2,7 @@ from mesh.exceptions import *
 from mesh.resource import Controller
 from mesh.util import LogHelper, import_object
 from scheme.fields import Field
+from scheme import supplemental
 
 __all__ = ('Bundle', 'Specification', 'mount')
 
