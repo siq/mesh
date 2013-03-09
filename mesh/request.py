@@ -55,11 +55,13 @@ class Request(object):
     :param schema: Optional, default is ``None``; the schema specifying the expected content.
     """
 
-    ATTRS = ('batch', 'description', 'endpoint', 'filter', 'specific', 'subject_required', 'title')
+    ATTRS = ('batch', 'description', 'endpoint', 'filter', 'specific',
+        'subject_required', 'title', 'verbose')
 
     def __init__(self, resource=None, name=None, endpoint=None, filter=None, schema=None,
-        responses=None, specific=False, description=None, title=None, auto_constructed=False,
-        batch=False, subject_required=True, validators=None, metadata=None, **params):
+            responses=None, specific=False, description=None, title=None, auto_constructed=False,
+            batch=False, subject_required=True, validators=None, metadata=None, verbose=False,
+            **params):
 
         self.auto_constructed = auto_constructed
         self.batch = batch
@@ -75,6 +77,7 @@ class Request(object):
         self.subject_required = subject_required
         self.title = title
         self.validators = validators or []
+        self.verbose = verbose
 
         for status, response in self.responses.iteritems():
             if response.status is None:
@@ -234,7 +237,11 @@ class Request(object):
         return description
 
     def process(self, controller, request, response, mediators=None):
-        log('debug', 'beginning to process %r', request)
+        message = 'processing request: %s' % request.description
+        if self.verbose:
+            message += '\n' + format_structure(request.data, abbreviate=True)
+        log('info', message)
+
         if mediators:
             for mediator in mediators:
                 try:
@@ -293,6 +300,10 @@ class Request(object):
                 response(INVALID, error)
             except RequestError, exception:
                 return response(exception.status, exception.content)
+
+        if self.verbose and response.content:
+            log('debug', 'response for request to %s:\n%s', request.description,
+                format_structure(response.content, abbreviate=True))
 
         definition = self.responses.get(response.status)
         if not definition:

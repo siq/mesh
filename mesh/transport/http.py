@@ -164,9 +164,14 @@ class HttpRequest(ServerRequest):
             aspects.append('(%s)' % self.mimetype)
         if self.context:
             aspects.append('context=%r' % self.context)
-        #if self.data:
-        #    aspects.append('data=%r' % self.data)
         return 'HttpRequest(%s)' % ' '.join(aspects)
+
+    @property
+    def description(self):
+        aspects = ['%s %s' % (self.method, self.path)]
+        if self.mimetype:
+            aspects.append('(%s)' % self.mimetype)
+        return ' '.join(aspects)
 
     def _parse_accept_header(self, headers):
         if not headers:
@@ -325,7 +330,6 @@ class WsgiServer(Server):
                 context = environ[self.context_key]
 
             path_info = environ['PATH_INFO']
-            log('debug', 'dispatching wsgi request %s:%s' % (method, path_info))
 
             response = self.dispatch(method, path_info, environ.get('CONTENT_TYPE'),
                 context, environ, data)
