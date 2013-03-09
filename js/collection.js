@@ -1,9 +1,9 @@
 define([
-    'vendor/underscore',
     'vendor/jquery',
+    'bedrock/underscore',
     'bedrock/class',
     'bedrock/events'
-], function(_, $, Class, Eventable) {
+], function($, _, Class, Eventable) {
     var extend = $.extend, intersection = _.intersection, isArray = _.isArray,
         isString = _.isString, toArray = _.toArray;
 
@@ -366,7 +366,7 @@ define([
     //     });
     _.each(['each', 'forEach', 'map', 'reduce', 'foldl', 'inject',
             'reduceRight', 'foldr', 'find', 'detect', 'filter', 'select',
-            'pluck', 'first', 'last', 'where'],
+            'pluck', 'first', 'last', 'where', 'props'],
             function(method) {
                 Collection.prototype[method] = function() {
                     var args = Array.prototype.slice.call(arguments);
