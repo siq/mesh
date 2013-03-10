@@ -296,7 +296,7 @@ class Request(object):
                     response.status = OK
             except StructuralError, exception:
                 error = exception.serialize()
-                log('info', 'request to %s failed controller invocation', str(self))
+                log('exception', 'request to %s failed controller invocation', str(self))
                 response(INVALID, error)
             except RequestError, exception:
                 return response(exception.status, exception.content)
