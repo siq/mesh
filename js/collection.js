@@ -366,7 +366,8 @@ define([
     //     });
     _.each(['each', 'forEach', 'map', 'reduce', 'foldl', 'inject',
             'reduceRight', 'foldr', 'find', 'detect', 'filter', 'select',
-            'pluck', 'first', 'last', 'where', 'props'],
+            'pluck', 'first', 'last', 'where', 'findWhere',
+            'mpluck', 'mwhere', 'mfindWhere'],
             function(method) {
                 Collection.prototype[method] = function() {
                     var args = Array.prototype.slice.call(arguments);
