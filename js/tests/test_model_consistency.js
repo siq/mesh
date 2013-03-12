@@ -18,12 +18,7 @@ define([
         // clear all of the current models and reset the example mocking
         // settings to defaults
         _.each([Example, NestedPolymorphicExample], function(Resource) {
-            Resource
-                .mockDelay()
-                .mockFailure()
-                .mockDataChange()
-                .mockUnwrapRequestHandlers()
-                .models.clear();
+            Resource.mockReset();
         });
 
         if (options && options.noCollection) {

@@ -220,6 +220,16 @@ define([
             return Resource;
         };
 
+        Resource.mockReset = function() {
+            Resource
+                .mockDelay()
+                .mockFailure()
+                .mockDataChange()
+                .mockUnwrapRequestHandlers()
+                .models.clear();
+            return Resource;
+        };
+
         return Resource;
     }
 
