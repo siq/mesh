@@ -22,6 +22,10 @@ class ServerRequest(object):
     def __repr__(self):
         return '%s(endpoint=%r)' % (type(self).__name__, self.endpoint)
 
+    @property
+    def description(self):
+        return self.endpoint or ''
+
 class ServerResponse(object):
     """An API response."""
 
