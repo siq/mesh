@@ -24,7 +24,7 @@ class ServerRequest(object):
 
     @property
     def description(self):
-        return self.endpoint or ''
+        return str(self.endpoint or '')
 
 class ServerResponse(object):
     """An API response."""
