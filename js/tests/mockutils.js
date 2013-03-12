@@ -6,8 +6,11 @@ define([
     'mesh/fields'
 ], function($, _, uuid, Class, fields) {
     var Xhr = Class.extend({
-        init:               function(stat) { this.status = stat || 200; },
-        getResponseHeader:  function() { return 'application/json'; }
+        init: function(stat, rest) {
+            this.status = stat || 200;
+            _.extend(this, rest);
+        },
+        getResponseHeader: function() { return 'application/json'; }
     });
 
     // we use a format for query params that's like json but not json
@@ -26,16 +29,30 @@ define([
     }
 
     // 'params' here is the object passed to the 'ajax' method of a request
-    function filterFromQuery(objects, params, attr) {
-        var filter;
+    function filterFromParams(objects, params, attr) {
+        var filter = {}, data = params.data || {},
+            limit = data.limit,
+            offset = data.offset;
 
-        attr = attr || 'name__icontains';
-        filter = params.data && params.data.query &&
-                 pseudoJsonToObject(params.data.query)[attr];
-
-        objects = !filter? _.toArray(objects) : _.filter(objects, function(m) {
-            return m.name.toLowerCase().indexOf(filter) >= 0;
+        if (params.data && params.data.query) {
+            filter = pseudoJsonToObject(params.data.query);
+        }
+        _.each(filter, function(value, key) {
+            var split = key.split('__'), prop = split[0], op = split[1];
+            objects = _.filter(objects, function(o) {
+                if (op === 'icontains') {
+                    return o[prop].toLowerCase().indexOf(value) >= 0;
+                } else if (op === 'gt') {
+                    return Number(o[prop]) > Number(value);
+                }
+            });
         });
+        if (offset != null) {
+            objects = objects.slice(offset);
+        }
+        if (limit != null) {
+            objects = objects.slice(0, limit);
+        }
 
         return _.map(objects, function(o) { return $.extend(true, {}, o); });
     }
@@ -58,12 +75,18 @@ define([
         });
     }
 
-    function mockResource(name, Resource, defaultResourceFixtures) {
-        var hasUuid, id, defaultDelay = 0, delay = defaultDelay, fail = false,
+    function mockResource(name, Resource, defaultResourceFixtures, opts) {
+        var hasUuid, id, defaultDelay = 0,
+            delay = defaultDelay,
+            fail = false,
             resourceFixtures = _.map(defaultResourceFixtures, function(f) {
                 return $.extend(true, {}, f);
             }),
+            defaultTotal = defaultResourceFixtures.length,
+            total = resourceFixtures.length,
             reqHandlers = {};
+
+        opts = opts || {};
 
         if (Resource.prototype.__schema__.id instanceof fields.UUIDField) {
             hasUuid = true;
@@ -76,11 +99,15 @@ define([
         Resource.prototype.__requests__.query.ajax = reqHandlers.query = function(params) {
             var dfd = $.Deferred(),
                 resources = [],
-                limit = params.data.limit || resourceFixtures.length,
-                offset = params.data.offset || 0,
+                // limit = params.data.limit || resourceFixtures.length,
+                // offset = params.data.offset || 0,
                 shouldFail = fail;
 
-            resources = filterFromQuery(resourceFixtures, params);
+            resources = filterFromParams(resourceFixtures.slice(0, total), params);
+            if (opts.includeable) {
+                resources = stripUnlessIncluded(
+                        resources, params, opts.includeable);
+            }
 
             setTimeout(function() {
                 if (shouldFail) {
@@ -92,7 +119,7 @@ define([
                 } else {
                     params.success({
                         resources: resources,
-                        total: resourceFixtures.length
+                        total: total
                     }, 200, Xhr());
                 }
             }, delay);
@@ -107,8 +134,11 @@ define([
                 which = +which;
             }
 
-            objects = filterFromQuery(resourceFixtures, params);
+            objects = filterFromParams(resourceFixtures, params);
             obj = _.find(objects, function(o) { return o.id === which; });
+            if (opts.includeable) {
+                obj = stripUnlessIncluded([obj], params, opts.includeable)[0];
+            }
 
             setTimeout(function() {
                 if (shouldFail) {
@@ -121,64 +151,71 @@ define([
             }, delay);
         };
 
-        Resource.prototype.__requests__.update.ajax = reqHandlers.update = function(params) {
-            var obj, which = _.last(params.url.split('/')), shouldFail = fail;
+        if (Resource.prototype.__requests__.update) {
+            Resource.prototype.__requests__.update.ajax = reqHandlers.update = function(params) {
+                var obj, which = _.last(params.url.split('/')), shouldFail = fail;
 
-            if (!hasUuid) {
-                which = +which;
-            }
-
-            setTimeout(function() {
-                if (shouldFail) {
-                    params.error(Xhr(406));
-                } else {
-                    obj = _.find(resourceFixtures, function(e) {
-                        return e.id === which;
-                    });
-                    $.extend(obj, JSON.parse(params.data));
-                    params.success({id: obj.id}, 200, Xhr());
+                if (!hasUuid) {
+                    which = +which;
                 }
-            }, delay);
-        };
 
-        Resource.prototype.__requests__['delete'].ajax = reqHandlers['delete'] = function(params) {
-            var obj, which = _.last(params.url.split('/')), shouldFail = fail;
-
-            if (!hasUuid) {
-                which = +which;
-            }
-
-            setTimeout(function() {
-                if (shouldFail) {
-                    params.error(Xhr(406));
-                } else {
-                    resourceFixtures = _.filter(resourceFixtures, function(f) {
-                        return f.id !== which;
-                    });
-                    params.success({id: which}, 200, Xhr());
-                }
-            }, delay);
-
-        };
-
-        Resource.prototype.__requests__.create.ajax = reqHandlers.create = function(params) {
-            var obj, which = _.last(params.url.split('/')), shouldFail = fail;
-
-            setTimeout(function() {
-                if (shouldFail) {
-                    params.error(Xhr(406));
-                } else {
-                    resourceFixtures.push(JSON.parse(params.data));
-                    if (hasUuid) {
-                        _.last(resourceFixtures).id = uuid();
+                setTimeout(function() {
+                    if (shouldFail) {
+                        params.error(Xhr(406));
                     } else {
-                        _.last(resourceFixtures).id = id++;
+                        obj = _.find(resourceFixtures, function(e) {
+                            return e.id === which;
+                        });
+                        $.extend(obj, JSON.parse(params.data));
+                        params.success({id: obj.id}, 200, Xhr());
                     }
-                    params.success({id: _.last(resourceFixtures).id}, 200, Xhr());
-                }
-            }, delay);
+                }, delay);
+            };
+        }
 
-        };
+        if (Resource.prototype.__requests__['delete']) {
+            Resource.prototype.__requests__['delete'].ajax = reqHandlers['delete'] = function(params) {
+                var obj, which = _.last(params.url.split('/')), shouldFail = fail;
+
+                if (!hasUuid) {
+                    which = +which;
+                }
+
+                setTimeout(function() {
+                    if (shouldFail) {
+                        params.error(Xhr(406));
+                    } else {
+                        resourceFixtures = _.filter(resourceFixtures, function(f) {
+                            return f.id !== which;
+                        });
+                        params.success({id: which}, 200, Xhr());
+                    }
+                }, delay);
+
+            };
+        }
+
+        if (Resource.prototype.__requests__.create) {
+            Resource.prototype.__requests__.create.ajax = reqHandlers.create = function(params) {
+                var obj, which = _.last(params.url.split('/')), shouldFail = fail;
+
+                setTimeout(function() {
+                    if (shouldFail) {
+                        params.error(Xhr(406));
+                    } else {
+                        resourceFixtures.push(JSON.parse(params.data));
+                        total++;
+                        if (hasUuid) {
+                            _.last(resourceFixtures).id = uuid();
+                        } else {
+                            _.last(resourceFixtures).id = id++;
+                        }
+                        params.success({id: _.last(resourceFixtures).id}, 200, Xhr());
+                    }
+                }, delay);
+
+            };
+        }
 
         Resource.mockDelay = function(newDelay) {
             delay = newDelay == null? defaultDelay : newDelay;
@@ -187,6 +224,11 @@ define([
 
         Resource.mockFailure = function(shouldFail) {
             fail = shouldFail == null? false : shouldFail;
+            return Resource;
+        };
+
+        Resource.mockTotal = function(newTotal) {
+            total = newTotal == null? defaultTotal : newTotal;
             return Resource;
         };
 
@@ -232,6 +274,8 @@ define([
 
         return Resource;
     }
+
+    mockResource.Xhr = Xhr;
 
     return mockResource;
 });
