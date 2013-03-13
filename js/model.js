@@ -314,15 +314,17 @@ define([
                 args = Array.prototype.slice(0),
                 changes = self._changes,
                 inFlight = self._inFlight.save,
-                creating = self._creating();
+                creating = self._creating(),
+                requestName = self._chooseRequest(),
+                all = requestName === 'put' || params && params.all;
 
-            request = self._getRequest(creating ? 'create' : 'update');
+            request = self._getRequest(requestName);
 
             subject = self;
 
             // .save({all: true}) causes save to send every paramter,
             // regardless of whether it changed
-            if (!creating && (!params || !params.all)) {
+            if (!creating && !all) {
                 subject = SettableObject();
                 for (name in changes) {
                     if (changes.hasOwnProperty(name)) {
@@ -475,6 +477,12 @@ define([
             return dfd;
         },
 
+        _chooseRequest: function() {
+            return  this._hasCompositeId()? 'put' :
+                    this._creating()?       'create' :
+                                            'update';
+        },
+
         _creating: function() {
             return !this._loaded && !_.find(this._inFlight.save, function(req) {
                 return req.dfd.state() === 'pending';
@@ -530,6 +538,11 @@ define([
 
         _getRequest: function(name) {
             return this.__requests__[name];
+        },
+
+        _hasCompositeId: function() {
+            // hackety hackety hackety hack....
+            return this.__name__ === 'association';
         },
 
         _initiateRequest: function(name, params) {
