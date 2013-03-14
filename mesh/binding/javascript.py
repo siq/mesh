@@ -193,6 +193,7 @@ class Generator(object):
 
         specification = {
             '__name__': resource['name'],
+            '__composite_key__': resource.get('composite_key'),
             '__bundle__': bundle,
             '__schema__': schema,
             '__requests__': requests,
