@@ -154,10 +154,10 @@ define([
             return value;
         },
 
-        validate: function(value, mimetype, options) {
+        validate: function(value, mimetype, options, hazOwn) {
             value = this._normalizeValue(value);
             if (value == null) {
-                if (this.nonnull) {
+                if (hazOwn && this.nonnull) {
                     throw NonNullError('nonnull');
                 } else {
                     return value;
@@ -660,7 +660,7 @@ define([
                                                    options.validateField, name)
                             }) :
                             options;
-                        field.validate(value[name], mimetype, ops);
+                        field.validate(value[name], mimetype, ops, name.hasOwnProperty(value));
                     } catch (e) {
                         error = error || CompoundError(null, {structure: {}});
                         error.structure[name] = [e];
