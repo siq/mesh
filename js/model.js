@@ -458,11 +458,15 @@ define([
                     prop = which[i];
                     field = self._fieldFromPropName(prop);
                     try {
-                        field && field.validate(self.get(prop), null, {
-                            validateField: function(fieldName, value) {
-                                self._validateOne(prop, value);
-                            }
-                        });
+                        if (field) {
+                            field.validate(self.get(prop), null, {
+                                validateField: function(fieldName, value) {
+                                    self._validateOne(prop, value);
+                                }
+                            });
+                        } else {
+                            self._validateOne(prop, self.get(prop));
+                        }
                     } catch (e) {
                         (errors = errors || {})[prop] = e;
                     }
@@ -502,7 +506,7 @@ define([
             while (prop.length > 1) {
                 field = field.structure[prop.shift()];
             }
-            return field.structure[prop[0]];
+            return field && field.structure && field.structure[prop[0]];
         },
 
         // when you set some nested property like {foo: {bar: 123, baz: 456}}
@@ -592,11 +596,15 @@ define([
             if (opts.validate) {
                 var field = self._fieldFromPropName(prop);
                 try {
-                    field && field.validate(newValue, null, {
-                        validateField: function(fieldName, value) {
-                            self._validateOne(prop, value);
-                        }
-                    });
+                    if (field) {
+                        field.validate(newValue, null, {
+                            validateField: function(fieldName, value) {
+                                self._validateOne(prop, value);
+                            }
+                        });
+                    } else {
+                        self._validateOne(prop, newValue);
+                    }
                 } catch (e) {
                     ctrl.error = e;
                     return;

@@ -1,5 +1,8 @@
 /*global test,asyncTest,ok,equal,deepEqual,start,module,strictEqual,notEqual */
 
+// TODO: test _validateOne for prop name w/ a '.' in it when there's no schema
+// def for that field.
+
 // this file exists because it's easier to mock up the Example resource for the
 // entire file, and the original test_model.js was using some weird techniques
 // to mock the ajax requests
