@@ -288,6 +288,10 @@ define([
             }
         },
 
+        refresh: function() {
+            return this.load({reload: true});
+        },
+
         remove: function(models) {
             var model;
             if (!isArray(models)) {
