@@ -157,7 +157,7 @@ define([
         validate: function(value, mimetype, options, hazOwn) {
             value = this._normalizeValue(value);
             if (value == null) {
-                if (hazOwn && this.nonnull) {
+                if (this.required || (hazOwn && this.nonnull)) {
                     throw NonNullError('nonnull');
                 } else {
                     return value;
@@ -489,7 +489,7 @@ define([
             for (i = 0, l = value.length; i < l; i++) {
                 failed = false;
                 try {
-                    this.item.validate(value[i]);
+                    this.item.validate(value[i], undefined, undefined, value.hasOwnProperty(i));
                 } catch (e) {
                     if (! (e instanceof ValidationError)) {
                         throw e;
