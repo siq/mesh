@@ -693,7 +693,7 @@ define([
         try {
             bigSchema.validate(m);
         } catch (e) {
-            s = e.serialize();
+            s = e.serialize({flatten: true});
         }
 
         deepEqual(s, {

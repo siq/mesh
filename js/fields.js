@@ -60,8 +60,8 @@ define([
                 });
             } else {
                 return _.reduce(this.structure, function(memo, item, key) {
-                    if (item[0] instanceof CompoundError) {
-                        _.each(item[0].serialize(), function(v, k) {
+                    if ((opts && opts.flatten) && item[0] instanceof CompoundError) {
+                        _.each(item[0].serialize(opts), function(v, k) {
                             memo[key + '.' + k] = v;
                         });
                     } else {
