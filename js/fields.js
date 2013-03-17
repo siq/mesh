@@ -86,6 +86,21 @@ define([
         ret.prototype.name = ret.prototype.token;
         return ret;
     });
+    ValidationError.fromPlainObject = function(o) {
+        var e;
+        if (o == null) {
+            return o;
+        }
+        if (o.token && o.error) {
+            return ValidationError(o);
+        }
+        return CompoundError(null, _.reduce(o, function(errs, val, key) {
+            errs[key] = _.map(o[key], function(v, k) {
+                return ValidationError.fromPlainObject(v);
+            });
+            return errs;
+        }, {}));
+    };
 
     var InvalidTypeError = ValidationError.extend({token: 'invalidtypeerror'});
 
