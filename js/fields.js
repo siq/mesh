@@ -36,7 +36,8 @@ define([
     ValidationError.prototype.toString = function() {
         return this.message != null? this.name + ': ' + this.message : this.name;
     };
-    ValidationError.prototype.serialize = function() {
+    ValidationError.prototype.serialize = function(opts) {
+        var nested;
         if (this.structure) {
             // if it's a structural error, it will be something like:
             //
@@ -59,7 +60,15 @@ define([
                 });
             } else {
                 return _.reduce(this.structure, function(memo, item, key) {
-                    memo[key] = _.map(item, function(e) {return e.serialize();});
+                    if (item[0] instanceof CompoundError) {
+                        _.each(item[0].serialize(), function(v, k) {
+                            memo[key + '.' + k] = v;
+                        });
+                    } else {
+                        memo[key] = _.map(item, function(e) {
+                            return e.serialize(opts);
+                        });
+                    }
                     return memo;
                 }, {});
             }

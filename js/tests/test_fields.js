@@ -1,9 +1,10 @@
 /*global test, asyncTest, ok, equal, deepEqual, start, module, strictEqual, notStrictEqual, raises*/
 define([
     'vendor/underscore',
+    'vendor/uuid',
     './../datetime',
     './../fields'
-], function(_, datetime, fields) {
+], function(_, uuid, datetime, fields) {
     var URLENCODED = 'application/x-www-form-urlencoded';
 
     function assertValidation(schema, value, assertion) {
@@ -613,6 +614,39 @@ define([
             });
     });
 
+    var nnr = {nonnull: true, required: true},
+        bigSchema = fields.StructureField({
+            nonnull: true,
+            required: true,
+            strict: true,
+            structure: {
+                id: fields.UUIDField(nnr),
+                name: fields.TupleField(_.extend({
+                    values: [fields.TextField(nnr), fields.TextField(nnr)]
+                }, nnr)),
+                age: fields.IntegerField(nnr),
+                description: fields.TextField(nnr),
+                address: fields.StructureField({
+                    nonnull: true,
+                    required: true,
+                    strict: true,
+                    structure: {
+                        number: fields.IntegerField(nnr),
+                        street: fields.SequenceField(_.extend({
+                            unique: false,
+                            item: fields.TextField(nnr)
+                        }, nnr)),
+                        city: fields.TextField(nnr),
+                        state: fields.TextField(nnr),
+                        zip: fields.TextField(nnr)
+                    }
+                }),
+                relatives: fields.MapField(_.extend({
+                    value: fields.TextField(nnr)
+                }, nnr))
+            }
+        });
+
     module('serializing validation errors');
 
     test('serailzing StructureField error', function() {
@@ -647,40 +681,45 @@ define([
         });
     });
 
-    module('extracting');
+    test('serialize error and flatten props', function() {
+        var s, m = {
+                age: 23,
+                description: 'foo',
+                id: uuid(),
+                address: {city: 'foo', number: 1},
+                name: ['foo', 'bar'],
+                relatives: {}
+            };
+        try {
+            bigSchema.validate(m);
+        } catch (e) {
+            s = e.serialize();
+        }
 
-    var nnr = {nonnull: true, required: true},
-        bigSchema = fields.StructureField({
-            nonnull: true,
-            required: true,
-            strict: true,
-            structure: {
-                id: fields.UUIDField(nnr),
-                name: fields.TupleField(_.extend({
-                    values: [fields.TextField(nnr), fields.TextField(nnr)]
-                }, nnr)),
-                age: fields.IntegerField(nnr),
-                description: fields.TextField(nnr),
-                address: fields.StructureField({
-                    nonnull: true,
-                    required: true,
-                    strict: true,
-                    structure: {
-                        number: fields.IntegerField(nnr),
-                        street: fields.SequenceField(_.extend({
-                            unique: false,
-                            item: fields.TextField(nnr)
-                        }, nnr)),
-                        city: fields.TextField(nnr),
-                        state: fields.TextField(nnr),
-                        zip: fields.TextField(nnr)
-                    }
-                }),
-                relatives: fields.MapField(_.extend({
-                    value: fields.TextField(nnr)
-                }, nnr))
+        deepEqual(s, {
+          "address.state": [
+            {
+              "message": "missing required field \"state\"",
+              "token": "nonnull"
             }
+          ],
+          "address.street": [
+            {
+              "message": "missing required field \"street\"",
+              "token": "nonnull"
+            }
+          ],
+          "address.zip": [
+            {
+              "message": "missing required field \"zip\"",
+              "token": "nonnull"
+            }
+          ]
         });
+
+    });
+
+    module('extracting');
 
     test('simple fields that are undefined', function() {
         var example1 = {
