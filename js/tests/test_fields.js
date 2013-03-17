@@ -838,5 +838,16 @@ define([
         ok(failed);
     });
 
+    test('get error for prop when there are no errors for that prop', function() {
+        var failed;
+        try {
+            bigSchema.validate({age: 21, address: {number: 'foo'}});
+        } catch (e) {
+            failed = true;
+            ok(e.forField('age') == null);
+        }
+        ok(failed);
+    });
+
     start();
 });

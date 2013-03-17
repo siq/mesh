@@ -94,7 +94,10 @@ define([
         forField: function(prop) {
             var key, split = prop.split('.'), cur = this;
             while ((key = split.splice(0, 1)[0])) {
-                cur = cur.structure[key][0]; // don't know aobut that [0]...
+                cur = cur.structure && cur.structure[key] && cur.structure[key][0];
+                if (cur == null) {
+                    break;
+                }
             }
             return cur;
         }
