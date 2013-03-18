@@ -284,7 +284,9 @@ define([
             if (new Date() - startTime > params.timeout) {
                 // TODO: need to pass some error code or something in the reject call 
                 // to indicate request timeout
-                deferred.reject();
+                deferred.reject([[{
+                    message: 'a timeout occurred', token: 'timeout'
+                }]]);
                 return;
             }
             self.refresh().then(function(result, xhr) {
