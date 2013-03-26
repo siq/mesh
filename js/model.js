@@ -367,6 +367,7 @@ define([
             _.last(inFlight).promise = dfd.pipe(function(data, xhr) {
                 if (creating) {
                     self._manager.associate(self, data.id);
+                    self._manager.notify(self, 'add');
                 }
                 self._inFlight.destroy = [];
                 self.set(data, {unchanged: true});

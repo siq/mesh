@@ -120,7 +120,7 @@ define([
             this.total = null;
             this.status = null;
             this.xhrStatus = null;
-            this.manager.on('change destroy', this.notify, this);
+            this.manager.on('change destroy add', this.notify, this);
         },
 
         add: function(models, idx) {
@@ -285,6 +285,9 @@ define([
                 } else {
                     this.trigger.apply(this, [eventName, this, model].concat(rest));
                 }
+            }
+            if (eventName === 'add') {
+                this.refresh();
             }
         },
 
