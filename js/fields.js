@@ -91,15 +91,17 @@ define([
         if (o == null) {
             return o;
         }
-        if (o.token && o.error) {
-            return ValidationError(o);
+        if (o.token) {
+            return ValidationError(o.message, {token: o.token});
         }
-        return CompoundError(null, _.reduce(o, function(errs, val, key) {
-            errs[key] = _.map(o[key], function(v, k) {
-                return ValidationError.fromPlainObject(v);
-            });
-            return errs;
-        }, {}));
+        return CompoundError(null, {
+            structure: _.reduce(o, function(errs, val, key) {
+                errs[key] = _.map(o[key], function(v, k) {
+                    return ValidationError.fromPlainObject(v);
+                });
+                return errs;
+            }, {})
+        });
     };
 
     var InvalidTypeError = ValidationError.extend({token: 'invalidtypeerror'});
