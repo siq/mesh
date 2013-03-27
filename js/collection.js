@@ -287,7 +287,15 @@ define([
                 }
             }
             if (eventName === 'add') {
-                this.refresh();
+                // if there is a query then we can't be sure this model will be in
+                // in the result list so `refresh()
+                // otherwise we can just `add` the model which will also trigger
+                // and `update` event
+                if (_.isEmpty(this.query.params)) {
+                    this.add(model);
+                } else {
+                    this.refresh();
+                }
             }
         },
 
