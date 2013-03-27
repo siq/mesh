@@ -265,6 +265,7 @@ define([
         Resource.mockReset = function() {
             Resource
                 .mockDelay()
+                .mockTotal()
                 .mockFailure()
                 .mockDataChange()
                 .mockUnwrapRequestHandlers()
