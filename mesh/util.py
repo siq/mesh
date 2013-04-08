@@ -72,8 +72,18 @@ class LogFormatter(logging.Formatter):
         record.timestamp = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
         return logging.Formatter.format(self, record)
 
+#decorate the python logger with a custom log level
+DEBUG_LEVEL_VERBOSE = 9
+logging.addLevelName(DEBUG_LEVEL_VERBOSE, "VERBOSE")
+def verbose(self, message, *args, **kwargs):
+    if self.isEnabledFor(DEBUG_LEVEL_VERBOSE):
+        self._log(DEBUG_LEVEL_VERBOSE, message, args, **kwargs)
+logging.Logger.verbose = verbose
+
 class LogHelper(object):
+    DEBUG_LEVEL_V_NUM=9
     LEVELS = {
+        'verbose': DEBUG_LEVEL_VERBOSE,
         'debug': logging.DEBUG,
         'info': logging.INFO,
         'warning': logging.WARNING,

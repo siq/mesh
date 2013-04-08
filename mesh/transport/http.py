@@ -335,6 +335,7 @@ class WsgiServer(Server):
                 context, environ, data)
             response.apply_standard_headers()
 
+            log('verbose', 'for: %s request %s:%s data=%s \t\tresponse status:%s, content=%s' % (environ['REMOTE_ADDR'], method, path_info, str(data),response.status, response.content))
             start_response(response.status_line, response.headers.items())
             return response.content or ''
         except Exception, exception:
