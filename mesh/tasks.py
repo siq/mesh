@@ -63,7 +63,7 @@ class GenerateDocs(Task):
 
     def run(self, runtime):
         from mesh.documentation.generator import DocumentationGenerator
-        DocumentationGenerator(self['docroot']).generate(self['bundle'].describe())
+        DocumentationGenerator(self['docroot']).generate(self['bundle'].describe(verbose=True))
         runtime.execute('sphinx.html', sourcedir=self['docroot'], view=self['view'],
             nocache=self['nocache'], binary=self['sphinx'])
 

@@ -153,7 +153,7 @@ class Bundle(object):
         name = name or self.name
         return Bundle(name, *mounts)
 
-    def describe(self, targets=None):
+    def describe(self, targets=None, verbose=False):
         if isinstance(targets, basestring):
             targets = targets.split(' ')
 
@@ -164,11 +164,11 @@ class Bundle(object):
         for version, resources in sorted(self.versions.iteritems()):
             formatted_version = format_version(version)
             description['versions'][formatted_version] = self._describe_version(version, resources,
-                [self.name, formatted_version], targets)
+                [self.name, formatted_version], targets, verbose)
 
         return description
 
-    def _describe_version(self, version, resources, path, targets=None):
+    def _describe_version(self, version, resources, path, targets=None, verbose=False):
         description = {}
         for name, candidate in resources.iteritems():
             if targets and name not in targets:
@@ -178,10 +178,10 @@ class Bundle(object):
                 for subversion, subresources in candidate.iteritems():
                     formatted_subversion = format_version(subversion)
                     bundle['versions'][formatted_subversion] = self._describe_version(subversion,
-                        subresources, path + [name, formatted_subversion])
+                        subresources, path + [name, formatted_subversion], verbose=verbose)
             else:
                 resource, controller = candidate
-                description[name] = resource.describe(controller, path)
+                description[name] = resource.describe(controller, path, verbose)
 
         return description
 

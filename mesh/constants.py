@@ -1,4 +1,4 @@
-FIELD_PARAMETERS = ('readonly', 'deferred', 'sortable', 'operators')
+FIELD_PARAMETERS = {'readonly': False, 'deferred': False, 'sortable': False, 'operators': None}
 RETURNING = 'returning'
 
 DELETE = 'DELETE'

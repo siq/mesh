@@ -30,10 +30,10 @@ class Response(object):
     def __repr__(self):
         return 'Response(status=%r)' % self.status
 
-    def describe(self):
+    def describe(self, verbose=False):
         description = {'status': self.status, 'schema': None}
         if self.schema:
-            description['schema'] = self.schema.describe(FIELD_PARAMETERS)
+            description['schema'] = self.schema.describe(FIELD_PARAMETERS, verbose)
         return description
 
 class Request(object):
@@ -214,7 +214,7 @@ class Request(object):
 
         return params
 
-    def describe(self, path_prefix=None):
+    def describe(self, path_prefix=None, verbose=False):
         description = {'endpoint': None, 'path': None}
         for attr in ('batch', 'description', 'filter', 'name', 'specific', 'title'):
             value = getattr(self, attr, None)
@@ -228,11 +228,11 @@ class Request(object):
 
         description['schema'] = None
         if self.schema:
-            description['schema'] = self.schema.describe(FIELD_PARAMETERS)
+            description['schema'] = self.schema.describe(FIELD_PARAMETERS, verbose)
 
         description['responses'] = {}
         for status, response in self.responses.iteritems():
-            description['responses'][status] = response.describe()
+            description['responses'][status] = response.describe(verbose)
 
         return description
 
