@@ -228,6 +228,51 @@ define([
         UnknownFieldError: UnknownFieldError
     };
 
+    // a mapping of field types, as defined by scheme, to field implementations,
+    // used exclusively by constructField() below
+    var fieldmapping = {
+        "field": Field
+    };
+
+    var constructFieldParameter = function(parameter) {
+        var result, value;
+        if (isPlainObject(parameter)) {
+            if (parameter.__type__) {
+                return constructField(parameter);
+            }
+            result = {};
+            for (name in parameter) {
+                if (parameter.hasOwnProperty(name)) {
+                    result[name] = constructFieldParameter(parameter[name]);
+                }
+            }
+            return result;
+        } else if (isArray(parameter)) {
+            result = [];
+            for (var i = 0, l = parameter.length; i < l; i++) {
+                value = parameter[i];
+                if (value != null) {
+                    value = constructFieldParameter(value);
+                }
+                result[i] = value;
+            }
+            return result;
+        } else {
+            return parameter;
+        }
+    };
+
+    // given a specification of a scheme field, which potentially has nested scheme
+    // fields, attempts to construct the field using the implementations defined
+    // within this module
+    var constructField = function(specification) {
+        var constructor = fieldmapping[specification.__type__];
+        delete specification.__type__;
+
+        specification = constructFieldParameter(specification);
+        return constructor(specification);
+    };
+
     fields.BooleanField = Field.extend({
         _normalizeValue: function(value) {
             if (isString(value)) {
@@ -295,6 +340,13 @@ define([
     });
 
     fields.DefinitionField = Field.extend({
+        _serializeValue: function(value, mimetype) {
+            // todo: implement serialization of field definitions
+        },
+
+        _unserializeValue: function(value, mimetype) {
+            return constructField(value);
+        },
     });
 
     fields.EmailField = Field.extend({
@@ -951,6 +1003,26 @@ define([
             }, {});
         },
         structural: true // just so Request doesn't choke
+    });
+
+    $.extend(fieldmapping, {
+        "boolean": fields.BooleanField,
+        "date": fields.DateField,
+        "datetime": fields.DateTimeField,
+        "definition": fields.DefinitionField,
+        "email": fields.EmailField,
+        "enumeration": fields.EnumerationField,
+        "float": fields.FloatField,
+        "integer": fields.IntegerField,
+        "map": fields.MapField,
+        "sequence": fields.SequenceField,
+        "structure": fields.StructureField,
+        "text": fields.TextField,
+        "time": fields.TimeField,
+        "token": fields.TokenField,
+        "tuple": fields.TupleField,
+        "union": fields.UnionField,
+        "uuid": fields.UUIDField
     });
 
     return fields;
