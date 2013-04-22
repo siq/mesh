@@ -121,6 +121,33 @@ define([
             return deferred;
         },
 
+        redefine: function(fields) {
+            var params = {responses: {}}, response;
+
+            for (var code in this.responses) {
+                if (this.hasOwnProperty(code)) {
+                    response = _.clone(this.responses[code]);
+                    if (response.schema instanceof fields.StructureField) {
+                        response.schema = response.schema.redefine(fields);
+                    }
+                    params.responses[code] = response;
+                }
+            }
+
+            if (this.schema instanceof fields.StructureField) {
+                params.schema = this.schema.redefine(fields);
+            } else {
+                params.schema = this.schema;
+            }
+
+            for (var name in this) {
+                if (this.hasOwnProperty(name) && !params.hasOwnProperty(name)) {
+                    params[name] = this[name];
+                }
+            }
+            return Request(params);
+        },
+
         validate: function(value, mimetype) {
             if (this.schema && this.schema.structural) {
                 this.schema.validate.apply(this.schema, arguments);

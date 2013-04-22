@@ -241,7 +241,7 @@ define([
                 return constructField(parameter);
             }
             result = {};
-            for (name in parameter) {
+            for (var name in parameter) {
                 if (parameter.hasOwnProperty(name)) {
                     result[name] = constructFieldParameter(parameter[name]);
                 }
@@ -621,6 +621,29 @@ define([
                 }
             }
             return extraction;
+        },
+
+        // todo: support redefinition of polymorphic structures
+        redefine: function(fields) {
+            var structure = {}, params;
+            for (var name in this.structure) {
+                if (this.structure.hasOwnProperty(name)) {
+                    if (fields.hasOwnProperty(name) && fields[name]) {
+                        structure[name] = fields[name];
+                    } else {
+                        structure[name] = this.structure[name];
+                    }
+                }
+            }
+
+            params = {structure: structure};
+            for (var name in this) {
+                if (this.hasOwnProperty(name) && name !== 'structure') {
+                    params[name] = this[name];
+                }
+            }
+
+            return fields.StructureField(params);
         },
 
         serialize: function(value, mimetype, options) {

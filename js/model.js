@@ -128,7 +128,37 @@ define([
 
         query: function(params, request) {
             return collection.Query(this, params, request);
-        }
+        },
+
+        redefine: function(fields) {
+            var model = this.model, schema, requests;
+
+            schema = {};
+            for (var name in model.__schema__) {
+                if (model.__schema__.hasOwnProperty(name)) {
+                    if (fields.hasOwnProperty(name) && fields[name]) {
+                        schema[name] = fields[name];
+                    } else {
+                        schema[name] = model.__schema__[name];
+                    }
+                }
+            }
+
+            requests = {};
+            for (var name in model.__requests__) {
+                if (model.__requests__.hasOwnProperty(name)) {
+                    requests[name] = model.__requests__[name].redefine(fields);
+                }
+            }
+
+            return Model.extend({
+                __bundle__: model.__bundle__,
+                __composite_key__: model.__composite_key__,
+                __name__: model.__name__,
+                __requests__: requests,
+                __schema__: schema
+            });
+        },
     }, {mixins: [Eventable]});
 
     var Model = Class.extend({
