@@ -124,7 +124,7 @@ class Generator(object):
         self.template_dir = template_dir
 
     def generate(self, bundle):
-        description = bundle.describe()
+        description = bundle.describe(verbose=True)
 
         files = {}
         self._generate_versions(bundle, description['versions'], files)
