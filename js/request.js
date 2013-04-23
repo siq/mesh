@@ -121,21 +121,21 @@ define([
             return deferred;
         },
 
-        redefine: function(fields) {
+        redefine: function(redefinitions) {
             var params = {responses: {}}, response;
 
             for (var code in this.responses) {
-                if (this.hasOwnProperty(code)) {
+                if (this.responses.hasOwnProperty(code)) {
                     response = _.clone(this.responses[code]);
                     if (response.schema instanceof fields.StructureField) {
-                        response.schema = response.schema.redefine(fields);
+                        response.schema = response.schema.redefine(redefinitions);
                     }
                     params.responses[code] = response;
                 }
             }
 
             if (this.schema instanceof fields.StructureField) {
-                params.schema = this.schema.redefine(fields);
+                params.schema = this.schema.redefine(redefinitions);
             } else {
                 params.schema = this.schema;
             }

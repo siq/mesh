@@ -130,14 +130,14 @@ define([
             return collection.Query(this, params, request);
         },
 
-        redefine: function(fields) {
-            var model = this.model, schema, requests;
+        redefine: function(redefinitions) {
+            var model = this.model.prototype, schema, requests;
 
             schema = {};
             for (var name in model.__schema__) {
                 if (model.__schema__.hasOwnProperty(name)) {
-                    if (fields.hasOwnProperty(name) && fields[name]) {
-                        schema[name] = fields[name];
+                    if (redefinitions.hasOwnProperty(name) && redefinitions[name]) {
+                        schema[name] = redefinitions[name];
                     } else {
                         schema[name] = model.__schema__[name];
                     }
@@ -147,7 +147,7 @@ define([
             requests = {};
             for (var name in model.__requests__) {
                 if (model.__requests__.hasOwnProperty(name)) {
-                    requests[name] = model.__requests__[name].redefine(fields);
+                    requests[name] = model.__requests__[name].redefine(redefinitions);
                 }
             }
 

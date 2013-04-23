@@ -624,12 +624,12 @@ define([
         },
 
         // todo: support redefinition of polymorphic structures
-        redefine: function(fields) {
+        redefine: function(redefinitions) {
             var structure = {}, params;
             for (var name in this.structure) {
                 if (this.structure.hasOwnProperty(name)) {
-                    if (fields.hasOwnProperty(name) && fields[name]) {
-                        structure[name] = fields[name];
+                    if (redefinitions.hasOwnProperty(name) && redefinitions[name]) {
+                        structure[name] = redefinitions[name];
                     } else {
                         structure[name] = this.structure[name];
                     }
