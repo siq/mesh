@@ -1,5 +1,4 @@
 import os
-import re
 from types import FunctionType
 
 from unittest2 import TestCase
@@ -20,9 +19,8 @@ def versions(version=None, min_version=None, max_version=None):
     return decorator
 
 def _execute_wrapper(method, bundle, version):
-    pattern = re.compile(r'^[-.\w]+$')
     def wrapper(resource, *args, **kwargs):
-        if isinstance(resource, basestring) and re.match(pattern, resource):
+        if isinstance(resource, basestring):
             resource = '%s/%s.%s/%s' % (bundle.name, version[0], version[1], resource)
         return method(resource, *args, **kwargs)
 
@@ -35,7 +33,8 @@ def _construct_test_method(function, bundle, generator, version, context, mediat
         def test(self):
             specification = bundle.specify()
             client = HttpClient(url, specification, context=context)
-            client.execute = _execute_wrapper(client.execute, bundle, version)
+            client._execute = client.execute
+            client.execute = _execute_wrapper(client._execute, bundle, version)
 
             if generator:
                 client.register()
@@ -52,7 +51,8 @@ def _construct_test_method(function, bundle, generator, version, context, mediat
             specification = bundle.specify()
             server, client = InternalTransport.construct_fixture(bundle, specification,
                 context=context, mediators=mediators)
-            client.execute = _execute_wrapper(client.execute, bundle, version)
+            client._execute = client.execute
+            client.execute = _execute_wrapper(client._execute, bundle, version)
 
             if generator:
                 client.register()
