@@ -1,4 +1,5 @@
 import os
+import re
 from types import FunctionType
 
 from unittest2 import TestCase
@@ -19,8 +20,9 @@ def versions(version=None, min_version=None, max_version=None):
     return decorator
 
 def _execute_wrapper(method, bundle, version):
+    pattern = re.compile(r'^[-.\w]+$')
     def wrapper(resource, *args, **kwargs):
-        if isinstance(resource, basestring):
+        if isinstance(resource, basestring) and re.match(pattern, resource):
             resource = '%s/%s.%s/%s' % (bundle.name, version[0], version[1], resource)
         return method(resource, *args, **kwargs)
 
