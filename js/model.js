@@ -158,7 +158,7 @@ define([
                 __requests__: requests,
                 __schema__: schema
             });
-        },
+        }
     }, {mixins: [Eventable]});
 
     var Model = Class.extend({
