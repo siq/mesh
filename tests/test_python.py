@@ -78,3 +78,6 @@ class TestPythonInterface(TestCase):
         self.assertEqual(
                 example.extract_dict(other_field='other'),
                 {'id': 1, 'required_field': 'text', 'text_field': None, 'other_field': 'other'})
+        self.assertEqual(
+                example.extract_dict(attrs={'required_field': 'new_field'}), 
+                {'new_field': 'text'})
