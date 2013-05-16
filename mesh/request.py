@@ -237,7 +237,10 @@ class Request(object):
         return description
 
     def process(self, controller, request, response, mediators=None):
-        message = 'processing request: %s' % request.description
+        if hasattr(request, 'headers') and request.headers.has_key('REMOTE_ADDR'):
+            message = 'processing request: %s from %s' % (request.description, request.headers['REMOTE_ADDR'])
+        else:
+            message = 'processing request: %s' % (request.description)
         if self.verbose:
             message += '\n' + format_structure(request.data, abbreviate=True)
         log('info', message)
