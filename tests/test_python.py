@@ -26,7 +26,7 @@ class TestPythonInterface(TestCase):
 
     def test_model_get(self):
         self.assertRaises(GoneError, lambda: Example.get(0))
-        
+
         id = Example.create(required_field='text', integer_field=2).id
 
         example = Example.get(id)
@@ -44,7 +44,7 @@ class TestPythonInterface(TestCase):
         example.required_field = 'changed'
         example.save()
         self.assertEqual(example.required_field, 'changed')
-        
+
         example.update({'required_field': 'again'})
         self.assertEqual(example.required_field, 'again')
 
@@ -55,4 +55,26 @@ class TestPythonInterface(TestCase):
 
         example.destroy()
         self.assertRaises(GoneError, lambda: Example.get(example.id))
-        
+
+    def test_model_extract_dict(self):
+        example = Example.create(required_field='text')
+        example.text_field = None
+
+        self.assertEqual(
+                example.extract_dict(),
+                {'id': 1, 'required_field': 'text', 'text_field': None})
+        self.assertEqual(
+                example.extract_dict(attrs='required_field'),
+                {'required_field': 'text'})
+        self.assertEqual(
+                example.extract_dict(exclude='required_field'),
+                {'id': 1, 'text_field': None})
+        self.assertEqual(
+                example.extract_dict(attrs='required_field', exclude='required_field'),
+                {})
+        self.assertEqual(
+                example.extract_dict(drop_none=True),
+                {'id': 1, 'required_field': 'text'})
+        self.assertEqual(
+                example.extract_dict(other_field='other'),
+                {'id': 1, 'required_field': 'text', 'text_field': None, 'other_field': 'other'})

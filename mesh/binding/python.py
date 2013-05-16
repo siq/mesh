@@ -138,6 +138,27 @@ class Model(object):
     def execute(cls, request, data, subject=None):
         return cls._get_client().execute(cls._resource, request, subject, data)
 
+    def extract_dict(self, attrs=None, exclude=None, drop_none=False, **extraction):
+        if isinstance(attrs, basestring):
+            attrs = attrs.split(' ')
+        elif not attrs:
+            attrs = self._data.keys()
+        if isinstance(attrs, (tuple, list)):
+            attrs = dict(zip(attrs, attrs))
+
+        if exclude:
+            if isinstance(exclude, basestring):
+                exclude = exclude.split(' ')
+            for attr in exclude:
+                attrs.pop(attr, None)
+
+        for attr, name in attrs.iteritems():
+            value = getattr(self, attr)
+            if not (drop_none and value is None):
+                extraction[name] = value
+
+        return extraction
+
     @classmethod
     def generate_model(cls, specification, resource, mixins):
         bases = [cls]
