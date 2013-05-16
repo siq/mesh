@@ -153,7 +153,7 @@ class Model(object):
                 attrs.pop(attr, None)
 
         for attr, name in attrs.iteritems():
-            value = getattr(self, attr)
+            value = self._data.get(attr)
             if not (drop_none and value is None):
                 extraction[name] = value
 
