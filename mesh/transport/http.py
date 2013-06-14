@@ -12,6 +12,7 @@ from mesh.bundle import Specification
 from mesh.constants import *
 from mesh.exceptions import *
 from mesh.transport.base import *
+from mesh.transport.multipart import MultipartPayload, MultipartEncoder, parse_multipart_mixed
 from mesh.util import LogHelper
 
 __all__ = ('HttpClient', 'HttpProxy', 'HttpRequest', 'HttpResponse', 'HttpServer')
@@ -80,7 +81,7 @@ INTROSPECTION_PATH_EXPR = r"""(?x)^%s
     /_(?P<request>[\w.]+)
     (?:[!](?P<format>\w+))?
     /?$"""
-    
+
 class Connection(object):
     def __init__(self, url, timeout=None):
         self.scheme, self.host, self.path = urlparse(url)[:3]
@@ -102,9 +103,10 @@ class Connection(object):
                 url = '/' + url
         else:
             url = ''
-
         url = self.path + url
-        if body:
+
+        multipart = isinstance(body, MultipartEncoder)
+        if body and not multipart:
             if method == 'GET':
                 url = '%s?%s' % (url, body)
                 body = None
@@ -120,7 +122,10 @@ class Connection(object):
 
         connection = self.implementation(self.host, timeout=self.timeout)
         try:
-            connection.request(method, url, body, headers)
+            if multipart:
+                self._send_multipart_request(connection, method, url, body, headers)
+            else:
+                connection.request(method, url, body, headers)
         except socket.error, exception:
             if exception.errno in (errno.EACCES, errno.EPERM, errno.ECONNREFUSED):
                 raise ConnectionRefused(url)
@@ -143,6 +148,21 @@ class Connection(object):
 
         mimetype = response.getheader('Content-Type', None)
         return HttpResponse(STATUS_CODES[response.status], content, mimetype, headers)
+
+    def _send_multipart_request(self, connection, method, url, body, headers):
+        connection.connect()
+        connection.putrequest(method, url)
+
+        for header, value in headers.iteritems():
+            connection.putheader(header, value)
+
+        connection.endheaders()
+        while True:
+            chunk = body.next_chunk(2097152)
+            if chunk:
+                connection.send(chunk)
+            else:
+                break
 
 class HttpRequest(ServerRequest):
     """An HTTP API request."""
@@ -318,30 +338,44 @@ class WsgiServer(Server):
     def __call__(self, environ, start_response):
         try:
             method = environ['REQUEST_METHOD']
-            if method == GET:
-                data = environ['QUERY_STRING']
-            elif method == OPTIONS:
-                data = None
-            else:
-                data = environ['wsgi.input'].read()
+            mimetype = environ.get('CONTENT_TYPE')
+
+            try:
+                data = self._parse_request_data(environ, method, mimetype)
+            except ValueError:
+                log('exception', 'exception raised during request data parsing')
+                start_response('400 Bad Request', [])
+                return ''
 
             context = {}
             if self.context_key and self.context_key in environ:
                 context = environ[self.context_key]
 
             path_info = environ['PATH_INFO']
+            response = self.dispatch(method, path_info, mimetype, context, environ, data)
 
-            response = self.dispatch(method, path_info, environ.get('CONTENT_TYPE'),
-                context, environ, data)
+            log('verbose', 'for: %s request %s:%s data=%s \t\tresponse status:%s, content=%s'
+                % (environ['REMOTE_ADDR'], method, path_info, str(data), response.status, response.content))
+
             response.apply_standard_headers()
-
-            log('verbose', 'for: %s request %s:%s data=%s \t\tresponse status:%s, content=%s' % (environ['REMOTE_ADDR'], method, path_info, str(data),response.status, response.content))
             start_response(response.status_line, response.headers.items())
             return response.content or ''
         except Exception, exception:
             log('exception', 'exception raised during wsgi dispatch')
             start_response('500 Internal Server Error', [])
             return ''
+
+    def _parse_request_data(self, environ, method, mimetype):
+        if method == GET:
+            return environ['QUERY_STRING']
+        elif method == OPTIONS:
+            return None
+
+        input = environ['wsgi.input']
+        if mimetype and 'multipart/mixed' in mimetype:
+            return parse_multipart_mixed(input, mimetype)
+        else:
+            return input.read()
 
 class HttpServer(WsgiServer):
     """The HTTP API server."""
@@ -434,11 +468,18 @@ class HttpServer(WsgiServer):
 
         request.subject = path.subject
         if data:
-            try:
-                request.data = self.formats[mimetype].unserialize(data)
-            except Exception:
-                log('exception', 'failed to parse data for %r', request)
-                return response(BAD_REQUEST)
+            if isinstance(data, MultipartPayload):
+                try:
+                    request.data = data.unserialize(self.formats)
+                except Exception:
+                    log('exception', 'failed to parse data for %r', request)
+                    return response(BAD_REQUEST)
+            else:
+                try:
+                    request.data = self.formats[mimetype].unserialize(data)
+                except Exception:
+                    log('exception', 'failed to parse data for %r', request)
+                    return response(BAD_REQUEST)
 
         try:
             group.dispatch(request, response)
@@ -518,7 +559,7 @@ class HttpClient(Client):
     DEFAULT_HEADER_PREFIX = 'X-MESH-'
 
     def __init__(self, url, specification=None, context=None, format=formats.Json, formats=None,
-            context_header_prefix=None, timeout=None, bundle=None):
+            context_header_prefix=None, timeout=None, bundle=None, echo=False):
 
         super(HttpClient, self).__init__(context=context, format=format,
                 formats=formats)
@@ -534,6 +575,7 @@ class HttpClient(Client):
             specification = Specification(specification)
 
         self.context_header_prefix = context_header_prefix or self.DEFAULT_HEADER_PREFIX
+        self.echo = echo
         self.paths = {}
         self.specification = specification
         self.url = url.rstrip('/')
@@ -550,6 +592,12 @@ class HttpClient(Client):
         request, method, path, mimetype, data, headers = self._prepare_request(resource, request,
             subject, data, format, context)
 
+        if self.echo:
+            description = 'REQUEST: %s %s' % (method, path)
+            if data:
+                description += ' %r' % data
+            print(description)
+
         try:
             response = self.connection.request(method, path, data, headers)
         except socket.timeout:
@@ -563,6 +611,12 @@ class HttpClient(Client):
                 raise exception
             else:
                 raise Exception('unknown status')
+
+        if self.echo:
+            description = 'RESPONSE: %s' % response.status
+            if response.content:
+                description += ' %s' % response.content
+            print(description)
 
         if response.content:
             format = self.formats[response.mimetype]
@@ -582,6 +636,7 @@ class HttpClient(Client):
 
     def prepare(self, resource, request, subject=None, data=None, format=None, context=None,
             preparation=None):
+
         request, method, path, mimetype, data, headers = self._prepare_request(resource, request,
             subject, data, format, context)
 
@@ -607,17 +662,23 @@ class HttpClient(Client):
         request = resource['requests'][request]
 
         format = format or self.format
+        headers = self.construct_headers(context)
         method, path = request['endpoint']
 
         mimetype = None
         if data is not None:
-            data = request['schema'].process(data, OUTGOING, True)
-            if method == GET:
-                data = formats.UrlEncoded.serialize(data)
-                mimetype = formats.UrlEncoded.mimetype
+            if isinstance(data, MultipartPayload):
+                data.payload = request['schema'].process(data.payload, OUTGOING, True)
+                data = MultipartEncoder(data, format)
+                headers.update(data.headers)
             else:
-                data = format.serialize(data)
-                mimetype = format.mimetype
+                data = request['schema'].process(data, OUTGOING, True)
+                if method == GET:
+                    data = formats.UrlEncoded.serialize(data)
+                    mimetype = formats.UrlEncoded.mimetype
+                else:
+                    data = format.serialize(data)
+                    mimetype = format.mimetype
 
         path = self._get_path(request['path'])
         if subject:
@@ -625,7 +686,6 @@ class HttpClient(Client):
         else:
             path = path % format.name
 
-        headers = self.construct_headers(context)
         if mimetype:
             headers['Content-Type'] = mimetype
 

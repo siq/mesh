@@ -11,6 +11,7 @@ class ClientShell(Task):
         'context': Map(Text()),
         'context_header_prefix': Text(),
         'bundle': Text(required=True),
+        'echo': Boolean(default=False),
         'mixins': Text(),
         'url': Text(required=True),
         'version': Text(default='1.0'),
@@ -24,13 +25,13 @@ class ClientShell(Task):
         from mesh.transport.http import HttpClient
 
         if %(introspect)r:
-            CLIENT = HttpClient(%(url)r, bundle=%(bundle)r, context=%(context)r,
+            CLIENT = HttpClient(%(url)r, bundle=%(bundle)r, context=%(context)r, echo=%(echo)r,
                 context_header_prefix=%(context_header_prefix)r).register()
             SPECIFICATION = CLIENT.specification
             API = bind(SPECIFICATION, %(bundle)r + '/' + %(version)r, %(mixins)r)
         else:
             SPECIFICATION = import_object(%(bundle)r).specify()
-            CLIENT = HttpClient(%(url)r, SPECIFICATION, context=%(context)r,
+            CLIENT = HttpClient(%(url)r, SPECIFICATION, context=%(context)r, echo=%(echo)r,
                 context_header_prefix=%(context_header_prefix)r).register()
             API = bind(SPECIFICATION, SPECIFICATION.name + '/' + %(version)r, %(mixins)r)
     """
