@@ -567,6 +567,8 @@ class HttpClient(Client):
             url = 'http://' + url
 
         self.connection = Connection(url, timeout)
+        self.context_header_prefix = context_header_prefix or self.DEFAULT_HEADER_PREFIX
+
         if bundle and not specification:
             specification = self._introspect_bundle(bundle)
         if not specification:
@@ -574,7 +576,6 @@ class HttpClient(Client):
         if not isinstance(specification, Specification):
             specification = Specification(specification)
 
-        self.context_header_prefix = context_header_prefix or self.DEFAULT_HEADER_PREFIX
         self.echo = echo
         self.paths = {}
         self.specification = specification
