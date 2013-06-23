@@ -64,7 +64,6 @@ class BufferedStream(object):
 
         self.buffer = buffer[size:]
 
-    @noisy
     def read(self, chunksize, boundary=None):
         buffer = self.buffer
         if not buffer and not self.stream:
@@ -92,7 +91,6 @@ class BufferedStream(object):
 
         return buffer
 
-    @noisy
     def readline(self):
         buffer = self.buffer
         if not buffer:
@@ -277,46 +275,3 @@ class MultipartEncoder(object):
         
         self.openfile = open(segment.filename)
         return self.next_chunk(chunksize, chunk)
-
-
-    def old_next_chunk(self, chunksize):
-        buffer = self.buffer
-        if self.finished:
-            return ''
-
-        length = len(buffer)
-        if length >= chunksize:
-            self.buffer = buffer[chunksize:]
-            return buffer[:chunksize]
-
-        if not self.file:
-            header = self._next_attachment()
-            if header:
-                buffer += header
-            else:
-                buffer += '%s--\r\n' % self.boundary
-                self.buffer = ''
-                self.finished = True
-                return buffer
-
-        chunk = self.file.read(chunksize - len(buffer))
-        if chunk:
-            buffer += chunk
-        else:
-            self.file.close()
-            self.file = None
-            return self.next_chunk(chunksize)
-
-        self.buffer = ''
-        return buffer
-
-    def _next_attachment(self):
-        if not self.files:
-            return None
-
-        name, file = self.files.popitem()
-        self.file = open(file.filename)
-
-        return '%s\r\nContent-Disposition: attachment; name="%s"\r\n\r\n' % (self.boundary, name)
-                       
-
