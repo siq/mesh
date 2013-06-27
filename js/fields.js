@@ -265,7 +265,7 @@ define([
     // given a specification of a scheme field, which potentially has nested scheme
     // fields, attempts to construct the field using the implementations defined
     // within this module
-    var constructField = function(specification) {
+    var constructField = fields.construct = function(specification) {
         var constructor = fieldmapping[specification.__type__];
         delete specification.__type__;
 
