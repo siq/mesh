@@ -9,6 +9,7 @@ from mesh.constants import *
 from mesh.exceptions import *
 from mesh.transport.base import Client
 from mesh.util import StructureFormatter, get_package_data, import_object
+from scheme.surrogate import surrogate
 
 class ReadOnlyError(Exception):
     """..."""
@@ -106,6 +107,9 @@ class Model(object):
 
         classname = type(self).__name__
         return '%s(%s)' % (classname, ', '.join(attrs))
+
+    def construct_surrogate(self, implementation, **params):
+        return surrogate.construct(implementation, self._data, **params)
 
     @classmethod
     def create(cls, **params):
