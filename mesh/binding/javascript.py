@@ -108,6 +108,7 @@ class Generator(object):
         'map': 'fields.MapField',
         'sequence': 'fields.SequenceField',
         'structure': 'fields.StructureField',
+        'surrogate': 'fields.SurrogateField',
         'text': 'fields.TextField',
         'time': 'fields.TimeField',
         'token': 'fields.TokenField',

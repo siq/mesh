@@ -794,6 +794,15 @@ define([
         }
     });
 
+    fields.SurrogateField = Field.extend({
+        _unserializeValue: function(value, mimetype) {
+            if (!isPlainObject(value)) {
+                throw InvalidTypeError();
+            }
+            return value;
+        }
+    });
+
     fields.TextField = Field.extend({
         _validateType: function(value) {
             if (!isString(value)) {
