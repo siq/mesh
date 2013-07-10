@@ -703,7 +703,10 @@ class HttpClient(Client):
 class HttpProxy(WsgiServer):
     """An HTTP proxy."""
 
-    PROXIED_REQUEST_HEADERS = {'HTTP_COOKIE': 'Cookie'}
+    PROXIED_REQUEST_HEADERS = {
+        'HTTP_COOKIE': 'Cookie',
+        'HTTP_X_FORWARDED_FOR': 'X-Forwarded-For',
+    }
 
     def __init__(self, url, context=None, default_format=None, available_formats=None,
             mediators=None, context_key=None, context_header_prefix=None, timeout=None):
