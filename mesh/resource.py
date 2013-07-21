@@ -341,6 +341,8 @@ class ResourceMeta(type):
 class Resource(object):
     """A resource definition.
     
+    
+
     """
 
     __metaclass__ = ResourceMeta

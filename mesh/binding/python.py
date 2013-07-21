@@ -1,3 +1,10 @@
+"""Python client bindings for mesh-based APIs.
+
+This module provides support for generating python bindings for mesh-based
+APIs.
+
+"""
+
 import sys
 from imp import new_module
 from inspect import getsource
@@ -72,10 +79,19 @@ class Query(object):
         return iter(self._execute_query())
 
     def all(self):
+        """Executes this query and returns a list containing all of the resulting
+        model instances. If the query results in zero instances, an empty list will
+        be returned."""
+
         return self._execute_query()
 
     def one(self):
-        return self._execute_query()[0]
+        """Executes this query and returns the first model instance resulting. If the
+        query does not result in any model instances, ``None`` is returned."""
+
+        results = self._execute_query()
+        if results:
+            return results[0]
 
     def _execute_query(self):
         model = self.model
@@ -113,6 +129,10 @@ class Model(object):
 
     @classmethod
     def create(cls, **params):
+        """Creates a new instance of this resource by submitting the specified parameters
+        in a ``create`` request to the host API. If successful, a client instance of this
+        class will be returned, with the specified parameters."""
+
         request = cls._resource['requests'].get('create')
         if not request:
             raise RuntimeError()
@@ -126,6 +146,18 @@ class Model(object):
         return instance.save(request, **params)
 
     def destroy(self, quiet=False, **params):
+        """Attempts to destroy the resource instance represented by this client model
+        by submitting a ``delete`` request to the host API.
+
+        :param boolean quiet: Optional, default is ``False``; if ``True``, 'exc':`GoneError`
+            will not be raised if the host API reports the resource instance represented
+            by this client model does not exist.
+
+        :param **params: Optional; if specified, additional keyword parameters will
+            be submitted with the ``delete`` request (and should be expected by the
+            host API).
+        """
+
         request = self._get_request('delete')
         if self.id is None:
             return self
@@ -140,9 +172,41 @@ class Model(object):
 
     @classmethod
     def execute(cls, request, data, subject=None):
+        """Executes an explicit API request against the host API for the resource instance
+        represented by this client model, then returns the raw result.
+
+        :param string request: The name of the request to submit against the host API.
+
+        :param data: The data payload to submit.
+        """
+
         return cls._get_client().execute(cls._resource, request, subject, data)
 
     def extract_dict(self, attrs=None, exclude=None, drop_none=False, **extraction):
+        """Constructs and returns a ``dict`` containing field/value pairs extracted
+        from this client model. By default, the constructed dictionary will contain
+        values for all fields defined by the resource.
+
+        :param attrs: Optional, default is ``None``; if specified, indicates the exact
+            set of fields would should be extracted from this model client. The ``attrs``
+            parameter can be specified as either a list of strings or as a single
+            space-delimited string, in either case containing the names of the fields
+            to extract.
+
+        :param exclude: Optional, default is ``None``; if specified, indicates one or
+            more attributes which should not be extracted from this model client. The
+            parameter can be specified as either a list of strings or as a single
+            space-delimited string, in either case containing the names of the attributes
+            to exclude.
+
+        :param boolean drop_none: Optional, default is ``False``; if ``True``, the
+            extracted ``dict`` will not contain key/value pairs for those attributes
+            of this client model which currently have a value of ``None``.
+
+        :param **params: Optional; if specified, additional keyword parameters will
+            be included in the extracted ``dict``.
+        """
+
         if isinstance(attrs, basestring):
             attrs = attrs.split(' ')
         elif not attrs:
@@ -190,6 +254,16 @@ class Model(object):
 
     @classmethod
     def get(cls, id, **params):
+        """Attempts to get the resource instance identified by ``id`` by submitting
+        a `get` request to the host API. If successful, an instance of this class
+        representing the resource instance will be returned.
+
+        :param string id: The id of the resource instance to get.
+
+        :param **params: Additional keyword parameters to include in the `get`
+            request to the host API.
+        """
+
         if isinstance(id, (list, tuple)):
             attrs = {}
             for i, key in enumerate(self._composite_key):
@@ -200,6 +274,14 @@ class Model(object):
         return cls(**attrs).refresh(**params)
 
     def refresh(self, **params):
+        """Attempts to refresh this model instance by submitting a `get` request to
+        the host API. If successful, this model instance is returned, with the values
+        of the resource fields updated to reflect their value on the host.
+
+        :param **params: Additional keyword parameters to include in the `get`
+            request to the host API (such as ``include``).
+        """
+
         request = self._get_request('get')
         if self.id is None:
             return self
@@ -209,14 +291,28 @@ class Model(object):
         return self
 
     def put(self, **params):
+        """Attempts to put this model instance by submitting a `put` request to the
+        host API (which either either create or update the resource instance as
+        appropriate). If successful, this model instance is returned.
+
+        :param **params: Additional keyword parameters to include in the `put`
+            request to the host API.
+        """
+
         request = self._get_request('put')
         return self.save(request, **params)
 
     @classmethod
     def query(cls, **params):
+        """Constructs and returns a query for this resource instance."""
+
         return cls.query_class(cls, **params)
 
     def save(self, _request=None, **params):
+        """Attempts to save local changes to this model instance by submitting either
+        a 'create' or 'update' to the host API, depending on whether the local instance
+        has an value for the `id` field."""
+
         request = _request
         if not request:
             if self.id is not None:
@@ -270,6 +366,24 @@ class ResourceSet(dict):
             raise AttributeError(name)
 
 def bind(binding, name, mixin_modules=None):
+    """Generates a client binding for the resource identified by ``name``, using
+    the resource definition specified by ``binding``.
+
+    :param binding: The resource bundle to bind, specified as either: (a) a binding
+        module, either pre-generated or generated through the import of a .mesh
+        file; (b) a :class:`mesh.bundle.Bundle` instance; (c) a serialized description
+        of a bundle, as a ``dict``; (d) a :class:`mesh.bundle.Specification` instance;
+        or (e) a ``str`` containing the full package path to one of the above.
+
+    :param str name: The mesh designation of either a specific versioned resource
+        (i.e., ``'bundle/1.0/resource'``) or a specific bundle version (``'bundle/1.0'``)
+        to bind.
+
+    :param list mixin_modules: Optional, default is ``None``; if specified, indicates
+        one or more modules which can provide mixin functionality to the generated
+        binding.
+    """
+
     if isinstance(binding, basestring):
         binding = import_object(binding)
 
@@ -375,7 +489,7 @@ class BindingGenerator(object):
         dotted package path of the module which should be used as the basis
         for any generated bindings.
 
-    :param str specification_var: Optiona, default is ``specification``; the
+    :param str specification_var: Optional, default is ``specification``; the
         name which should be used for the bundle specification in the
         generated bindings.
     """

@@ -39,20 +39,52 @@ class Response(object):
 class Request(object):
     """A request definition for a resource.
 
-    :param resource: The resource this request is declared on.
-    :type resource: :class:`mesh.resource.Resource`
+    :param resource: The resource this request concerns, specified as a resource
+        class.
 
-    :param string name: The name of this request; must be unique within the set of requests
-        declared for a particular resource.
+    :param string name: The name of this request, used to identify the request
+        in a variety of contexts; must be unique among the set of requests for a
+        particular resource.
 
-    :param tuple endpoint: Optional, default is ``None``; the HTTP endpoint for this request,
-        specified as a two-tuple containing an HTTP method (``GET``, ``POST``, etc.) and a
-        path segment.
+    :param tuple endpoint: Optional, default is ``None``; the HTTP endpoint for
+        this request, specified as a two-tuple containing a ``str`` indicating the
+        HTTP method and a ``str`` indicating the path segment.
 
-    :param filter: Optional, default is ``None``; the filter specification for this request,
-        used when it shares an HTTP endpoint with another request for a resource.
+    :param schema: Optional, default is ``None``; if specified, the schema defining
+        the incoming data expected for this request.
+    :type schema: :class:`scheme.fields.Structure`
 
-    :param schema: Optional, default is ``None``; the schema specifying the expected content.
+    :param dict responses: Optional, default is ``None``; the set of potential
+        responses for this request, specified as a ``dict`` mapping ``str`` keys
+        indicating an HTTP status code to :class:`mesh.request.Response` values.
+
+    :param boolean specific: Optional, default is ``False``;
+
+    :param str description: Optional, default is ``None``; a description for this
+        request, principally used in documentation.
+
+    :param str title: Optional, default is ``None``; a title for this request,
+        principally used in documentation.
+
+    :param boolean auto_constructed: Optional, default is ``False``; if ``True``,
+        indicates this request was auto-constructed by mesh and not manually
+        defined.
+
+    :param boolean batch: Optional, default is ``False``; if ``True``, indicates
+        this request accepts and returns multiple resource instances, instead of
+        operating on a single instance.
+
+    :param boolean subject_required: Optional, default is ``True``; if ``False``,
+        indicates that a subject is not required for this request despite it
+        being marked as ``specific``. When ``True``, a subject will be required
+        for requested marked as ``specific``. The primary use case for this 
+        parameter is to support requests like ``put``.
+
+    :param validators: Optional, default is ``None``.
+
+    :param dict metadata: Optional, default is ``None``.
+
+    :param boolean verbose: Optional, default is ``False``.
     """
 
     ATTRS = ('batch', 'description', 'endpoint', 'filter', 'specific',

@@ -27,7 +27,22 @@ def parse_version(version, silent=False):
             raise
 
 class mount(object):
-    """A resource mount."""
+    """Mounts a resource/controller pair within a bundle.
+
+    :param resource: The resource to mount, specified as either a resource class
+        or a string containing the full package path to a resource class.
+
+    :param controller: The controller to mount, specified as either a controller
+        class or a string containing the full package path to a controller class.
+
+    :param int min_version: Optional, default is ``None``; if specified, indicates
+        the minimum version of the specified resource and controller to mount. The
+        default of ``None`` indicates no minimum version.
+
+    :param int max_version: Optional, default is ``None``; if specified, idnciates
+        the maximum version of the specified resource and controller to mount. The
+        default of ``None`` indicates no maximum version.
+    """
 
     def __init__(self, resource, controller=None, min_version=None, max_version=None):
         self.controller = controller
@@ -119,7 +134,15 @@ class recursive_mount(mount):
                 return bundle.name, bundle.versions
 
 class Bundle(object):
-    """A bundle of resources."""
+    """A bundle of resource/controller pairs.
+
+    :param str name: The name of this bundle, which is used to identify the
+        bundle in various contexts, including within URLs, and thus should
+        generally be a unique name.
+
+    :param *mounts: Any number of :class:`mesh.bundle.mount` instances to 
+        mount within this bundle.    
+    """
 
     def __init__(self, name, *mounts, **params):
         self.description = params.get('description', None)
@@ -142,6 +165,17 @@ class Bundle(object):
             self._collate_mounts()
 
     def clone(self, name=None, callback=None):
+        """Constructs and returns a clone of this bundle.
+
+        :param str name: Optional, default is ``None``; if specified, provides
+            the name for the cloned bundle. If omitted, the cloned bundle will
+            have the same name as this bundle.
+
+        :param callback: Optional, default is ``None``; if specified, provides
+            a function taking a single argument, to be called with a clone of
+            each :class:`mesh.bundle.mount` instance mounted within this bundle.
+        """
+
         mounts = []
         for mount in self.mounts:
             mount = mount.clone()
@@ -154,6 +188,19 @@ class Bundle(object):
         return Bundle(name, *mounts)
 
     def describe(self, targets=None, verbose=False):
+        """Constructs and returns a serializable description of this bundle.
+
+        :param targets: Optional, default is ``None``; if specified, either a
+            ``list`` or a space-delimited ``str`` containing the names of resources
+            within this bundle, to which to limit the description.
+
+        :param boolean verbose: Optional, default is ``False``; if ``True``, the
+            constructed description will contain all attribute/value pairs nested
+            objects, even those attributes which have the default value. When 
+            ``False``, attributes which have a default value are omitted from the
+            description to provide a more compact representation.
+        """
+
         if isinstance(targets, basestring):
             targets = targets.split(' ')
 

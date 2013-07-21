@@ -97,6 +97,14 @@ def add_query_operator(resource, operator):
         raise TypeError()
 
 def add_schema_field(resource, field):
+    """Adds ``field`` to the schema of ``resource``, updating all requests
+    to include ``field``, where appropriate.
+
+    :param resource: The :class:`mesh.resource.Resource` to modify.
+
+    """
+
+
     resource.schema[field.name] = field
     if 'get' in resource.requests:
         request = resource.requests['get']
