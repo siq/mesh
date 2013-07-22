@@ -34,7 +34,7 @@ class Query(Query):
         params['total'] = True
 
         response = self.model._get_client().execute(self.model._resource, 'query', None, params)
-        return response.content.get('total'
+        return response.content.get('total')
 
     def exclude(self, *fields):
         """Constructs and returns a clone of this query set to exclude one or more
