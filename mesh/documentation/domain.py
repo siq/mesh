@@ -91,6 +91,7 @@ class FieldDefinition(Directive):
         'constraints': directives.unchanged,
         'default': directives.unchanged,
         'example': directives.unchanged,
+        'title': directives.unchanged,
         'pattern': directives.unchanged,
         'values': directives.unchanged,
         'required_keys': directives.unchanged,
@@ -102,6 +103,8 @@ class FieldDefinition(Directive):
         'sectional': directives.flag,
         'unique': directives.flag,
         'polymorphic': directives.flag,
+        'ignore_null': directives.flag,
+        'key': directives.unchanged,
     }
 
     aspects = {
@@ -142,8 +145,8 @@ class FieldDefinition(Directive):
         if subtype:
             span = inline('<', 'field-subtype')
             aspects = None
-            if ' ' in subtype:
-                subtype, aspects = subtype.split(' ', 1)
+            if ';' in subtype:
+                subtype, aspects = subtype.split(';', 1)
             span += emphasis(subtype, 'field-type')
             if aspects:
                 span += text(' ')
@@ -151,6 +154,10 @@ class FieldDefinition(Directive):
             span += text('>')
             signature += text(' ')
             signature += span
+
+        key = self.options.get('key')
+        if key:
+            signature += literal(' key=%s' % key, 'field-constraints')
 
         constant = self.options.get('constant')
         if constant:
@@ -165,12 +172,18 @@ class FieldDefinition(Directive):
             signature += literal(' %s' % constraints, 'field-constraints')
 
         flags = []
-        for flag in ('required', 'nonnull', 'readonly', 'deferred', 'unique', 'polymorphic'):
+        for flag in ('required', 'nonnull', 'readonly', 'deferred',
+                'unique', 'polymorphic', 'ignore_null'):
             if flag in self.options:
                 flags.append(flag)
         if flags:
             signature += text(' ')
             signature += inline(' '.join(flags), 'field-flags')
+
+        title = self.options.get('title')
+        if title:
+            signature += text(' ')
+            signature += inline('"%s"' % title, 'field-description')
 
         description = self.options.get('description')
         if description:

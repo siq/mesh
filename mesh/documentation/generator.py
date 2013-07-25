@@ -134,16 +134,27 @@ class DocumentationGenerator(object):
         if 'id' in fields:
             yield 'id', fields['id']
 
-        optional = []
+        optional, readonly = [], []
         for name, field in sorted(fields.iteritems()):
             if name != 'id':
-                if field.get('required'):
+                if field.get('readonly'):
+                    readonly.append((name, field))
+                elif field.get('required'):
                     yield name, field
                 else:
                     optional.append((name, field))
 
-        for name, field in optional:
-            yield name, field
+        for remaining in (optional, readonly):
+            for name, field in remaining:
+                yield name, field
+
+    def _collate_schema_fields(self, fields):
+        if 'id' in fields:
+            yield 'id', fields['id']
+
+        for name, field in sorted(fields.iteritems()):
+            if name != 'id':
+                yield name, field
 
     def _describe_date(self, field, block, role):
         constraints = []
@@ -160,12 +171,23 @@ class DocumentationGenerator(object):
             constraints.append('min=%s' % field['minimum'])
         if isinstance(field.get('maximum'), datetime):
             constraints.append('max=%s' % field['maximum'])
+        if field.get('utc', False):
+            constraints.append('utc=True')
         if constraints:
             block.set('constraints', ', '.join(constraints))
 
+    def _describe_decimal(self, field, block, role):
+        constraints = []
+        if field.get('minimum') is not None:
+            constraints.append('min=%r' % field['minimum'])
+        if field.get('maximum') is not None:
+            constraints.append('max=%r' % field['maximum'])
+        if constraints:
+            block.set('constraints', ' '.join(constraints))
+
     def _describe_enumeration(self, field, block, role):
         if field.get('constant') is None:
-            block.set('values', repr(field['enumeration']))
+            block.set('values', ' '.join(sorted(field['enumeration'])))
 
     def _describe_float(self, field, block, role):
         constraints = []
@@ -183,17 +205,23 @@ class DocumentationGenerator(object):
         if field.get('maximum') is not None:
             constraints.append('max=%r' % field['maximum'])
         if constraints:
-            block.set('constraints', ' '.join(constraints))
+            block.set('constraints', ', '.join(constraints))
 
     def _describe_map(self, field, block, role):
         if field.get('required_keys'):
             block.set('required_keys', repr(sorted(field['required_keys'])))
-        value = field.get('value')
-        if value:
-            if not value.get('description'):
-                block.set('subtype', value['__type__'])
-            else:
-                block.append(self._document_field('', value, role))
+        
+        key = field.get('key')
+        if key:
+            key = key['__type__']
+        else:
+            key = 'text'
+
+        value = field['value']
+        if value.get('structural', False) or value.get('description'):
+            block.append(self._document_field('', value, role, key=key))
+        else:
+            block.set('subtype', '%s: %s' % (key, value['__type__']))
 
     def _describe_sequence(self, field, block, role):
         constraints = []
@@ -217,7 +245,7 @@ class DocumentationGenerator(object):
                 block.set('polymorphic', '')
                 field_name = polymorphic_on['name']
                 for value, substructure in sorted(structure.iteritems()):
-                    subblock = directive('field', '%s = %r' % (field_name, value))
+                    subblock = directive('field', '%s=%r' % (field_name, value))
                     for name, subfield in self._collate_fields(substructure):
                         subblock.append(self._document_field(name, subfield, role))
                     block.append(subblock)
@@ -231,6 +259,8 @@ class DocumentationGenerator(object):
             constraints.append('min=%r' % field['min_length'])
         if isinstance(field.get('max_length'), (int, long)):
             constraints.append('max=%r' % field['max_length'])
+        if not field.get('strip', True):
+            constraints.append('strip=false')
         if constraints:
             block.set('constraints', ', '.join(constraints))
         if field.get('pattern'):
@@ -254,20 +284,24 @@ class DocumentationGenerator(object):
     def _describe_union(self, field, block, role):
         fields = field.get('fields')
         if fields:
-            for i, subfield in enumerate(fields):
+            for i, subfield in enumerat,e(fields):
                 block.append(self._document_field('', subfield, role))
 
-    def _document_field(self, name, field, role=None, sectional=False):
+    def _document_field(self, name, field, role=None, sectional=False, key=None):
         block = directive('field', name)
-        block.set('type', field['__type__'])
         if sectional:
             block.set('sectional', '')
+
+        type = field['__type__']
+        if key:
+            type = '%s: %s' % (key, type)
+        block.set('type', type)
 
         for attr in ('description', 'notes'):
             value = field.get(attr)
             if value:
                 block.set(attr, value)
-        for attr in ('nonnull', 'readonly'):
+        for attr in ('nonnull', 'readonly', 'ignore_null'):
             if field.get(attr):
                 block.set(attr, '')
 
@@ -283,6 +317,10 @@ class DocumentationGenerator(object):
         default = field.get('default')
         if default is not None:
             block.set('default', repr(default))
+
+        title = field.get('title')
+        if title is not None:
+            block.set('title', title)
         
         formatter = getattr(self, '_describe_%s' % field['__type__'], None)
         if formatter:
@@ -322,7 +360,7 @@ class DocumentationGenerator(object):
             block.append(description)
 
         schema = directive('structure', 'SCHEMA')
-        for name, field in self._collate_fields(specification['schema']):
+        for name, field in self._collate_schema_fields(specification['schema']):
             schema.append(self._document_field(name, field, 'schema'))
 
         block.append(schema)
