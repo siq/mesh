@@ -138,6 +138,18 @@ def add_schema_field(resource, field):
             for operator in OperatorConstructor.construct({}, field).itervalues():
                 request.schema.structure['query'].insert(operator)
 
+        if field.sortable:
+            tokens = []
+            for suffix in ('', '+', '-'):
+                tokens.append(field.name + suffix)
+            sort = request.schema.structure.get('sort')
+            if sort:
+                sort.item.redefine_enumeration(tokens)
+            else:
+                request.schema.structure['sort'] = Sequence(
+                    Enumeration(sorted(tokens), nonnull=True),
+                        description='The sort order for this query.')
+
     if field.readonly:
         return
 
