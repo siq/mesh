@@ -692,6 +692,9 @@ class HttpClient(Client):
 
         return request, method, path, mimetype, data, headers
 
+    def _provide_binding(self):
+        return self.specification
+
     def _get_path(self, path):
         try:
             return self.paths[path]

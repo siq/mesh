@@ -384,22 +384,28 @@ def bind(binding, name, mixin_modules=None):
         binding.
     """
 
+    try:
+        provide_binding = binding._provide_binding
+    except AttributeError:
+        pass
+    else:
+        return Binding(provide_binding(), mixin_modules).generate(name)
+
     if isinstance(binding, basestring):
         binding = import_object(binding)
 
     if isinstance(binding, ModuleType):
         binding = getattr(binding, 'binding', None)
-
-    if isinstance(binding, Bundle):
+    elif isinstance(binding, Bundle):
         binding = binding.specify()
 
     if isinstance(binding, (Specification, dict)):
         binding = Binding(binding, mixin_modules)
 
-    if not isinstance(binding, Binding):
+    if isinstance(binding, Binding):
+        return binding.generate(name)
+    else:
         raise TypeError(binding)
-
-    return binding.generate(name)
 
 class Binding(object):
     """A python binding manager."""
