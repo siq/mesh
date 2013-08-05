@@ -150,6 +150,12 @@ define([
     // against stuff that's been .extract()'ed
     var UnknownFieldError = ValidationError.extend({token: 'unknownfielderror'});
 
+    // some fields are just containers for other field types
+    // these field type containers call validate on the individual items they contain
+    // these containers can also have `min_length: true` and `max_length: true` options
+    var MinLengthError = ValidationError.extend({token: 'minlengtherror'});
+    var MaxLengthError = ValidationError.extend({token: 'maxlengtherror'});
+
     var Field = Class.extend({
         structural: false,
 
@@ -567,6 +573,13 @@ define([
 
             this._super.apply(this, arguments);
 
+            if (value.length > this.max_length) {
+                throw MaxLengthError('field cannot contain more than ' +
+                    this.max_length + ' items');
+            }
+            if (value.length < this.min_length) {
+                throw MinLengthError('field must contain at least one item');
+            }
             for (i = 0, l = value.length; i < l; i++) {
                 failed = false;
                 try {
