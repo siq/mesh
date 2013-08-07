@@ -406,6 +406,8 @@ define([
                 return self;
             });
 
+            // remove inFlight changes after they have been resolved
+            // or refresh will not update as expected
             _.last(inFlight).promise.then(function(m) {
                 for (i = 0, l = inFlight.length; i < l; i++) {
                     if (inFlight[i].promise.state() === 'resolved') {
