@@ -406,6 +406,14 @@ define([
                 return self;
             });
 
+            _.last(inFlight).promise.then(function(m) {
+                for (i = 0, l = inFlight.length; i < l; i++) {
+                    if (inFlight[i].promise.state() === 'resolved') {
+                        inFlight[i].changes = {};
+                    }
+                }
+            });
+
             _.last(inFlight).promise.always(function() {
                 var inFlight = self._inFlight.save,
                     idx = _.indexOf(_.pluck(inFlight, 'dfd'), dfd);
