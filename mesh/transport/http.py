@@ -569,17 +569,27 @@ class HttpClient(Client):
         self.connection = Connection(url, timeout)
         self.context_header_prefix = context_header_prefix or self.DEFAULT_HEADER_PREFIX
 
-        if bundle and not specification:
-            specification = self._introspect_bundle(bundle)
-        if not specification:
+        if specification:
+            if not isinstance(specification, Specification):
+                specification = Specification(specification)
+            self._active_specification = specification
+            self.bundle = specification.name
+        elif bundle:
+            self.bundle = bundle
+        else:
             raise ValueError(specification)
-        if not isinstance(specification, Specification):
-            specification = Specification(specification)
 
         self.echo = echo
         self.paths = {}
-        self.specification = specification
         self.url = url.rstrip('/')
+
+    @property
+    def specification(self):
+        try:
+            return self._active_specification
+        except AttributeError:
+            self._active_specification = self._introspect_bundle(self.bundle)
+            return self._active_specification
 
     def construct_headers(self, context=None):
         headers = {}
@@ -630,7 +640,7 @@ class HttpClient(Client):
 
     def ping(self):
         try:
-            response = self.connection.request('GET', self.specification.name)
+            response = self.connection.request('GET', self.bundle)
             return response.ok
         except (RequestError, IOError):
             return False

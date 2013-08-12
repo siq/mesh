@@ -87,7 +87,11 @@ class Client(object):
     def __init__(self, specification=None, context=None, format=None, formats=None):
         self.context = context or {}
         self.format = format
-        self.specification = specification
+
+        self.bundle = None
+        if specification is not None:
+            self.specification = specification
+            self.bundle = specification.name
 
         self.formats = {}
         for format in (formats or STANDARD_FORMATS):
@@ -113,13 +117,12 @@ class Client(object):
         return resource['requests'][request]
 
     def register(self):
-        self.clients[self.specification.name] = self
+        self.clients[self.bundle] = self
         return self
 
     def unregister(self):
-        name = self.specification.name
-        if self.clients.get(name) is self:
-            del self.clients[name]
+        if self.clients.get(self.bundle) is self:
+            del self.clients[self.bundle]
         return self
 
     def _construct_context(self, additional=None):
