@@ -39,13 +39,17 @@ define([
         }
         _.each(filter, function(value, key) {
             var split = key.split('__'), prop = split[0], op = split[1];
-            objects = _.filter(objects, function(o) {
-                if (op === 'icontains') {
-                    return o[prop].toLowerCase().indexOf(value) >= 0;
-                } else if (op === 'gt') {
-                    return Number(o[prop]) > Number(value);
-                }
-            });
+            if (key === 'id') {
+                objects = _.where(objects, key, value);
+            } else {
+                objects = _.filter(objects, function(o) {
+                    if (op === 'icontains') {
+                        return o[prop].toLowerCase().indexOf(value) >= 0;
+                    } else if (op === 'gt') {
+                        return Number(o[prop]) > Number(value);
+                    }
+                });
+            }
         });
         if (offset != null) {
             objects = objects.slice(offset);
