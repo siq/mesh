@@ -718,7 +718,6 @@ class HttpProxy(WsgiServer):
 
     PROXIED_REQUEST_HEADERS = {
         'HTTP_COOKIE': 'Cookie',
-        'X_SPIRE_X_FORWARDED_FOR': 'X_SPIRE_X_FORWARDED_FOR',
     }
 
     def __init__(self, url, context=None, default_format=None, available_formats=None,
