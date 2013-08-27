@@ -131,19 +131,22 @@ define([
         }
     });
 
-    return function(bundle) {
-        var deferred = $.Deferred();
-        $.ajax({
-            dataType: 'json',
-            type: 'GET',
-            url: meshconf.bundles[bundle] + '/' + bundle + '/_specification',
-            success: function(data, status, xhr) {
-                deferred.resolve(Introspector(bundle, data));
-            },
-            error: function(xhr) {
-                deferred.reject(xhr);
-            }
-        });
-        return deferred;
+    return {
+        introspect: function(bundle) {
+            var deferred = $.Deferred();
+            $.ajax({
+                dataType: 'json',
+                type: 'GET',
+                url: meshconf.bundles[bundle] + '/' + bundle + '/_specification',
+                success: function(data, status, xhr) {
+                    deferred.resolve(Introspector(bundle, data));
+                },
+                error: function(xhr) {
+                    deferred.reject(xhr);
+                }
+            });
+            return deferred;
+        },
+        Introspector: Introspector
     };
 });
