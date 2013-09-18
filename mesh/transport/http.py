@@ -665,7 +665,7 @@ class HttpClient(Client):
     def _introspect_bundle(self, bundle):
         response = self.connection.request(GET, '%s/_specification' % bundle,
             headers=self.construct_headers())
-        return self.format.unserialize(response.content)
+        return Specification(self.format.unserialize(response.content))
         
     def _prepare_request(self, resource, request, subject=None, data=None, format=None, context=None):
         if not isinstance(resource, dict):
