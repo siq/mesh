@@ -2,10 +2,6 @@
 
 // TODO: test _validateOne for prop name w/ a '.' in it when there's no schema
 // def for that field.
-//
-// TODO: test making a change to a model w/o saving it, then calling
-// collection.refresh() -- unlike a model.refresn() it calls .set() w/o setting
-// the 'noclobber' flag, so it overrides the un-persisted changes
 
 // this file exists because it's easier to mock up the Example resource for the
 // entire file, and the original test_model.js was using some weird techniques
@@ -68,6 +64,19 @@ define([
             ok(c.first().get('text_field') !== newValue);
             c.first().set('text_field', newValue);
             c.first().refresh().then(function() {
+                equal(c.first().get('text_field'), newValue);
+                start();
+            });
+        });
+    });
+
+    asyncTest('collection refresh doesnt overwrite changed model properties', function() {
+        setup().then(function(c) {
+            var origValue = c.first().get('text_field'),
+                newValue = 'foo';
+            ok(c.first().get('text_field') !== newValue);
+            c.first().set('text_field', newValue);
+            c.refresh().then(function() {
                 equal(c.first().get('text_field'), newValue);
                 start();
             });

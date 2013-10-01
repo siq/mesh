@@ -95,12 +95,12 @@ define([
             return model;
         },
 
-        instantiate: function(model, loaded) {
+        instantiate: function(model, loaded, noclobber) {
             var instance;
             if (model.id) {
                 instance = this.models[model.id];
                 if (instance) {
-                    instance.set(model);
+                    instance.set(model, {noclobber: noclobber});
                     if (loaded) {
                         instance._loaded = true;
                     }

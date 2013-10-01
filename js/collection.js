@@ -42,12 +42,13 @@ define([
         },
 
         execute: function(params) {
-            var self = this, manager = this.manager;
+            var self = this, manager = this.manager, noclobber;
             params = params || {};
+            noclobber = params.noclobber;
             return self.request.initiate(null, self.params).pipe(function(data, xhr) {
                 if (!params.plain) {
                     for (var i = 0, l = data.resources.length; i < l; i++) {
-                        data.resources[i] = manager.instantiate(data.resources[i], true);
+                        data.resources[i] = manager.instantiate(data.resources[i], true, noclobber);
                     }
                 }
                 data.complete = (xhr.status === 200);
@@ -182,13 +183,15 @@ define([
         },
 
         load: function(params) {
-            var query, offset, limit, models, dfd, reload, total, underflow,
+            var query, offset, limit, models, dfd, reload, total, underflow, noclobber,
                 self = this;
 
             // pull out the reload value if it's there
             if (params) {
                 reload = params.reload;
                 delete params.reload;
+                noclobber = params.noclobber;
+                delete params.noclobber;
                 $.extend(true, self.query.params, params);
             }
 
@@ -237,7 +240,7 @@ define([
                 query: self.query
             };
 
-            query.execute().done(function(data) {
+            query.execute({noclobber: noclobber}).done(function(data) {
                 var offset = query.params.offset || 0,
                     limit = query.params.limit || null,
                     instance, results;
@@ -300,7 +303,7 @@ define([
         },
 
         refresh: function() {
-            return this.load({reload: true});
+            return this.load({reload: true, noclobber: true});
         },
 
         remove: function(models) {
