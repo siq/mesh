@@ -395,7 +395,11 @@ define([
             self._changes = {};
 
             _.last(inFlight).promise = dfd.pipe(function(data, xhr) {
-                if (creating) {
+                var httpStatus = request.STATUS_CODES[xhr.status],
+                    dynamicFormResponse = (httpStatus === 'partial' &&
+                        (data.parameters || {}).state &&
+                        (data.parameters || {}).strategy && data.form);
+                if (creating && !dynamicFormResponse) {
                     self._manager.associate(self, data.id);
                     self._manager.notify(self, 'add');
                 }
