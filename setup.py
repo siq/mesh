@@ -8,6 +8,10 @@ except Exception:
     pass
 else:
     version = revision
+try:
+    version = os.environ['INTERNAL_VERSION']
+except:
+    pass
 
 packages = []
 for root, dirs, files in os.walk('mesh'):

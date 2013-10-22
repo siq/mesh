@@ -1,7 +1,8 @@
 #!/bin/bash
+export REVISION=$(git rev-list --all|wc -l)
 if [[ ! $PKGUSER || ! $PKGEMAIL || ! $PKGTAG ]]; then
-  REVISION=$(git rev-list --all|wc -l) python setup.py bdist_rpm
+  python setup.py bdist_rpm --release $REVISION
 else
   CHANGELOG=$(echo -e "* $(date +"%a %b %d %Y") ${PKGUSER} ${PKGEMAIL}\n- ${PKGTAG}")
-  REVISION=$(git rev-list --all|wc -l) python setup.py bdist_rpm --changelog="$CHANGELOG"
+  python setup.py bdist_rpm --release $REVISION --changelog="$CHANGELOG"
 fi
