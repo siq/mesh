@@ -2,6 +2,7 @@ from bake import *
 from bake.util import execute_python_shell
 from mesh.util import StructureFormatter
 from scheme import *
+from scheme.formats import Json
 from scheme.supplemental import ObjectReference
 
 class ClientShell(Task):
@@ -127,13 +128,17 @@ class GenerateSpecification(Task):
     description = 'generate the specification for a bundle'
     parameters = {
         'bundle': ObjectReference(required=True),
+        'format': Enumeration('json python', default='python'),
         'path': Path(required=True),
         'targets': Sequence(Text()),
     }
 
     def run(self, runtime):
         description = self['bundle'].describe(self['targets'])
-        content = StructureFormatter().format(description)
+        if self['format'] == 'python':
+            content = StructureFormatter().format(description)
+        elif self['format'] == 'json':
+            content = Json.serialize(description)
         self['path'].write_bytes(content)
 
 class StartWsgiServer(Task):
