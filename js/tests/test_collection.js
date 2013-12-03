@@ -483,6 +483,59 @@ define([
         });
     });
 
+    asyncTest('refresh', function() {
+        Example.models.clear();
+        var ajaxCount = 0, collection = Example.collection();
+
+        collection.query.request.ajax = function(params) {
+            var num = params.data.limit? params.data.limit : 10;
+
+            ajaxCount++;
+
+            setTimeout(function() {
+                var split, ret = _.reduce(_.range(num), function(memo, i) {
+                    memo.resources.push({name: 'item ' + i, id: i+1234});
+                    return memo;
+                }, {total: num, resources: []});
+                if (ajaxCount === 2) {
+                    ret.resources[0].name = 'new name';
+                }
+                params.success(ret, 200, {});
+            }, 50);
+        };
+
+        collection.load().done(function() {
+            equal(ajaxCount, 1);
+            collection.load().done(function(models) {
+                var model = models[0];
+                equal(ajaxCount, 1);
+                equal(model.name, 'item 0');
+                collection.refresh().done(function(models) {
+                    var model = models[0];
+                    equal(model.name, 'new name');
+                    equal(ajaxCount, 2);
+                    collection.refresh().done(function() {
+                        equal(model.name, 'item 0');
+                        equal(ajaxCount, 3);
+                        start();
+                    }).fail(function() {
+                        ok(false, '4th colleciton load failed');
+                        start();
+                    });
+                }).fail(function() {
+                    ok(false, '3rd colleciton load failed');
+                    start();
+                });
+            }).fail(function() {
+                ok(false, '2nd colleciton load failed');
+                start();
+            });
+        }).fail(function() {
+            ok(false, '1st colleciton load failed');
+            start();
+        });
+    });
+
     module('pageing');
 
     var pageingAjaxCount = 0;
