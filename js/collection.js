@@ -260,11 +260,11 @@ define([
 
                 /* Models need to be fully replaced if a reload is called.
                    If .destroy() isn't called on a model, the manager will not be aware of a model deletion */
-		if(reload) {
-                    _.each(self.models,	function(model) {
-			model._manager.dissociate(model);
+                if(reload) {
+                    _.each(self.models, function(model) {
+                        model._manager.dissociate(model);
                     });
-                    self.models	= [];
+                    self.models = [];
                 }
                 for (var i = 0, l = data.resources.length; i < l; i++) {
                     instance = data.resources[i];
