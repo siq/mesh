@@ -157,6 +157,12 @@ define([
     var MinLengthError = ValidationError.extend({token: 'minlengtherror'});
     var MaxLengthError = ValidationError.extend({token: 'maxlengtherror'});
 
+    // Min/Max number errors for floats and ints
+    var MinIntegerError = ValidationError.extend({token: 'minintegererror'});
+    var MaxIntegerError = ValidationError.extend({token: 'maxintegererror'});
+    var MinFloatError = ValidationError.extend({token: 'minfloaterror'});
+    var MaxFloatError = ValidationError.extend({token: 'maxfloaterror'});
+
     var Field = Class.extend({
         structural: false,
 
@@ -404,10 +410,10 @@ define([
 
         _validateValue: function(value) {
             if (isNumber(this.minimum) && value < this.minimum) {
-                throw ValidationError('invalid');
+                throw MinIntegerError();
             }
             if (isNumber(this.maximum) && value > this.maximum) {
-                throw ValidationError('invalid');
+                throw MaxIntegerError();
             }
         }
     });
@@ -432,10 +438,10 @@ define([
 
         _validateValue: function(value) {
             if (isNumber(this.minimum) && value < this.minimum) {
-                throw ValidationError('invalid');
+                throw MinFloatError();
             }
             if (isNumber(this.maximum) && value > this.maximum) {
-                throw ValidationError('invalid');
+                throw MaxFloatError();
             }
         }
     });
