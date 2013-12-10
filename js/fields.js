@@ -118,14 +118,15 @@ define([
         // for a specific field like 'foo.bar', you can call
         // myCompundError.forField('foo.bar')
         forField: function(prop) {
-            var key, split = prop.split('.'), cur = this;
+            var key, split = prop.split('.'), cur = this,
+                notNested = cur.structure && cur.structure[prop] && cur.structure[prop][0];
             while ((key = split.splice(0, 1)[0])) {
                 cur = cur.structure && cur.structure[key] && cur.structure[key][0];
                 if (cur == null) {
                     break;
                 }
             }
-            return cur;
+            return notNested || cur;
         }
     });
 
