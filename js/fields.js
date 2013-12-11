@@ -359,7 +359,7 @@ define([
 
         _unserializeValue: function(value, mimetype) {
             return constructField(value);
-        },
+        }
     });
 
     fields.EmailField = Field.extend({
