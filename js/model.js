@@ -50,6 +50,8 @@ define([
         init: function(model) {
             this.model = model;
             this.models = {};
+            window.registryManagers = window.registryManagers || {};
+            window.registryManagers[_.uniqueId('_')] = this.models;
         },
 
         associate: function(model, id) {
