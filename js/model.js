@@ -50,8 +50,9 @@ define([
         init: function(model) {
             this.model = model;
             this.models = {};
-            window.registryManagers = window.registryManagers || {};
-            window.registryManagers[_.uniqueId('_')] = this.models;
+            window.managerRegistry = window.managerRegistry || {};
+            // window.managerRegistry[_.uniqueId('_')] = this.models;
+            window.managerRegistry[_.uniqueId('_')] = this;
         },
 
         associate: function(model, id) {
@@ -102,22 +103,7 @@ define([
             if (model.id) {
                 instance = this.models[model.id];
                 if (instance) {
-                    // when we load a model from the server that has already been loaded
-                    // we set the serve model values on the existing model to stay in sync with the server
-                    // if the values are different then this will cause changes to be tracked in
-                    // the models._changes object but these changes can be cleared since they are from the server
-                    // if we don't clear these changes out then noclobber will prevent setting
-                    // new values on those 'changed' properties
-                    // 1. get the current client side changes (we don't want to clobber these)
-                    // 2. set model values
-                    // 3. get the changes caused during the set that were not already being tracked
-                    // 4. clear out those changes
-                    changes = _.keys(instance._changes);
-                    instance.set(model, {noclobber: noclobber});
-                    changes = _.without(_.keys(instance._changes), changes);
-                    _.each(changes, function(change) {
-                        delete instance._changes[change];
-                    });
+                    this.merge(model, instance, noclobber);
                     if (loaded) {
                         instance._loaded = true;
                     }
@@ -133,6 +119,25 @@ define([
             } else {
                 return this.collection(id).load();
             }
+        },
+
+        merge: function(server, client, noclobber) {
+            // when we load a model from the server that has already been loaded
+            // we set the serve model values on the existing model to stay in sync with the server
+            // if the values are different then this will cause changes to be tracked in
+            // the models._changes object but these changes can be cleared since they are from the server
+            // if we don't clear these changes out then noclobber will prevent setting
+            // new values on those 'changed' properties
+            // 1. get the current client side changes (we don't want to clobber these)
+            // 2. set model values
+            // 3. get the changes caused during the set that were not already being tracked
+            // 4. clear out those changes
+            changes = _.keys(client._changes);
+            client.set(server, {noclobber: noclobber});
+            changes = _.without(_.keys(client._changes), changes);
+            _.each(changes, function(change) {
+                delete client._changes[change];
+            });
         },
 
         notify: function(model, eventName) {

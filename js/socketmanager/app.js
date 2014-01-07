@@ -29,9 +29,13 @@
 
 // app.listen(3000);
 
-var app = require('http').createServer(handler)
-  , io = require('socket.io').listen(app)
-  , fs = require('fs')
+var app = require('http').createServer(handler),
+    io = require('socket.io').listen(app),
+    fs = require('fs'),
+    test_model = {
+      name: 'a test model',
+      id: 1
+    };
 
 app.listen(3000);
 
@@ -49,13 +53,15 @@ function handler (req, res) {
 }
 
 io.sockets.on('connection', function (socket) {
-  socket.emit('news', { hello: 'world' });
-  socket.on('my other event', function (data) {
-    console.log('server', data);
-  });
+  // socket.emit('news', { hello: 'world' });
+  // socket.on('my other event', function (data) {
+  //   console.log('server', data);
+  // });
   setInterval(function() {
-    console.log('emit infoset update');
-    socket.emit('update', 'infoset', 'model', {status: true});
-    socket.emit('change', 'infoset', 'model', {status: true});
+    console.log('emit update/change');
+    // socket.emit('update', 'infoset', 'model', {status: true});
+    // socket.emit('change', 'infoset', 'model', {status: true});
+    socket.emit('update', 'infoset', test_model, {status: true});
+    socket.emit('change', 'infoset', test_model, {status: true});
   }, 5000);
 });
