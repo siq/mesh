@@ -13,15 +13,15 @@ define([
         ok(SocketManager.getInstance());
     });
 
-    asyncTest('server changes are not tracked', function() {
-        Example.collection().load().then(function() {
-            ok(true);
-            start();
-        }, function() {
-            ok(false, "Shouldn't get here.");
-            start();
-        });
-    });
+    // asyncTest('server changes are not tracked', function() {
+    //     Example.collection().load().then(function() {
+    //         ok(true);
+    //         start();
+    //     }, function() {
+    //         ok(false, "Shouldn't get here.");
+    //         start();
+    //     });
+    // });
 
     start();
 });

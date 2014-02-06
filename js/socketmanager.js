@@ -9,6 +9,9 @@ define([
     var instance = null,
         resourceMap = {},
         socket = io.connect('http://localhost:3000', {query: 'userid=TODO:get user id'});
+    socket.on('connect', function() {
+        console.log('connect', arguments);
+    });
 
     var getModel = function(id) {
             if (!id) {
@@ -36,9 +39,6 @@ define([
         },
         _bindEvents: function() {
             var self = this;
-            socket.on('connect', function() {
-                console.log('connect', arguments);
-            });
             socket.on('update', function (/*arguments*/) {
                 /* TODO: decide format
                     how models typically look triggering change event
