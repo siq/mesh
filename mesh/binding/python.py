@@ -315,7 +315,7 @@ class Model(object):
 
         request = _request
         if not request:
-            if self.id is not None:
+            if getattr(self, 'id', None) is not None:
                 request = self._get_request('update')
             else:
                 request = self._get_request('create')
