@@ -889,6 +889,38 @@ define([
             });
         });
     });
+    
+    module("windowing");
+    
+    asyncTest("load does not break when only a portion of data is in cache and remaining is on server (or fixture)", function() {
+        var collection = Example.collection(),
+            query1 = {limit: 3, offset: 8},
+            query2 = {limit: 3, offset: 5},
+            dfd1, dfd2;
+            
+        pageingAjaxCount = 0;
+        collection.query.request.ajax = pageingAjax;
+        window.c = collection;
+        collection.load({offset:0,limit:3})
+            .done(function(data){
+                equal(data.length,3,"data length equals limit");
+                equal(pageingAjaxCount,1,"first call made");
+                collection.load({offset:3,limit:5})
+                    .done(function(models){
+                        console.log(models);
+                        equal(models.length,5,"data length equals limit");
+                        equal(pageingAjaxCount,2,"second call made");
+                        collection.load({offset:5,limit:5})
+                            .done(function(_models){
+                                console.log(_models);
+                                equal(_models.length,5,"data length equals limit");
+                                equal(pageingAjaxCount,3,"third call made");
+                            });
+                    });
+            });
+        ok(true);
+        start();
+    });
 
     start();
 });
