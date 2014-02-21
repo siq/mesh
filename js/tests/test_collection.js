@@ -915,8 +915,20 @@ define([
                                 console.log(_models);
                                 equal(_models.length,5,"data length equals limit");
                                 equal(pageingAjaxCount,3,"third call made");
+                            })
+                            .fail(function() {
+                                ok(false, '3rd colleciton load failed');
+                                start();
                             });
+                    })
+                    .fail(function() {
+                        ok(false, '2nd colleciton load failed');
+                        start();
                     });
+            })
+            .fail(function() {
+                ok(false, '1st colleciton load failed');
+                start();
             });
         ok(true);
         start();
