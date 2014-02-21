@@ -907,12 +907,10 @@ define([
                 equal(pageingAjaxCount,1,"first call made");
                 collection.load({offset:3,limit:5})
                     .done(function(models){
-                        console.log(models);
                         equal(models.length,5,"data length equals limit");
                         equal(pageingAjaxCount,2,"second call made");
                         collection.load({offset:5,limit:5})
                             .done(function(_models){
-                                console.log(_models);
                                 equal(_models.length,5,"data length equals limit");
                                 equal(pageingAjaxCount,3,"third call made");
                             })
