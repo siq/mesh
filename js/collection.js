@@ -206,14 +206,13 @@ define([
             // same query
             if (!reload) {
                 if (self._lastLoad && self._lastLoad.query === self.query &&
-                        _.isEqual(self._lastLoad.params, params)) {
-                        self._lastLoad.dfd.done(function(models){
-                            // the deferred resolves but since there is no update event fired,
-                            // components subscribing to the collection are not notified that
-                            // the deferred has actually resolved
-                            self.trigger('update', self, models);
-                        });
-                       
+                    _.isEqual(self._lastLoad.params, params)) {
+                    self._lastLoad.dfd.done(function(models){
+                        // the deferred resolves but since there is no update event fired,
+                        // components subscribing to the collection are not notified that
+                        // the deferred has actually resolved
+                        self.trigger('update', self, models);
+                    });
                     return self._lastLoad.dfd;
                 }
             }
