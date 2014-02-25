@@ -181,7 +181,11 @@ define([
             }
             return results;
         },
-
+        /* ignoreLastDeferredCheck :
+        *  unless this is set to true the method checks if the current load query is the same
+        *  as the previous query that fired an XHR. Before windowing, it would be unlikely to get
+        *  successive queries like [offset,limit] : [0,50],[50,50],[0,50],[50,50].
+        */
         load: function(params) {
             var query, offset, limit, models, dfd, reload, total, underflow, noclobber,
                 self = this;
@@ -203,6 +207,13 @@ define([
             if (!reload) {
                 if (self._lastLoad && self._lastLoad.query === self.query &&
                         _.isEqual(self._lastLoad.params, params)) {
+                        self._lastLoad.dfd.done(function(models){
+                            // the deferred resolves but since there is no update event fired,
+                            // components subscribing to the collection are not notified that
+                            // the deferred has actually resolved
+                            self.trigger('update', self, models);
+                        });
+                       
                     return self._lastLoad.dfd;
                 }
             }
@@ -218,7 +229,7 @@ define([
                 // the objects we have are valid cached objects
                 models = (limit) ? models.slice(offset, offset + limit) : models.slice(offset);
                 // underflow may happen on limit changes
-                underflow = ((offset + limit) < total) && (models.length !== limit);
+                underflow = ((offset + limit) <= total) && (models.length !== limit);
 
                 // check to make sure the models are valid and not just empty
                 // remove falsy values i.e. undefined and check if the length is still the same
