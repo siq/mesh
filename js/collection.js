@@ -186,7 +186,7 @@ define([
         *  as the previous query that fired an XHR. Before windowing, it would be unlikely to get
         *  successive queries like [offset,limit] : [0,50],[50,50],[0,50],[50,50].
         */
-        load: function(params, ignoreLastDeferredCheck ) {
+        load: function(params) {
             var query, offset, limit, models, dfd, reload, total, underflow, noclobber,
                 self = this;
 
@@ -204,9 +204,16 @@ define([
 
             // siq/mesh issue #10 corner case 1 and 2
             // same query
-            if (!reload && !ignoreLastDeferredCheck) {
+            if (!reload) {
                 if (self._lastLoad && self._lastLoad.query === self.query &&
                         _.isEqual(self._lastLoad.params, params)) {
+                        self._lastLoad.dfd.done(function(models){
+                            // the deferred resolves but since there is no update event fired,
+                            // components subscribing to the collection are not notified that
+                            // the deferred has actually resolved
+                            self.trigger('update', self, models);
+                        });
+                       
                     return self._lastLoad.dfd;
                 }
             }
