@@ -951,7 +951,12 @@ define([
         var collection = Example.collection(),
             query1 = {limit: 3, offset: 8},
             query2 = {limit: 3, offset: 5},
-            dfd1, dfd2;
+            dfd1, dfd2,
+            isUpdateTriggered = false;
+        
+        collection.on('update',function(){
+            isUpdateTriggered = true;
+        });
             
         windowingAjaxCount = 0;
         collection.query.request.ajax = windowingAjax;
@@ -960,18 +965,25 @@ define([
             .done(function(data){
                 equal(data.length,3,"data length equals limit");
                 equal(windowingAjaxCount,1,"first call made");
+                ok(isUpdateTriggered);
+                isUpdateTriggered = false;
                 collection.load({offset:3,limit:3})
                     .done(function(models){
                         equal(models.length,3,"data length equals limit");
                         equal(windowingAjaxCount,2,"second call made");
+                        ok(isUpdateTriggered);
+                        isUpdateTriggered = false;
                         collection.load({offset:0,limit:3})
                             .done(function(_models){
                                 equal(_models.length,3,"data length equals limit");
                                 equal(windowingAjaxCount,2,"third call queried from cache,no XHR");
+                                ok(isUpdateTriggered);
+                                isUpdateTriggered = false;
                                 collection.load({offset:3,limit:3})
                                     .done(function(_models){
                                         equal(_models.length,3,"data length equals limit");
-                                        equal(windowingAjaxCount,2,"four    th call queried from cache,no XHR");
+                                        equal(windowingAjaxCount,2,"fourth call queried from cache,no XHR");
+                                        ok(isUpdateTriggered);
                                     })
                                     .fail(function() {
                                         ok(false, '4th colleciton load failed');
