@@ -892,27 +892,91 @@ define([
     
     module("windowing");
     
+    var windowingAjaxCount = 0,
+        windowingAjax = function(params) {
+        var limit = params.data.limit,
+            offset = params.data.offset,
+            newData = $.extend(true, {}, data);
+
+        windowingAjaxCount++;
+        if(limit) {
+            newData.resources = data.resources.slice(offset, offset + limit);
+        }
+
+        params.success(newData, 200, {});
+
+    };
+    
     asyncTest("load does not break when only a portion of data is in cache and remaining is on server (or fixture)", function() {
         var collection = Example.collection(),
             query1 = {limit: 3, offset: 8},
             query2 = {limit: 3, offset: 5},
             dfd1, dfd2;
             
-        pageingAjaxCount = 0;
-        collection.query.request.ajax = pageingAjax;
+        windowingAjaxCount = 0;
+        collection.query.request.ajax = windowingAjax;
         window.c = collection;
         collection.load({offset:0,limit:3})
             .done(function(data){
                 equal(data.length,3,"data length equals limit");
-                equal(pageingAjaxCount,1,"first call made");
+                equal(windowingAjaxCount,1,"first call made");
                 collection.load({offset:3,limit:5})
                     .done(function(models){
                         equal(models.length,5,"data length equals limit");
-                        equal(pageingAjaxCount,2,"second call made");
+                        equal(windowingAjaxCount,2,"second call made");
                         collection.load({offset:5,limit:5})
                             .done(function(_models){
                                 equal(_models.length,5,"data length equals limit");
-                                equal(pageingAjaxCount,3,"third call made");
+                                equal(windowingAjaxCount,3,"third call made");
+                            })
+                            .fail(function() {
+                                ok(false, '3rd colleciton load failed');
+                                start();
+                            });
+                    })
+                    .fail(function() {
+                        ok(false, '2nd colleciton load failed');
+                        start();
+                    });
+            })
+            .fail(function() {
+                ok(false, '1st colleciton load failed');
+                start();
+            });
+        ok(true);
+        start();
+    });
+    
+    asyncTest("Deferred object from the last (previous) load always resolves", function() {
+        var collection = Example.collection(),
+            query1 = {limit: 3, offset: 8},
+            query2 = {limit: 3, offset: 5},
+            dfd1, dfd2;
+            
+        windowingAjaxCount = 0;
+        collection.query.request.ajax = windowingAjax;
+        window.c = collection;
+        collection.load({offset:0,limit:3})
+            .done(function(data){
+                equal(data.length,3,"data length equals limit");
+                equal(windowingAjaxCount,1,"first call made");
+                collection.load({offset:3,limit:3})
+                    .done(function(models){
+                        equal(models.length,3,"data length equals limit");
+                        equal(windowingAjaxCount,2,"second call made");
+                        collection.load({offset:0,limit:3})
+                            .done(function(_models){
+                                equal(_models.length,3,"data length equals limit");
+                                equal(windowingAjaxCount,2,"third call queried from cache,no XHR");
+                                collection.load({offset:3,limit:3})
+                                    .done(function(_models){
+                                        equal(_models.length,3,"data length equals limit");
+                                        equal(windowingAjaxCount,2,"four    th call queried from cache,no XHR");
+                                    })
+                                    .fail(function() {
+                                        ok(false, '4th colleciton load failed');
+                                        start();
+                                    });
                             })
                             .fail(function() {
                                 ok(false, '3rd colleciton load failed');
