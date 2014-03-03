@@ -207,12 +207,17 @@ define([
             if (!reload) {
                 if (self._lastLoad && self._lastLoad.query === self.query &&
                     _.isEqual(self._lastLoad.params, params)) {
-                    /*self._lastLoad.dfd.done(function(models){
-                        // the deferred resolves but since there is no update event fired,
-                        // components subscribing to the collection are not notified that
-                        // the deferred has actually resolved
+                   
+                    // check if a request is pending, if so just return the deferred and update
+                    // later when resolved
+                    if(self._lastLoad.dfd.state() !== 'pending') {
+                        // lifted this logic from the `page cache` section below
+                        models = self.models;
+                        limit = params.limit;
+                        offset = params.offset;
+                        models = (limit) ? models.slice(offset, offset + limit) : models.slice(offset);
                         self.trigger('update', self, models);
-                    });*/
+                    }
                     return self._lastLoad.dfd;
                 }
             }
