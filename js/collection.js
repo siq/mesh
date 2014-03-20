@@ -233,7 +233,16 @@ define([
                 // the objects we have are valid cached objects
                 models = (limit) ? models.slice(offset, offset + limit) : models.slice(offset);
                 // underflow may happen on limit changes
-                underflow = ((offset + limit) <= total) && (models.length !== limit);
+                if((offset + limit) <= total) {
+                    underflow = models.length < limit;
+                }else {
+                     /*underflow corner case - in the final window, grid queries for more records than 
+                       available in total but cache does not hold all the remaining records, can (should) 
+                       be a ternary statement but for now sticking to an if-else 
+                       to understand better when working on this later :(
+                    */
+                    underflow = (total - offset) !== models.length;
+                }
 
                 // check to make sure the models are valid and not just empty
                 // remove falsy values i.e. undefined and check if the length is still the same
