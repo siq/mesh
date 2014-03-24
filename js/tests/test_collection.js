@@ -889,6 +889,54 @@ define([
             });
         });
     });
+
+    asyncTest("collection edge case - current load is same as previous load", function() {
+        var collection = Example.collection(),
+            query1 = {limit: 5, offset: 0},
+            query2 = {limit: 5, offset: 5},
+            dfd1, dfd2;
+
+        collection.query.request.ajax = pageingAjax;
+
+        collection.load(query1)
+            .done(function(){
+                equal(collection.currentPage().length,5,"data length equals limit");
+                equal(collection.currentPage()[0].get('required_value'),'foo 0',"equals first element on page 1");
+                collection.load(query2)
+                    .done(function(){
+                        equal(collection.currentPage().length,5,"data length equals limit");
+                        equal(collection.currentPage()[0].get('required_value'),'foo 5',"equals first element on page 2");
+                        collection.load(query1)
+                            .done(function(){
+                                equal(collection.currentPage().length,5,"data length equals limit");
+                                equal(collection.currentPage()[0].get('required_value'),'foo 0',"equals first element on page 1 (from cache)");
+                                collection.load(query2)
+                                    .done(function(){
+                                        equal(collection.currentPage().length,5,"data length equals limit");
+                                        equal(collection.currentPage()[0].get('required_value'),'foo 5',"equals first element on page 2 (from cache)");
+                                    })
+                                    .fail(function() {
+                                        ok(false, '4th colleciton with query2 load failed');
+                                        start();
+                                    });
+                            })
+                            .fail(function() {
+                                ok(false, '3rd colleciton with query1 load failed');
+                                start();
+                            });
+                    })
+                    .fail(function() {
+                        ok(false, '2nd colleciton with query2 load failed');
+                        start();
+                    });
+            })
+            .fail(function() {
+                ok(false, '1st colleciton with query1 load failed');
+                start();
+            });
+        ok(true);
+        start();
+    });
     
     module("windowing");
     
@@ -949,8 +997,8 @@ define([
     
     asyncTest("Deferred object from the last (previous) load always resolves", function() {
         var collection = Example.collection(),
-            query1 = {limit: 3, offset: 8},
-            query2 = {limit: 3, offset: 5},
+            query1 = {limit: 3, offset: 0},
+            query2 = {limit: 3, offset: 3},
             dfd1, dfd2,
             isUpdateTriggered = false;
         
@@ -961,47 +1009,54 @@ define([
         windowingAjaxCount = 0;
         collection.query.request.ajax = windowingAjax;
         window.c = collection;
-        collection.load({offset:0,limit:3})
+        // load collection with query1 - intial load
+        collection.load(query1)
             .done(function(data){
                 equal(data.length,3,"data length equals limit");
-                equal(windowingAjaxCount,1,"first call made");
-                ok(isUpdateTriggered);
+                equal(windowingAjaxCount,1,"first call with query1");
+                ok(isUpdateTriggered, "update triggered as expected");
                 isUpdateTriggered = false;
-                collection.load({offset:3,limit:3})
+                // load collection with query2 - equivalent to navigating to page 2
+                // query2 is now saved as _lastLoad.query
+                collection.load(query2)
                     .done(function(models){
                         equal(models.length,3,"data length equals limit");
-                        equal(windowingAjaxCount,2,"second call made");
-                        ok(isUpdateTriggered);
+                        equal(windowingAjaxCount,2,"second call with query2");
+                        ok(isUpdateTriggered, "update triggered as expected");
                         isUpdateTriggered = false;
-                        collection.load({offset:0,limit:3})
+                        // load collection with query1 - equivalent to navigating back to page 1
+                        // This is a load from cache,so query2 is still _lastLoad.query
+                        collection.load(query1)
                             .done(function(_models){
                                 equal(_models.length,3,"data length equals limit");
-                                equal(windowingAjaxCount,2,"third call queried from cache,no XHR");
-                                ok(isUpdateTriggered);
+                                equal(windowingAjaxCount,2,"third call with query1 queried from cache,no XHR");
+                                ok(isUpdateTriggered, "update triggered as expected");
                                 isUpdateTriggered = false;
-                                collection.load({offset:3,limit:3})
+                                // last step : load collection with query2 - equivalent to navigating page 2
+                                // query2 == _lastLoad.query, collection should return _lastLoad.dfd and also trigger an update
+                                collection.load(query2)
                                     .done(function(_models){
                                         equal(_models.length,3,"data length equals limit");
-                                        equal(windowingAjaxCount,2,"fourth call queried from cache,no XHR");
-                                        ok(isUpdateTriggered);
+                                        equal(windowingAjaxCount,2,"fourth call queried with query2 from cache,no XHR");
+                                        ok(isUpdateTriggered, "update triggered as expected");
                                     })
                                     .fail(function() {
-                                        ok(false, '4th colleciton load failed');
+                                        ok(false, '4th colleciton with query2 load failed');
                                         start();
                                     });
                             })
                             .fail(function() {
-                                ok(false, '3rd colleciton load failed');
+                                ok(false, '3rd colleciton with query1 load failed');
                                 start();
                             });
                     })
                     .fail(function() {
-                        ok(false, '2nd colleciton load failed');
+                        ok(false, '2nd colleciton with query2 load failed');
                         start();
                     });
             })
             .fail(function() {
-                ok(false, '1st colleciton load failed');
+                ok(false, '1st colleciton with query1 load failed');
                 start();
             });
         ok(true);
