@@ -187,7 +187,7 @@ define([
         *  successive queries like [offset,limit] : [0,50],[50,50],[0,50],[50,50].
         */
         load: function(params) {
-            var query, offset, limit, models, dfd, reload, total, underflow, noclobber,
+            var query, offset, limit, models, dfd, reload, total, overflow, underflow, noclobber,
                 self = this;
 
             // pull out the reload value if it's there
@@ -229,24 +229,17 @@ define([
                 offset = params.offset,
                 total = self.total;
 
-                // overflow is handled when the query is resolved so we only need to ensure
-                // the objects we have are valid cached objects
+                // get the cached models that fit our window
                 models = (limit) ? models.slice(offset, offset + limit) : models.slice(offset);
+                // overflow
+                overflow = offset + limit > models.length;
                 // underflow may happen on limit changes
-                if((offset + limit) <= total) {
-                    underflow = models.length < limit;
-                }else {
-                     /*underflow corner case - in the final window, grid queries for more records than 
-                       available in total but cache does not hold all the remaining records, can (should) 
-                       be a ternary statement but for now sticking to an if-else 
-                       to understand better when working on this later :(
-                    */
-                    underflow = (total - offset) !== models.length;
-                }
+                underflow = ((offset + limit) <= total) && (models.length !== limit);
 
                 // check to make sure the models are valid and not just empty
                 // remove falsy values i.e. undefined and check if the length is still the same
-                if (!underflow && models.length && (_.compact(models).length === models.length)) {
+                if (!overflow && !underflow && models.length &&
+                    _.compact(models).length === models.length) {
                     // the cache is valid
                     dfd = $.Deferred();
                     dfd.resolve(models);
