@@ -15,7 +15,7 @@ define([
 
     var getModel = function(id) {
             if (!id) {
-                console.log('recieved pushed model with no id');
+                console.warn('recieved pushed model with no id');
                 return;
             }
             var managerRegistry = window.managerRegistry || {},
@@ -40,24 +40,14 @@ define([
         _bindEvents: function() {
             var self = this;
             socket.on('update', function (/*arguments*/) {
-                /* TODO: decide format
-                    how models typically look triggering change event
-                    [event, model, changes]
-                    so we want to mimic that
-                    [resource_name, model, changes]
-
-                    Also we could just do something to get the model and the call set with no clobber
-                    `getModel().set(model, {noclobber: true});`
-                */
                 self._updateModel(arguments[1]);
             });
             socket.on('change', function (/*arguments*/) {
                 self._updateModel(arguments[1]);
             });
             socket.on('delete', function (/*arguments*/) {
-                // TODO: call Collection::remove ?? on all collections with this model
-                // better to just notify managers
-                // better yet call destroy on a model that will not cause a http request to be sent
+                // call destroy on a model 
+                // first set the id to null so no http request will be sent
                 var model = getModel(arguments[1].id);
                 if (!model) return;
                 model.id = null;
@@ -78,7 +68,7 @@ define([
                 model = getModel(id),
                 manager;
             if (!model) return;
-            // model.set(m, {noclobber: true});
+            // using the manager::merge will call `set` with `noclobber` 
             manager = model._manager;
             manager.merge(m, model, true);
         }
