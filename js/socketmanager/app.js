@@ -52,6 +52,38 @@ function handler (req, res) {
   });
 }
 
+// 0.9.x authorization method for incoming socket connection
+// io.configure(function (){
+//     io.set('authorization', function (handshakeData, accept) {
+//         var cookie = handshakeData.headers.cookie;
+//         // console.log('DEBUG: authorization', handshakeData);
+//         console.log('DEBUG: cookie', handshakeData.headers.cookie);
+//         if (cookie) {
+//             // TODO: validate cookie
+//         }
+//         else {
+//             return accept('No cookie transmitted.', false);
+//         }
+//         accept(null, true);
+//     });
+// });
+
+// 1.0.0-pre authorization method for incoming socket connection
+io.use(function (socket, accept) {
+    var cookie = socket.request.headers.cookie;
+    // console.log('DEBUG: authorization', handshakeData);
+    console.log('DEBUG: cookie', socket.request.headers.cookie);
+    if (cookie) {
+        // TODO: validate cookie
+        return accept();
+    }
+    else {
+        // return accept('No cookie transmitted.', false);
+        return accept(new Error('Authentication error'));
+    }
+    accept(null, true);
+});
+
 io.sockets.on('connection', function (socket) {
   // socket.emit('news', { hello: 'world' });
   // socket.on('my other event', function (data) {
