@@ -181,11 +181,6 @@ define([
             }
             return results;
         },
-        /* ignoreLastDeferredCheck :
-        *  unless this is set to true the method checks if the current load query is the same
-        *  as the previous query that fired an XHR. Before windowing, it would be unlikely to get
-        *  successive queries like [offset,limit] : [0,50],[50,50],[0,50],[50,50].
-        */
         load: function(params) {
             var query, offset, limit, models, dfd, reload, total, overflow, underflow, noclobber,
                 self = this;
@@ -207,7 +202,6 @@ define([
             if (!reload) {
                 if (self._lastLoad && self._lastLoad.query === self.query &&
                     _.isEqual(self._lastLoad.params, params)) {
-                   
                     // check if a request is pending, if so just return the deferred and update
                     // later when resolved
                     if(self._lastLoad.dfd.state() !== 'pending') {
@@ -216,7 +210,16 @@ define([
                         limit = params.limit;
                         offset = params.offset;
                         models = (limit) ? models.slice(offset, offset + limit) : models.slice(offset);
-                        self.trigger('update', self, models);
+                        // this needs to be async to prevent loops if
+                        // `load` is called from a collection update handler
+                        // i.e. collection.on('update', function() { collection.load(); })
+                        // yes that would be an anti-pattern so don't do it!
+                        // in the real world this may happen if you create a view on collection update
+                        // and in Widget::create you invoked `load` on the same collection
+                        // you shouldn't do that either
+                        self._lastLoad.dfd.then(function() {
+                            self.trigger('update', self, models);
+                        });
                     }
                     return self._lastLoad.dfd;
                 }
@@ -232,9 +235,9 @@ define([
                 // get the cached models that fit our window
                 models = (limit) ? models.slice(offset, offset + limit) : models.slice(offset);
                 // overflow
-                overflow = offset + limit > models.length;
+                overflow = limit - offset > models.length;
                 // underflow may happen on limit changes
-                underflow = ((offset + limit) <= total) && (models.length !== limit);
+                underflow = (offset + limit <= total) && (models.length !== limit);
 
                 // check to make sure the models are valid and not just empty
                 // remove falsy values i.e. undefined and check if the length is still the same
