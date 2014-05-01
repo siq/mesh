@@ -264,7 +264,7 @@ class ResourceMeta(type):
             chars.append(char)
         return ''.join(chars).strip()
 
-    def describe(resource, controller, path, verbose=False):
+    def describe(resource, controller, path, verbose=False, omissions=None):
         if controller:
             version = controller.version
         else:
@@ -285,13 +285,15 @@ class ResourceMeta(type):
 
         description['schema'] = {}
         for name, field in resource.schema.iteritems():
+            if omissions and name in omissions:
+                field = Field(name=name)
             description['schema'][name] = field.describe(verbose=verbose)
 
         prefix = '/%s/' % '/'.join(path)
 
         description['requests'] = {}
         for name, request in resource.requests.iteritems():
-            description['requests'][name] = request.describe(prefix, verbose)
+            description['requests'][name] = request.describe(prefix, verbose, omissions)
 
         return description
 

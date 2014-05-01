@@ -187,7 +187,7 @@ class Bundle(object):
         name = name or self.name
         return Bundle(name, *mounts)
 
-    def describe(self, targets=None, verbose=False):
+    def describe(self, targets=None, verbose=False, omissions=None):
         """Constructs and returns a serializable description of this bundle.
 
         :param targets: Optional, default is ``None``; if specified, either a
@@ -211,11 +211,13 @@ class Bundle(object):
         for version, resources in sorted(self.versions.iteritems()):
             formatted_version = format_version(version)
             description['versions'][formatted_version] = self._describe_version(version, resources,
-                [self.name, formatted_version], targets, verbose)
+                [self.name, formatted_version], targets, verbose, omissions)
 
         return description
 
-    def _describe_version(self, version, resources, path, targets=None, verbose=False):
+    def _describe_version(self, version, resources, path, targets=None,
+            verbose=False, omissions=None):
+
         description = {}
         for name, candidate in resources.iteritems():
             if targets and name not in targets:
@@ -225,10 +227,14 @@ class Bundle(object):
                 for subversion, subresources in candidate.iteritems():
                     formatted_subversion = format_version(subversion)
                     bundle['versions'][formatted_subversion] = self._describe_version(subversion,
-                        subresources, path + [name, formatted_subversion], verbose=verbose)
+                        subresources, path + [name, formatted_subversion], verbose=verbose,
+                        omissions=omissions)
             else:
+                omitted = None
+                if omissions:
+                    omitted = omissions.get('/'.join(path + [name]))
                 resource, controller = candidate
-                description[name] = resource.describe(controller, path, verbose)
+                description[name] = resource.describe(controller, path, verbose, omitted)
 
         return description
 

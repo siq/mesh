@@ -77,6 +77,7 @@ class GenerateJavascriptBindings(Task):
         'mimetype': Text(description='mimetype'),
         'path': Path(description='path to target directory', required=True),
         'templates': Path(description='path to templates directory'),
+        'omissions': Map(Sequence(Text())),
     }
 
     def run(self, runtime):
@@ -89,7 +90,7 @@ class GenerateJavascriptBindings(Task):
         if not root.isdir():
             raise TaskError('path is not a directory')
 
-        files = generator.generate(self['bundle'])
+        files = generator.generate(self['bundle'], self['omissions'])
         self._create_files(root, files)
 
     def _create_files(self, root, files):

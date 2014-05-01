@@ -124,8 +124,8 @@ class Generator(object):
         self.mimetype = mimetype or JSON
         self.template_dir = template_dir
 
-    def generate(self, bundle):
-        description = bundle.describe(verbose=True)
+    def generate(self, bundle, omissions=None):
+        description = bundle.describe(verbose=True, omissions=omissions)
 
         files = {}
         self._generate_versions(bundle, description['versions'], files)
