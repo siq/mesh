@@ -47,6 +47,9 @@ define([
                         return o[prop].toLowerCase().indexOf(value.toLowerCase()) >= 0;
                     } else if (op === 'gt') {
                         return Number(o[prop]) > Number(value);
+                    } else {
+                        // just return any matching
+                        return o[prop].indexOf(value) >= 0;
                     }
                 });
             }
