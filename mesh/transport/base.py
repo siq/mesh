@@ -101,9 +101,9 @@ class Client(object):
     def execute(self, resource, request, subject=None, data=None, format=None, context=None):
         raise NotImplementedError()
 
-    def extract(self, resource, request, subject):
+    def extract(self, resource, request, subject, sparse=True):
         request = self.get_request(resource, request)
-        return request['schema'].extract(subject)
+        return request['schema'].extract(subject, sparse=sparse)
 
     @classmethod
     def get_client(cls, name):
