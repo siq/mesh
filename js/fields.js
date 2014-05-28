@@ -163,6 +163,9 @@ define([
     var MinFloatError = ValidationError.extend({token: 'minfloaterror'});
     var MaxFloatError = ValidationError.extend({token: 'maxfloaterror'});
 
+    // email pattern error
+    var EmailPatternError = ValidationError.extend({token: 'emailpattern'});
+
     var Field = Class.extend({
         structural: false,
 
@@ -366,6 +369,16 @@ define([
         _validateType: function(value) {
             if (!isString(value)) {
                 throw InvalidTypeError();
+            }
+        },
+        _validateValue: function(value) {
+            // super soft regex for basic email address validation
+            // the real work for this is on the back end where it belongs
+            var valid = (/[^\s]+@[^\s]+\.[^\s]+/).test(value);
+            if (this.required || this.nonnull || value.length) {
+                if (!valid) {
+                    throw EmailPatternError();
+                }
             }
         }
     });
