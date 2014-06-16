@@ -16,9 +16,9 @@
   "version": "1.1.9",
   "dependencies": {
     "js-yaml": "0.3.x",
-    "bedrockjs": "git+ssh://git@github.com:siq/bedrockjs.git",
-    "siq-vendor-js": "git+ssh://git@github.com:siq/siq-vendor-js.git",
-    "csi": "git+ssh://git@github.com:siq/csi.git"
+    "bedrockjs": "git+ssh://git@github.com:siq/bedrockjs.git#release-7.5.1.0",
+    "siq-vendor-js": "git+ssh://git@github.com:siq/siq-vendor-js.git#release-7.5.1.0",
+    "csi": "git+ssh://git@github.com:siq/csi.git#release-7.5.1.0"
   },
   "csi": {
     "name": "mesh",
