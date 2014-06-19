@@ -8,7 +8,8 @@ define([
     //has socket.io dependency
     var instance = null,
         resourceMap = {},
-        socket = io.connect('http://localhost:3000', {query: 'userid=TODO:get user id'});
+        socket = io('http://localhost:3000');
+        // socket = io.connect('http://app:3000');
 
     socket.on('connect', function() {
         console.log('connect', arguments);
