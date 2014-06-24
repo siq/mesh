@@ -42,22 +42,27 @@ define([
         _bindEvents: function() {
             var self = this;
             socket.on('update', function (/*arguments*/) {
-                var resource = arguments[0].resource;
+                var entity = arguments[0].entity,
+                    resource = arguments[0].resource;
                 self._updateModel(resource);
             });
             socket.on('change', function (/*arguments*/) {
-                self._updateModel(arguments[1]);
+                var entity = arguments[0].entity,
+                    resource = arguments[0].resource;
+                self._updateModel(resource);
             });
             socket.on('delete', function (/*arguments*/) {
                 // call destroy on a model 
                 // first set the id to null so no http request will be sent
-                var model = getModel(arguments[1].id);
+                var entity = arguments[0].entity,
+                    model = getModel(arguments[0].resource.id);
                 if (!model) return;
                 model.id = null;
                 model.destroy();
             });
             socket.on('add', function (/*arguments*/) {
-                var model = arguments[1],
+                var entity = arguments[0].entity,
+                    model = arguments[0].resource,
                     manager;
                 if (!model) return;
                 // TODO: figure out how to get the manager from a new server model
