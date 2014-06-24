@@ -3,7 +3,7 @@ var http    = require('http'),
     fs      = require('fs'),
     app     = http.createServer(handler),
     io      = require('socket.io')(app),
-    port    = 3000,
+    port    = 9990, //3000,
     urls    = [
         '/push'
     ];
@@ -22,7 +22,7 @@ function push(request, response) {
         var post = JSON.parse(postData);
         console.log('DEBUG: recieved post', post);
         // push data through socket
-        io.emit('update', 'infoset');
+        io.emit('update', post);
     });
     response.writeHead(200);
     response.end();
@@ -73,5 +73,5 @@ io.on('connection', function (socket) {
 });
 
 app.listen(port, function(){
-    console.log('listening on *:' + port);
+    console.log('INFO: listening on *:' + port);
 });

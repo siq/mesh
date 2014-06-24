@@ -8,8 +8,8 @@ define([
     //has socket.io dependency
     var instance = null,
         resourceMap = {},
-        socket = io('http://localhost:3000');
-        // socket = io.connect('http://app:3000');
+        // socket = io('http://localhost:3000');
+        socket = io.connect('http://app:9990');
 
     socket.on('connect', function() {
         console.log('connect', arguments);
@@ -20,16 +20,16 @@ define([
                 console.warn('recieved pushed model with no id');
                 return;
             }
-            var managerRegistry = window.managerRegistry || {},
-                manager = _.find(managerRegistry, function(manager) {
+            var registry = window.registry || {},
+                manager = _.find(registry.managers, function(manager) {
                     return manager.models[id];
                 }),
                 model = _.findWhere(manager.models, {id: id});
             return model;
         };
         // getManager = function(model) {
-        //     var managerRegistry = window.managerRegistry || {},
-        //         manager = _.find(managerRegistry, function(manager) {
+        //     var registry = window.registry || {},
+        //         manager = _.find(registry.managers, function(manager) {
         //             return manager.models[model.id];
         //         });
         //     return manager;
@@ -42,7 +42,8 @@ define([
         _bindEvents: function() {
             var self = this;
             socket.on('update', function (/*arguments*/) {
-                self._updateModel(arguments[1]);
+                var resource = arguments[0].resource;
+                self._updateModel(resource);
             });
             socket.on('change', function (/*arguments*/) {
                 self._updateModel(arguments[1]);

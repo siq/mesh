@@ -6,7 +6,6 @@ define([
     'bedrock/mixins/assettable',
     './fields',
     './collection'
-
 ], function(_, $, Class, Eventable, asSettable, fields, collection) {
     var ret,
         $models = $('head script[type="application/json"][data-models=true]'),
@@ -15,6 +14,10 @@ define([
         SettableObject = Class.extend();
 
     asSettable.call(SettableObject.prototype, {propName: null});
+
+    var registry = window.registry = {};
+    window.registry = registry;
+    registry.managers = registry.managers || {};
 
     // if a nested property is changed like 'foo.bar', then the chnanges object
     // will look like:
@@ -47,12 +50,11 @@ define([
     }
 
     var Manager = Class.extend({
-        init: function(model) {
+        init: function(model, bundle) {
             this.model = model;
             this.models = {};
-            window.managerRegistry = window.managerRegistry || {};
-            // window.managerRegistry[_.uniqueId('_')] = this.models;
-            window.managerRegistry[_.uniqueId('_')] = this;
+            // window.managerRegistry.bundle[bundle] = this;
+            registry.managers[_.uniqueId('_')] = this;
         },
 
         associate: function(model, id) {
@@ -186,7 +188,7 @@ define([
     var Model = Class.extend({
         __new__: function(constructor, base, prototype) {
             constructor.manager = function() {
-                return Manager(constructor);
+                return Manager(constructor, prototype.__bundle__);
             };
             constructor.models = prototype.__models__ = constructor.manager();
             constructor.collection = function(params, independent) {
