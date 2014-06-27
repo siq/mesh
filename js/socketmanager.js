@@ -5,35 +5,36 @@ define([
     'bedrock/mixins/assettable'
 ], function(_, io, Class, asSettable) {
 
-    //has socket.io dependency
     var instance = null,
         resourceMap = {},
+        socket;
+
+    function initSocket() {
         // socket = io('http://localhost:3000');
         socket = io.connect('http://app:9990');
-
-    socket.on('connect', function() {
-        console.log('connect', arguments);
-    });
-
-    var getModel = function(id) {
-            if (!id) {
-                console.warn('recieved pushed model with no id');
-                return;
-            }
-            var registry = window.registry || {},
-                manager = _.find(registry.managers, function(manager) {
-                    return manager.models[id];
-                }),
-                model = _.findWhere(manager.models, {id: id});
-            return model;
-        };
-        // getManager = function(model) {
-        //     var registry = window.registry || {},
-        //         manager = _.find(registry.managers, function(manager) {
-        //             return manager.models[model.id];
-        //         });
-        //     return manager;
-        // };
+        socket.on('connect', function() {
+            console.log('connect', arguments);
+        });
+    }
+    function getModel(id) {
+        if (!id) {
+            console.warn('recieved pushed model with no id');
+            return;
+        }
+        var registry = window.registry || {},
+            manager = _.find(registry.managers, function(manager) {
+                return manager.models[id];
+            }),
+            model = _.findWhere(manager.models, {id: id});
+        return model;
+    }
+    // function getManager(model) {
+    //     var registry = window.registry || {},
+    //         manager = _.find(registry.managers, function(manager) {
+    //             return manager.models[model.id];
+    //         });
+    //     return manager;
+    // }
 
     var SocketManager = Class.extend({
         init: function() {
@@ -86,6 +87,7 @@ define([
     return {
         getInstance: function() {
             if (instance === null) {
+                initSocket();
                 window.socketmanager = instance = SocketManager();
             }
             return instance;
