@@ -10,8 +10,8 @@ define([
         socket;
 
     function initSocket() {
-        socket = io('http://localhost:9990');
-        // socket = io.connect('http://app:9990');
+        // socket = io('http://localhost:3000');
+        socket = io.connect('http://app:9990');
         socket.on('connect', function() {
             console.log('connect', arguments);
         });
