@@ -6,7 +6,6 @@ define([
     'bedrock/mixins/assettable',
     './fields',
     './collection'
-
 ], function(_, $, Class, Eventable, asSettable, fields, collection) {
     var ret,
         $models = $('head script[type="application/json"][data-models=true]'),
@@ -15,6 +14,10 @@ define([
         SettableObject = Class.extend();
 
     asSettable.call(SettableObject.prototype, {propName: null});
+
+    var registry = window.registry = {};
+    window.registry = registry;
+    registry.managers = registry.managers || {};
 
     // if a nested property is changed like 'foo.bar', then the chnanges object
     // will look like:
@@ -47,9 +50,11 @@ define([
     }
 
     var Manager = Class.extend({
-        init: function(model) {
+        init: function(model, bundle) {
             this.model = model;
             this.models = {};
+            // window.managerRegistry.bundle[bundle] = this;
+            registry.managers[_.uniqueId('_')] = this;
         },
 
         associate: function(model, id) {
@@ -100,22 +105,7 @@ define([
             if (model.id) {
                 instance = this.models[model.id];
                 if (instance) {
-                    // when we load a model from the server that has already been loaded
-                    // we set the serve model values on the existing model to stay in sync with the server
-                    // if the values are different then this will cause changes to be tracked in
-                    // the models._changes object but these changes can be cleared since they are from the server
-                    // if we don't clear these changes out then noclobber will prevent setting
-                    // new values on those 'changed' properties
-                    // 1. get the current client side changes (we don't want to clobber these)
-                    // 2. set model values
-                    // 3. get the changes caused during the set that were not already being tracked
-                    // 4. clear out those changes
-                    changes = _.keys(instance._changes);
-                    instance.set(model, {noclobber: noclobber});
-                    changes = _.without(_.keys(instance._changes), changes);
-                    _.each(changes, function(change) {
-                        delete instance._changes[change];
-                    });
+                    this.merge(model, instance, noclobber);
                     if (loaded) {
                         instance._loaded = true;
                     }
@@ -131,6 +121,25 @@ define([
             } else {
                 return this.collection(id).load();
             }
+        },
+
+        merge: function(server, client, noclobber) {
+            // when we load a model from the server that has already been loaded
+            // we set the serve model values on the existing model to stay in sync with the server
+            // if the values are different then this will cause changes to be tracked in
+            // the models._changes object but these changes can be cleared since they are from the server
+            // if we don't clear these changes out then noclobber will prevent setting
+            // new values on those 'changed' properties
+            // 1. get the current client side changes (we don't want to clobber these)
+            // 2. set model values
+            // 3. get the changes caused during the set that were not already being tracked
+            // 4. clear out those changes
+            changes = _.keys(client._changes);
+            client.set(server, {noclobber: noclobber});
+            changes = _.without(_.keys(client._changes), changes);
+            _.each(changes, function(change) {
+                delete client._changes[change];
+            });
         },
 
         notify: function(model, eventName) {
@@ -179,7 +188,7 @@ define([
     var Model = Class.extend({
         __new__: function(constructor, base, prototype) {
             constructor.manager = function() {
-                return Manager(constructor);
+                return Manager(constructor, prototype.__bundle__);
             };
             constructor.models = prototype.__models__ = constructor.manager();
             constructor.collection = function(params, independent) {
