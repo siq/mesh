@@ -15,9 +15,9 @@ define([
 
     asSettable.call(SettableObject.prototype, {propName: null});
 
-    // var registry = window.registry = {};
-    // window.registry = registry;
-    // registry.managers = registry.managers || {};
+    var registry = window.registry || {};
+    window.registry = registry;
+    registry.managers = registry.managers || {};
 
     // if a nested property is changed like 'foo.bar', then the chnanges object
     // will look like:
@@ -54,7 +54,7 @@ define([
             this.model = model;
             this.models = {};
             // window.managerRegistry.bundle[bundle] = this;
-            // registry.managers[_.uniqueId('_')] = this;
+            registry.managers[_.uniqueId('_')] = this;
         },
 
         associate: function(model, id) {
