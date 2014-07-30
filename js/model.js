@@ -136,10 +136,11 @@ define([
             // 4. clear out those changes
             changes = _.keys(client._changes);
             client.set(server, {noclobber: noclobber});
-            changes = _.without(_.keys(client._changes), changes);
+            changes = _.difference(_.keys(client._changes), changes);
             _.each(changes, function(change) {
                 delete client._changes[change];
             });
+            return this;
         },
 
         notify: function(model, eventName) {
@@ -424,6 +425,15 @@ define([
                         (data.parameters || {}).state &&
                         (data.parameters || {}).strategy && data.form);
                 if (creating && !dynamicFormResponse) {
+                    // if this was a client side model (model.cid)
+                    // dissociate it so it can be re-associated under it's served id (model.id)
+                    // i.e. self._manager.models[id] instead of self._manager.models[cid]
+                    // this will allow the 'add' notification to propagate to collections
+                    if (self.cid && !self.id) {
+                        self._manager
+                            .dissociate(self)
+                            .merge(data, self, true);
+                    }
                     self._manager.associate(self, data.id);
                     self._manager.notify(self, 'add');
                 }
