@@ -39,7 +39,7 @@ define([
         }
         _.each(filter, function(value, key) {
             var split = key.split('__'), prop = split[0], op = split[1];
-            if (key === 'id' || key === 'document_id') {
+            if (key === 'id' || key === 'document_id' || 'infoset_id') {
                 objects = _.where(objects, key, value);
             } else {
                 objects = _.filter(objects, function(o) {
