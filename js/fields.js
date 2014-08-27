@@ -241,7 +241,14 @@ define([
         ValidationError: ValidationError,
         NonNullError: NonNullError,
         CompoundError: CompoundError,
-        UnknownFieldError: UnknownFieldError
+        UnknownFieldError: UnknownFieldError,
+        MinLengthError: MinLengthError,
+        MaxLengthError: MaxLengthError,
+        MinIntegerError: MinIntegerError,
+        MaxIntegerError: MaxIntegerError,
+        MinFloatError: MinFloatError,
+        MaxFloatError: MaxFloatError,
+        EmailPatternError: EmailPatternError
     };
 
     // a mapping of field types, as defined by scheme, to field implementations,
@@ -375,8 +382,13 @@ define([
             // super soft regex for basic email address validation
             // the real work for this is on the back end where it belongs
             var valid = (/[^\s]+@[^\s]+\.[^\s]+/).test(value);
-            if (this.required || this.nonnull || value.length) {
-                if (!valid) {
+            if ((this.nonnull || this.min_length) && isString(value)) {
+                if (this.strip) {
+                    value = trim(value);
+                }
+                if (!value || (value < this.min_length)) {
+                    throw MinLengthError('field must contain at least one email');
+                } else if (!valid) {
                     throw EmailPatternError();
                 }
             }
