@@ -1,15 +1,14 @@
 define([
     'vendor/underscore',
-    'vendor/socket.io',
+    // 'vendor/socket.io',
     'bedrock/class',
     'bedrock/mixins/assettable'
-], function(_, io, Class, asSettable) {
+], function(_, /*io,*/ Class, asSettable) {
 
     var instance = null,
-        resourceMap = {},
         socket;
 
-    function initSocket() {
+    function initSocket(io) {
         socket = io.connect('http://'+window.location.hostname+':9990');
         // -- uncomment for use with butler and vpn
         // socket = io.connect('http://app:9990');
@@ -90,8 +89,10 @@ define([
     return {
         getInstance: function() {
             if (instance === null) {
-                initSocket();
-                window.socketmanager = instance = SocketManager();
+                require(['vendor/socket.io'], function(io) {
+                    initSocket(io);
+                    window.socketmanager = instance = SocketManager();
+                });
             }
             return instance;
         }
