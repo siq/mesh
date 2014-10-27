@@ -16,7 +16,7 @@ define([
         // -- uncomment for use with butler and ssh tunnels
         // socket = io.connect('http://localhost:15090');
         socket.on('connect', function() {
-            console.log('connect', arguments);
+            console.info('connected'/*, arguments*/);
         });
     }
     function getModel(id) {
