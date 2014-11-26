@@ -10,10 +10,13 @@ define([
         socket;
 
     function initSocket() {
-        // socket = io('http://localhost:3000');
-        socket = io.connect('http://app:9990');
+        socket = io.connect('http://'+window.location.hostname+':9990');
+        // -- uncomment for use with butler and vpn
+        // socket = io.connect('http://app:9990');
+        // -- uncomment for use with butler and ssh tunnels
+        // socket = io.connect('http://localhost:15090');
         socket.on('connect', function() {
-            console.log('connect', arguments);
+            console.info('connected'/*, arguments*/);
         });
     }
     function getModel(id) {
@@ -53,7 +56,7 @@ define([
                 self._updateModel(resource);
             });
             socket.on('delete', function (/*arguments*/) {
-                // call destroy on a model 
+                // call destroy on a model
                 // first set the id to null so no http request will be sent
                 var entity = arguments[0].entity,
                     model = getModel(arguments[0].resource.id);
@@ -77,7 +80,7 @@ define([
                 model = getModel(id),
                 manager;
             if (!model) return;
-            // using the manager::merge will call `set` with `noclobber` 
+            // using the manager::merge will call `set` with `noclobber`
             manager = model._manager;
             manager.merge(m, model, true);
         }

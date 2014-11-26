@@ -717,6 +717,7 @@ class HttpProxy(WsgiServer):
     """An HTTP proxy."""
 
     PROXIED_REQUEST_HEADERS = {
+        'HTTP_ACCEPT': 'Accept',
         'HTTP_COOKIE': 'Cookie',
         'X_SPIRE_X_FORWARDED_FOR': 'X_SPIRE_X_FORWARDED_FOR',
     }
