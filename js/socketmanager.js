@@ -27,7 +27,7 @@ define([
         var registry = window.registry || {},
             manager = _.find(registry.managers, function(manager) {
                 return manager.models[id];
-            }),
+            }) || {},
             model = _.findWhere(manager.models, {id: id});
         return model;
     }
