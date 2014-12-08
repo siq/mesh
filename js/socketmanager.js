@@ -10,7 +10,7 @@ define([
         socket;
 
     function initSocket() {
-        socket = io.connect('http://'+window.location.hostname+':9990');
+        socket = io.connect(window.location.hostname+':9990');
         // -- uncomment for use with butler and vpn
         // socket = io.connect('http://app:9990');
         // -- uncomment for use with butler and ssh tunnels
