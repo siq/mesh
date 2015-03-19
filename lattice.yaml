@@ -7,5 +7,5 @@ components:
       default:
         script: |
           python=$(find -L $BUILDROOT -type f -executable -name python)
-          $python setup.py install
+          $python setup.py -B install
 
