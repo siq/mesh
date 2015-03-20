@@ -5,7 +5,14 @@ Script to deploy simple "hello world" Mesh example client and server.
 from sys import argv, stderr, exit
 
 def _mello_client_request(client, name):
-    response = client.execute('melloworld', 'mello', None, {'name': name})
+    # client.execute
+    #   @params {string} resource
+    #   @params {?} request
+    #   @params {object} subject
+    #   @params {dictionary} data
+    #   @params {?} format
+    #   @params {?} context
+    response = client.execute('mello/1.0/melloworld', 'say_mello', None, {'name': name})
     print response.content['message']
 
 def _mello_client_prompt():
@@ -31,11 +38,11 @@ def client(argv):
     op.add_option('--local', action='store_true')
     opt, args = op.parse_args(argv)
 
-    specification = Specification(mello_bundle.describe(version=(1, 0)))
+    specification = Specification(mello_bundle.describe())
 
     if opt.local:
         server = InternalServer([mello_bundle])
-        client = InternalClient(server, specification)
+        client = InternalClient(server, specification).register()
     else:
         print >>stderr, 'not supported yet'
         return 1
