@@ -7,7 +7,7 @@ from sys import argv, stderr, exit
 def _mello_client_request(client, name):
     # client.execute
     #   @params {string} resource
-    #   @params {?} request
+    #   @params {string} request
     #   @params {object} subject
     #   @params {dictionary} data
     #   @params {?} format
