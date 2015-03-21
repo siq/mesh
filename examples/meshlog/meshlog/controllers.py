@@ -10,7 +10,7 @@ class MeshlogController(Controller):
             return storage[int(subject)]
         except ValueError:
             return None
-   
+
     def create(self, context, response, subject, data):
         data['id'] = _id = storage.put_new(data, self.resource)
         return response(dict(id=_id))
@@ -69,5 +69,5 @@ class PostController(MeshlogController):
             posts = filter(lambda p:query['author'] == p['author'], posts)
 
         return response({'resources':posts, 'total':len(posts)})
-        
-        
+
+

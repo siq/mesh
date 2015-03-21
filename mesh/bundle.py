@@ -140,8 +140,8 @@ class Bundle(object):
         bundle in various contexts, including within URLs, and thus should
         generally be a unique name.
 
-    :param *mounts: Any number of :class:`mesh.bundle.mount` instances to 
-        mount within this bundle.    
+    :param *mounts: Any number of :class:`mesh.bundle.mount` instances to
+        mount within this bundle.
     """
 
     def __init__(self, name, *mounts, **params):
@@ -196,7 +196,7 @@ class Bundle(object):
 
         :param boolean verbose: Optional, default is ``False``; if ``True``, the
             constructed description will contain all attribute/value pairs nested
-            objects, even those attributes which have the default value. When 
+            objects, even those attributes which have the default value. When
             ``False``, attributes which have a default value are omitted from the
             description to provide a more compact representation.
         """

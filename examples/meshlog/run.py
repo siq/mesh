@@ -24,11 +24,11 @@ def client(argv):
     op.add_option('--local', action='store_true')
     opt, args = op.parse_args(argv)
 
-    specification = Specification(meshlog_bundle.describe(version=(1, 0)))
+    specification = Specification(meshlog_bundle.describe())
 
     if opt.local:
         server = InternalServer([meshlog_bundle])
-        client = InternalClient(server, specification)
+        client = InternalClient(server, specification).register()
     else:
         client = HttpClient('http://%s:%s/' % (opt.host, opt.port), specification)
 
@@ -51,11 +51,11 @@ def client(argv):
 
     def create_blog_action(params):
         title = get_param(params, 'title')
-        client.execute('blog', 'create', None, {'title': title})
+        client.execute('meshlog/1.0/blog', 'create', None, {'title': title})
 
     def query_blog_action(params):
         q = get_param(params, 'query')
-        response = client.execute('blog', 'query', None, {'query': {'title__contains': q}})
+        response = client.execute('meshlog/1.0/blog', 'query', None, {'query': {'title__contains': q}})
         print 'Number of results:', response.content['total']
         for blog in response.content['resources']:
             print blog
@@ -63,16 +63,16 @@ def client(argv):
     def update_blog_action(params):
         blog_id = get_blog_id()
         title = get_param(params, 'new title')
-        client.execute('blog', 'update', blog_id, {'title': title})
+        client.execute('meshlog/1.0/blog', 'update', blog_id, {'title': title})
 
     def delete_blog_action(params):
         blog_id = get_blog_id()
-        client.execute('blog', 'delete', blog_id, {})
+        client.execute('meshlog/1.0/blog', 'delete', blog_id, {})
         if state['blog'] == blog_id:
             del state['blog']
 
     def view_blog_action(params):
-        print client.execute('blog', 'get', get_blog_id(), {}).content
+        print client.execute('meshlog/1.0/blog', 'get', get_blog_id(), {}).content
 
     def create_post_action(params):
         title = get_param(params, 'title')
@@ -80,7 +80,7 @@ def client(argv):
         blog_id = get_blog_id()
         body = raw_input('post: ')
         data = dict(title=title, author=author, blog=blog_id, body=body)
-        client.execute('post', 'create', None, data)
+        client.execute('meshlog/1.0/post', 'create', None, data)
 
     def query_post_action(params):
         blog_id = get_blog_id()
@@ -89,7 +89,7 @@ def client(argv):
                     {'blog': blog_id,
                      'title__contains': q,
                      'body__contains': q}}
-        response = client.execute('post', 'query', None, query)
+        response = client.execute('meshlog/1.0/post', 'query', None, query)
         print 'Number of posts:', response.content['total']
         for post in response.content['resources']:
             print post

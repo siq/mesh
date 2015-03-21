@@ -87,7 +87,7 @@ class Request(object):
     :param boolean subject_required: Optional, default is ``True``; if ``False``,
         indicates that a subject is not required for this request despite it
         being marked as ``specific``. When ``True``, a subject will be required
-        for requested marked as ``specific``. The primary use case for this 
+        for requested marked as ``specific``. The primary use case for this
         parameter is to support requests like ``put``.
 
     :param validators: Optional, default is ``None``.

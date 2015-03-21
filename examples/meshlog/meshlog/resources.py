@@ -18,7 +18,7 @@ class Post(Resource):
 
     class schema:
         title = Text(operators=['contains'])
-        author = Text(operators=['eq'])
+        author = Text(operators=['equal'])
         body = Text(operators=['contains'])
-        blog = Integer(required=True, nonnull=True, operators=['eq'])
+        blog = Integer(required=True, nonnull=True, operators=['equal'])
 
