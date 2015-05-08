@@ -41,6 +41,9 @@ class RequestError(MeshError):
 class BadRequestError(RequestError):
     status = BAD_REQUEST
 
+class UnauthorizedError(RequestError):
+    status = UNAUTHORIZED
+
 class ForbiddenError(RequestError):
     status = FORBIDDEN
 
@@ -73,6 +76,7 @@ class UnavailableError(RequestError):
 
 RequestError.errors = {
     BAD_REQUEST: BadRequestError,
+    UNAUTHORIZED: UnauthorizedError,
     FORBIDDEN: ForbiddenError,
     NOT_FOUND: NotFoundError,
     INVALID: InvalidError,
