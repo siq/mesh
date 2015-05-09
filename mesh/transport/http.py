@@ -26,6 +26,7 @@ STATUS_CODES = {
     SUBSET: 203,
     PARTIAL: 206,
     BAD_REQUEST: 400,
+    UNAUTHORIZED: 401,
     FORBIDDEN: 403,
     NOT_FOUND: 404,
     METHOD_NOT_ALLOWED: 405,
@@ -48,6 +49,7 @@ STATUS_LINES = {
     SUBSET: '203 Subset',
     PARTIAL: '206 Partial',
     BAD_REQUEST: '400 Bad Request',
+    UNAUTHORIZED: '401 Unauthorized',
     FORBIDDEN: '403 Forbidden',
     NOT_FOUND: '404 Not Found',
     METHOD_NOT_ALLOWED: '405 Method Not Allowed',
@@ -71,7 +73,7 @@ PATH_EXPR = r"""(?x)^%s
     )?
     (?:[!](?P<format>\w+))?
     /?$"""
-        
+
 BUNDLE_EXPR = re.compile(r"""(?x)
     /(?P<bundle>[\w.]+)
     /(?P<major>\d+)[.](?P<minor>\d+)""")
@@ -87,7 +89,7 @@ class Connection(object):
         self.scheme, self.host, self.path = urlparse(url)[:3]
         self.path = self.path.rstrip('/')
         self.timeout = timeout
-        
+
         if self.scheme == 'https':
             self.implementation = HTTPSConnection
         elif self.scheme == 'http':
@@ -400,7 +402,7 @@ class HttpServer(WsgiServer):
 
         self.path_expr = re.compile(PATH_EXPR % path_prefix)
         self.introspection_path_expr = re.compile(INTROSPECTION_PATH_EXPR % path_prefix)
-        
+
         self.bundles = {}
         for bundle in bundles:
             if bundle.name not in self.bundles:
@@ -489,7 +491,7 @@ class HttpServer(WsgiServer):
 
         if response.content:
             self._prepare_response_content(request, response)
-            
+
         return response
 
     def _construct_endpoint(self, preamble, resource, controller, request):
@@ -666,7 +668,7 @@ class HttpClient(Client):
         response = self.connection.request(GET, '%s/_specification' % bundle,
             headers=self.construct_headers())
         return Specification(self.format.unserialize(response.content))
-        
+
     def _prepare_request(self, resource, request, subject=None, data=None, format=None, context=None):
         if not isinstance(resource, dict):
             resource = self.specification.find(resource)
