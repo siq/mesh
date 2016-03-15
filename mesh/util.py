@@ -65,7 +65,7 @@ def import_object(path, ignore_errors=False, report_errors=False):
             raise
 
 class LogFormatter(logging.Formatter):
-    def __init__(self, format='%(timestamp)s %(name)s %(levelname)s %(message)s'):
+    def __init__(self, format='%(timestamp)s [pid=%(process)s:%(thread)s] %(name)s %(levelname)s [line:%(lineno)s] %(message)s'):
         logging.Formatter.__init__(self, format)
 
     def format(self, record):
