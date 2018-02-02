@@ -308,6 +308,9 @@ class Request(object):
 
         instance = controller()
 
+        if not instance.validate_request(request, response):
+            return response
+
         subject = None
         if self.specific:
             if request.subject is None:
