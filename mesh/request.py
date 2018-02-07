@@ -294,8 +294,6 @@ class Request(object):
         if self.verbose:
             message += '\n' + format_structure(request.data, abbreviate=True)
         log('info', message)
-        _debug('+Request.process', includeStackTrace=True)
-        _debug('+Request.process - request.data: ', format_structure(request.data, abbreviate=True))
 
         if mediators:
             for mediator in mediators:
@@ -309,15 +307,9 @@ class Request(object):
                     return response(INVALID, error)
 
         instance = controller()
-        try:
-            if not instance.validate_request(request, response):
-                _debug('Request.process - validate_request FAILED', type(instance))
-                return response
-            
-            _debug('Request.process - validate_request SUCCESS', type(instance))
-        except AttributeError:
-            _debug('Request.process - validate_request THREW EXCEPTION', type(instance))
-            pass
+
+        if not instance.validate_request(request, response):
+            return response
 
         subject = None
         if self.specific:
@@ -462,27 +454,3 @@ def validator(attr=None, requests=None):
         method.requests = requests
         return classmethod(method)
     return decorator
-
-
-def _debug(msg, obj=None, includeStackTrace=False):
-    import datetime
-    import inspect
-    import traceback
-    frame = inspect.currentframe()
-    fileName  =  frame.f_code.co_filename
-    line = ' [%s] %s' % (fileName, msg)
-    if obj != None:
-        line += ': ' + str(obj)
-    print 'DEBUG:' + line
-    if includeStackTrace:
-        print 'STACK' + ':' * 75
-        for s in traceback.format_stack():
-            print(s.strip())
-        print ':' * 80
-    with open('/tmp/_debug_','a') as fout:
-        fout.write(str(datetime.datetime.now().time()) + line + '\n')
-        if includeStackTrace:
-            fout.write('STACK:\n')
-            for s in traceback.format_stack():
-                fout.write('  ' + s.strip() + '\n')
-        fout.flush()
