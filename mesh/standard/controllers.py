@@ -26,3 +26,6 @@ class StandardController(Controller):
 
         return pruned
 
+    def validate_request(self, request, response):
+        return True
+

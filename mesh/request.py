@@ -308,6 +308,14 @@ class Request(object):
 
         instance = controller()
 
+        try:
+            if not instance.validate_request(request, response):
+                log('info', 'validate_request failed for controller %s', str(type(instance)))
+                return response
+        except AttributeError:
+            log('info', 'exception during validate_request for controller %s', str(type(instance)))
+            pass
+
         subject = None
         if self.specific:
             if request.subject is None:
