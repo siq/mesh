@@ -184,8 +184,6 @@ class HttpRequest(ServerRequest):
         aspects = ['%s:%s' % (self.method, self.path)]
         if self.mimetype:
             aspects.append('(%s)' % self.mimetype)
-        if self.context:
-            aspects.append('context=%r' % self.context)
         return 'HttpRequest(%s)' % ' '.join(aspects)
 
     @property
