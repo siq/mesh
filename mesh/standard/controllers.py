@@ -1,5 +1,6 @@
 from mesh.resource import *
 from scheme.util import format_structure
+from scheme.timezone import current_timestamp
 
 __all__ = ('StandardController',)
 
@@ -45,8 +46,13 @@ class StandardController(Controller):
         event_detail = {}
         event_payload = {}
         
+        ts1 = current_timestamp().strftime('%Y-%m-%dT%H:%M:%SZ')
+        ts2 = datetime.datetime.utcfromtimestamp(time.time()).strftime('%Y-%m-%dT%H:%M:%SZ')
+        _debug('timestamp string using scheme.current_timestamp',ts1)
+        _debug('timestamp string using date and time functions',ts2)
+        
         audit_data = {
-            'event_date': datetime.datetime.utcfromtimestamp(time.time()).strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'event_date': ts1,
             'event_detail': event_detail,
             'event_payload': event_payload,
         }
@@ -65,9 +71,9 @@ class StandardController(Controller):
         method = request.headers['REQUEST_METHOD']
         status = response.status
     
-        _debug('+send_audit_data - data before preparation in controller', format_structure(data))        
+        _debug('+send_audit_data - data before preparation in controller', format_structure(audit_data))        
         self._prepare_audit_data(method, status, data, audit_data)
-        _debug('+send_audit_data - data after preparation in controller', format_structure(data))        
+        _debug('+send_audit_data - data after preparation in controller', format_structure(audit_data))        
         
         # insert rest call to SIQ Audit here!
         
