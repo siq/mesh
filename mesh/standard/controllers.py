@@ -1,6 +1,8 @@
+from mesh.constants import OK, DELETE, POST, PUT
 from mesh.resource import *
-from scheme.util import format_structure
 from scheme.timezone import current_timestamp
+from scheme.util import format_structure
+
 
 __all__ = ('StandardController',)
 
@@ -34,10 +36,10 @@ class StandardController(Controller):
     def needs_audit(self, request):
         return False
     
-    def _prepare_audit_data(self, method, status, data, audit_data):
+    def _prepare_audit_data(self, method, status, resource_data, audit_data):
         raise NotImplementedError
     
-    def send_audit_data(self, request, response, data):
+    def send_audit_data(self, request, response, subject, data):
 
         import datetime
         import time
@@ -45,6 +47,7 @@ class StandardController(Controller):
         
         event_detail = {}
         event_payload = {}
+        resource_data = data or {}
         
         ts1 = current_timestamp().strftime('%Y-%m-%dT%H:%M:%SZ')
         ts2 = datetime.datetime.utcfromtimestamp(time.time()).strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -59,23 +62,55 @@ class StandardController(Controller):
         
         # check whether the correlation id is given as part of the data
         # if so, use it for this audit call, too, if not, create a new one
-        if 'correlation_id' in data:
-            correlation_id = data.pop('correlation_id')
-        else:
-            correlation_id = str(uuid.uuid4())
+        correlation_id = str(uuid.uuid4())
+        if not resource_data is None:
+            event_payload.update(resource_data)
+            if 'correlation_id' in resource_data:
+                correlation_id = resource_data.pop('correlation_id')
             
         audit_data['correlation_id']= correlation_id
         
-        # extract actor id details
+        # extract audit relevant details
         actor_id = request.context.get('user-id', '')
         method = request.headers['REQUEST_METHOD']
-        status = response.status
-    
-        _debug('+send_audit_data - data before preparation in controller', format_structure(audit_data))        
-        self._prepare_audit_data(method, status, data, audit_data)
-        _debug('+send_audit_data - data after preparation in controller', format_structure(audit_data))        
+        origin = request.headers['HTTP_X_SPIRE_X_FORWARDED_FOR']
+        status = response.status or OK
+        
+        if method == DELETE:
+            delsubj = self.acquire(request.subject)
+            resource_data = delsubj.extract_dict()
+        
+        if method == POST and not subject is None:
+            # a POST request passing the subject's id, should normally rather be a PUT request
+            # so translate that, accordingly
+            method = PUT
+                
+        if subject is None:
+            if status == OK:
+                resource_data['id'] = response.content.get('id','')
+            else:
+                resource_data['id'] = ''
+        else:
+            resource_data['id'] = subject.id
+             
+        audit_data['actor_id'] = actor_id
+        audit_data['origin'] = origin
+        if status == OK:
+            audit_data['result'] = 'SUCCESS'
+        else:
+            audit_data['result'] = 'FAILED'
+
+
+        _debug('+send_audit_data - request actor', str(actor_id))        
+        _debug('+send_audit_data - request method', method)        
+        _debug('+send_audit_data - response status', status)
+        _debug('+send_audit_data - subject id', resource_data['id'])        
+        self._prepare_audit_data(method, status, resource_data, audit_data)
+        _debug('+send_audit_data - audit record', format_structure(audit_data))        
         
         # insert rest call to SIQ Audit here!
+        # assume that failure to create/write the audit event will throw an exception
+        # which we'll deliberately NOT catch, here!
         
         return correlation_id
     
