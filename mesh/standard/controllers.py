@@ -33,7 +33,7 @@ class StandardController(Controller):
     def validate_request(self, request, response):
         return True
 
-    def needs_audit(self, request):
+    def needs_audit(self, request, subject):
         return False
     
     def _prepare_audit_data(self, method, status, resource_data, audit_data):

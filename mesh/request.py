@@ -295,22 +295,27 @@ class Request(object):
             message += '\n' + format_structure(request.data, abbreviate=True)
         log('info', message)
 
+        instance = controller()
+        
         if mediators:
             for mediator in mediators:
                 try:
                     mediator.before_validation(self, request, response)
                     if response.status:
+                        self._audit_failed_request(instance, request, response)
                         return response
                 except StructuralError, exception:
                     error = exception.serialize()
                     log('info', 'request to %s failed during mediator', str(self))
-                    return response(INVALID, error)
+                    response(INVALID, error)
+                    self._audit_failed_request(instance, request, response)
+                    return response
 
-        instance = controller()
 
         try:
             if not instance.validate_request(request, response):
                 log('info', 'validate_request failed for controller %s', str(type(instance)))
+                self._audit_failed_request(instance, request, response)
                 return response
         except AttributeError:
             log('info', 'exception during validate_request for controller %s', str(type(instance)))
@@ -319,16 +324,22 @@ class Request(object):
         subject = None
         if self.specific:
             if request.subject is None:
-                return response(BAD_REQUEST)
+                response(BAD_REQUEST)
+                self._audit_failed_request(instance, request, response)
+                return response
             subject = instance.acquire(request.subject)
             if not subject and self.subject_required:
                 log('info', 'request to %r specified unknown subject %r', str(self),
                     request.subject)
-                return response(GONE)
+                response(GONE)
+                self._audit_failed_request(instance, request, response)
+                return response
         elif request.subject:
             log('info', 'request to %r improperly specified subject %r', str(self),
                 request.subject)
-            return response(BAD_REQUEST)
+            response(BAD_REQUEST)
+            self._audit_failed_request(instance, request, response)
+            return response
 
         data = None
         if self.schema:
@@ -348,7 +359,9 @@ class Request(object):
                     response(INVALID, error)
         elif request.data:
             log('info', 'request to %r improperly specified data', str(self))
-            return response(BAD_REQUEST)
+            response(BAD_REQUEST)
+            self._audit_failed_request(instance, request, response, subject)
+            return response
 
         if not response.status:
             try:
@@ -359,8 +372,11 @@ class Request(object):
                 error = exception.serialize()
                 log('exception', 'request to %s failed controller invocation', str(self))
                 response(INVALID, error)
+                self._audit_failed_request(instance, request, response, subject, data)
             except RequestError, exception:
-                return response(exception.status, exception.content)
+                response(exception.status, exception.content)
+                self._audit_failed_request(instance, request, response, subject, data)
+                return response
 
         if self.verbose and response.content:
             log('debug', 'response for request to %s:\n%s', request.description,
@@ -369,11 +385,14 @@ class Request(object):
         definition = self.responses.get(response.status)
         if not definition:
             if response.status in ERROR_STATUS_CODES and not response.content:
+                self._audit_failed_request(instance, request, response, subject, data)
                 return response
             else:
                 log('error', 'response for %s has undeclared status code %s',
                     str(self), response.status)
-                return response(SERVER_ERROR)
+                response(SERVER_ERROR)
+                self._audit_failed_request(instance, request, response, subject, data)
+                return response
 
         if definition.schema:
             try:
@@ -382,10 +401,14 @@ class Request(object):
                 log('error', 'response for %s failed schema validation\n%s\n%s',
                     str(self), exception.format_errors(), format_structure(response.content))
                 response.content = None
-                return response(SERVER_ERROR)
+                response(SERVER_ERROR)
+                self._audit_failed_request(instance, request, response, subject, data)
+                return response
         elif response.content:
             log('error', 'response for %s improperly specified content', str(self))
-            return response(SERVER_ERROR)
+            response(SERVER_ERROR)
+            self._audit_failed_request(instance, request, response, subject, data)
+            return response
 
     def validate(self, data):
         if self.batch:
@@ -418,6 +441,19 @@ class Request(object):
                     error.merge(exception)
         if error.substantive:
             raise error
+        
+    def _audit_failed_request(self, controller, request, response, subject=None, data=None):
+        reqsubj = subject
+        reqdata = data
+        if not reqsubj:
+            reqsubj = request.subject
+
+        if controller.needs_audit(request, subject):
+            if not reqdata:
+                reqdata = request.data
+
+            controller.send_audit_data(request, response, subject, data)
+        
 
 class Mediator(object):
     """A request mediator."""
