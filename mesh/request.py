@@ -452,7 +452,7 @@ class Request(object):
             if not reqdata:
                 reqdata = request.data
 
-            controller.send_audit_data(request, response, subject, data)
+            controller.send_audit_data(request, response, subject, reqdata)
         
 
 class Mediator(object):
