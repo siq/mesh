@@ -74,6 +74,10 @@ class BadGatewayError(RequestError):
 class UnavailableError(RequestError):
     status = UNAVAILABLE
 
+class AuditCreateError(MeshError):
+    """ raised when an audit event cannot be be written to the audit store """
+    
+    
 RequestError.errors = {
     BAD_REQUEST: BadRequestError,
     UNAUTHORIZED: UnauthorizedError,

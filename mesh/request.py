@@ -377,6 +377,12 @@ class Request(object):
                 response(exception.status, exception.content)
                 self._audit_failed_request(instance, request, response, subject, data)
                 return response
+            except AuditCreateError, ace:
+                error = ace.serialize()
+                log('exception', 'request to %s failed during audit creation', str(self))
+                response(SERVER_ERROR, error)
+                return response
+
 
         if self.verbose and response.content:
             log('debug', 'response for request to %s:\n%s', request.description,
@@ -451,10 +457,13 @@ class Request(object):
         if controller.needs_audit(request, subject):
             if not reqdata:
                 reqdata = request.data
-
-            controller.send_audit_data(request, response, subject, reqdata)
+            try:
+                controller.send_audit_data(request, response, subject, reqdata)
+            except AuditCreateError, ace:
+                error = ace.serialize()
+                log('exception', 'request to %s failed during error audit creation: %s', str(self), error)
+                
         
-
 class Mediator(object):
     """A request mediator."""
 
