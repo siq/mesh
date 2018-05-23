@@ -378,8 +378,8 @@ class Request(object):
                 self._audit_failed_request(instance, request, response, subject, data)
                 return response
             except AuditCreateError, ace:
-                error = ace.serialize()
-                log('exception', 'request to %s failed during audit creation', str(self))
+                error = ace.message.get('message','')
+                log('exception', 'request to %s failed during audit creation: %s', str(self), error)
                 response(SERVER_ERROR, error)
                 return response
 
