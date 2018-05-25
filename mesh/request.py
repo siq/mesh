@@ -374,7 +374,7 @@ class Request(object):
                 response(INVALID, error)
                 self._audit_failed_request(instance, request, response, subject, data)
             except RequestError, exception:
-                log('error', 'request to %s returned a request error', str(self))
+                log('error', 'request to %s returned a request error: status=%s, content=%s', str(self), exception.status, exception.content)
                 response(status=exception.status, content=exception.content)
                 if not isinstance(exception, AuditCreateError):
                     self._audit_failed_request(instance, request, response, subject, data)
