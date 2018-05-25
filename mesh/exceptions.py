@@ -74,9 +74,12 @@ class BadGatewayError(RequestError):
 class UnavailableError(RequestError):
     status = UNAVAILABLE
 
-class AuditCreateError(MeshError):
-    """ raised when an audit event cannot be be written to the audit store """
-    
+class FailedDependencyError(RequestError):
+    status = FAILED_DEPENDENCY
+
+class AuditCreateError(FailedDependencyError):
+    ''' raised when creating an audit entry fails,
+        in which case the whole operation should return failed '''
     
 RequestError.errors = {
     BAD_REQUEST: BadRequestError,
@@ -91,6 +94,7 @@ RequestError.errors = {
     UNIMPLEMENTED: UnimplementedError,
     BAD_GATEWAY: BadGatewayError,
     UNAVAILABLE: UnavailableError,
+    FAILED_DEPENDENCY: FailedDependencyError
 }
 
 __all__ = construct_all_list(locals(), Exception)

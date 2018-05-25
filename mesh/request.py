@@ -370,17 +370,15 @@ class Request(object):
                     response.status = OK
             except StructuralError, exception:
                 error = exception.serialize()
-                log('exception', 'request to %s failed controller invocation', str(self))
+                log('error', 'request to %s failed controller invocation', str(self))
                 response(INVALID, error)
                 self._audit_failed_request(instance, request, response, subject, data)
             except RequestError, exception:
-                response(exception.status, exception.content)
-                self._audit_failed_request(instance, request, response, subject, data)
-                return response
-            except AuditCreateError, ace:
-                error = ace.message.get('message','')
-                log('exception', 'request to %s failed during audit creation: %s', str(self), error)
-                response(SERVER_ERROR, error)
+                log('error', 'request to %s returned a request error', str(self))
+                response(status=exception.status, content=exception.content)
+                if not isinstance(exception, AuditCreateError):
+                    self._audit_failed_request(instance, request, response, subject, data)
+                
                 return response
 
 
@@ -458,10 +456,11 @@ class Request(object):
             if not reqdata:
                 reqdata = request.data
             try:
+                log('debug', 'writing audit entry for failed request', str(self))
                 controller.send_audit_data(request, response, subject, reqdata)
             except AuditCreateError, ace:
-                error = ace.serialize()
-                log('exception', 'request to %s failed during error audit creation: %s', str(self), error)
+                error = str(ace.content)
+                log('error', 'request to %s failed during error audit creation: %s', str(self), error)
                 
         
 class Mediator(object):
