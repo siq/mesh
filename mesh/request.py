@@ -376,7 +376,8 @@ class Request(object):
             except RequestError, exception:
                 log('error', 'request to %s returned a request error: status=%s, content=%s', str(self), exception.status, exception.content)
                 response(status=exception.status, content=exception.content)
-                if not isinstance(exception, AuditCreateError):
+ 
+                if not isinstance(exception, AuditCreateError) and not isinstance(exception, FailedDependencyError):
                     self._audit_failed_request(instance, request, response, subject, data)
                 
                 return response
