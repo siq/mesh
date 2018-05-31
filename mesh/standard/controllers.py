@@ -28,4 +28,6 @@ class StandardController(Controller):
 
     def validate_request(self, request, response):
         return True
-
+       
+    def needs_audit(self, request, subject):
+        return False
