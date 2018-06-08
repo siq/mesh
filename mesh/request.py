@@ -374,7 +374,6 @@ class Request(object):
                 response(INVALID, error)
                 self._audit_failed_request(instance, request, response, subject, data)
             except RequestError, exception:
-                log('error', 'request to %s returned a request error: status=%s, content=%s', str(self), exception.status, exception.content)
                 response(status=exception.status, content=exception.content)
  
                 if not isinstance(exception, AuditCreateError) and not isinstance(exception, FailedDependencyError):
@@ -457,11 +456,11 @@ class Request(object):
             if not reqdata:
                 reqdata = request.data
             try:
-                log('debug', 'writing audit entry for failed request', str(self))
+                log('debug', 'writing audit entry for failed request: %s' % str(self))
                 controller.send_audit_data(request, response, subject, reqdata)
             except AuditCreateError, ace:
                 error = str(ace.content)
-                log('error', 'request to %s failed during error audit creation: %s', str(self), error)
+                log('error', 'request: %s failed during error audit creation: %s', str(self), error)
                 
         
 class Mediator(object):
