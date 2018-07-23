@@ -323,6 +323,10 @@ class Request(object):
 
         subject = None
         if self.specific:
+            log('debug','>>>>> self.specific = True')
+            log('debug','>>>>> request.subject = %s' % format_structure(subject))
+            log('debug','>>>>> self.subject_required = %s' % str(self.subject_required))
+            
             if request.subject is None:
                 response(BAD_REQUEST)
                 self._audit_failed_request(instance, request, response)
@@ -366,6 +370,7 @@ class Request(object):
         if not response.status:
             try:
                 instance.dispatch(self, request, response, subject, data)
+                log('debug','>>>>> after instance.dispatch - status = %s' % response.status)
                 if not response.status:
                     response.status = OK
             except StructuralError, exception:
@@ -451,8 +456,9 @@ class Request(object):
         reqdata = data
         if not reqsubj:
             reqsubj = request.subject
-
-        if controller.needs_audit(request, subject):
+        
+        from spire.core.auditable import Auditable
+        if isinstance(controller, Auditable) and controller.needs_audit(request, subject):
             if not reqdata:
                 reqdata = request.data
             try:
