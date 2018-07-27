@@ -451,8 +451,9 @@ class Request(object):
         reqdata = data
         if not reqsubj:
             reqsubj = request.subject
-
-        if controller.needs_audit(request, subject):
+        
+        from spire.core.auditable import Auditable
+        if isinstance(controller, Auditable) and controller.needs_audit(request, subject):
             if not reqdata:
                 reqdata = request.data
             try:
@@ -460,7 +461,7 @@ class Request(object):
                 controller.send_audit_data(request, response, subject, reqdata)
             except AuditCreateError, ace:
                 error = str(ace.content)
-                log('error', 'request: %s failed during error audit creation: %s', str(self), error)
+                log('error', 'request: %s failed during error audit creation: %s' % (str(self), error))
                 
         
 class Mediator(object):
