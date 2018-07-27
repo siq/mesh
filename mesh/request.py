@@ -323,10 +323,6 @@ class Request(object):
 
         subject = None
         if self.specific:
-            log('debug','>>>>> self.specific = True')
-            log('debug','>>>>> request.subject = %s' % format_structure(subject))
-            log('debug','>>>>> self.subject_required = %s' % str(self.subject_required))
-            
             if request.subject is None:
                 response(BAD_REQUEST)
                 self._audit_failed_request(instance, request, response)
@@ -370,7 +366,6 @@ class Request(object):
         if not response.status:
             try:
                 instance.dispatch(self, request, response, subject, data)
-                log('debug','>>>>> after instance.dispatch - status = %s' % response.status)
                 if not response.status:
                     response.status = OK
             except StructuralError, exception:
@@ -466,7 +461,7 @@ class Request(object):
                 controller.send_audit_data(request, response, subject, reqdata)
             except AuditCreateError, ace:
                 error = str(ace.content)
-                log('error', 'request: %s failed during error audit creation: %s', str(self), error)
+                log('error', 'request: %s failed during error audit creation: %s' % (str(self), error))
                 
         
 class Mediator(object):
