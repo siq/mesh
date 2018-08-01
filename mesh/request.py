@@ -447,21 +447,23 @@ class Request(object):
             raise error
         
     def _audit_failed_request(self, controller, request, response, subject=None, data=None):
-        reqsubj = subject
-        reqdata = data
-        if not reqsubj:
-            reqsubj = request.subject
         
-        from spire.core.auditable import Auditable
-        if isinstance(controller, Auditable) and controller.needs_audit(request, subject):
+        try:
+            from spire.core.auditable import Auditable
+        except ImportError:
+            # spire will only be available on appstack, but not on gateway/dataserver
+            pass
+        else:
+            reqdata = data
             if not reqdata:
                 reqdata = request.data
-            try:
-                log('debug', 'writing audit entry for failed request: %s' % str(self))
-                controller.send_audit_data(request, response, subject, reqdata)
-            except AuditCreateError, ace:
-                error = str(ace.content)
-                log('error', 'request: %s failed during error audit creation: %s' % (str(self), error))
+            if isinstance(controller, Auditable) and controller.needs_audit(request, subject):
+                try:
+                    log('debug', 'writing audit entry for failed request: %s' % str(self))
+                    controller.send_audit_data(request, response, subject, reqdata)
+                except AuditCreateError, ace:
+                    error = str(ace.content)
+                    log('error', 'request: %s failed during error audit creation: %s' % (str(self), error))
                 
         
 class Mediator(object):
