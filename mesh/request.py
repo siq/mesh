@@ -454,7 +454,9 @@ class Request(object):
             # spire will only be available on appstack, but not on gateway/dataserver
             pass
         else:
-            reqdata = request.data
+            reqdata = data
+            if not reqdata:
+                reqdata = request.data or {}
             if isinstance(controller, Auditable) and controller.needs_audit(request, subject):
                 try:
                     log('debug', 'writing audit entry for failed request: %s' % str(self))
