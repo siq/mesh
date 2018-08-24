@@ -108,6 +108,9 @@ class Connection(object):
         else:
             url = ''
         url = self.path + url
+        #TODO: added for defect 11503 to escape space in url. Not sure if
+        # this is the best place to encode. httpserver might be a better place.
+        url = url.replace(" ", "%20")
 
         multipart = isinstance(body, MultipartEncoder)
         if body and not multipart:
