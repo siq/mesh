@@ -460,7 +460,7 @@ class Request(object):
             if isinstance(controller, Auditable) and controller.needs_audit(request, subject):
                 try:
                     log('debug', 'writing audit entry for failed request: %s' % str(self))
-                    controller.send_audit_data_n(request, response, subject, reqdata, None)
+                    controller.send_audit_data(request, response, subject, reqdata, None)
                 except AuditCreateError, ace:
                     error = str(ace.content)
                     log('error', 'request: %s failed during error audit creation: %s' % (str(self), error))
