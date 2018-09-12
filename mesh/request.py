@@ -348,7 +348,10 @@ class Request(object):
             except StructuralError, exception:
                 error = exception.serialize()
                 log('info', 'request to %s failed schema validation', str(self))
+                log('info', ' error message: %s', error)
                 response(INVALID, error)
+                self._audit_failed_request(instance, request, response, subject, data)
+                return response
 
             if not response.status and self.validators:
                 try:
@@ -401,7 +404,7 @@ class Request(object):
         if definition.schema:
             try:
                 response.content = definition.schema.process(response.content, OUTGOING, request.serialized)
-            except StructuralError, exception:
+            except (StructuralError, ValidationError) as exception:
                 log('error', 'response for %s failed schema validation\n%s\n%s',
                     str(self), exception.format_errors(), format_structure(response.content))
                 response.content = None
@@ -447,7 +450,6 @@ class Request(object):
             raise error
         
     def _audit_failed_request(self, controller, request, response, subject=None, data=None):
-        
         try:
             from spire.core.auditable import Auditable
         except ImportError:
@@ -460,7 +462,9 @@ class Request(object):
             if isinstance(controller, Auditable) and controller.needs_audit(request, subject):
                 try:
                     log('debug', 'writing audit entry for failed request: %s' % str(self))
-                    controller.send_audit_data(request, response, subject, reqdata, None)
+                    add_params = {}
+                    add_params['path'] = request.path.path
+                    controller.send_audit_data(request, response, subject, reqdata, add_params)
                 except AuditCreateError, ace:
                     error = str(ace.content)
                     log('error', 'request: %s failed during error audit creation: %s' % (str(self), error))
