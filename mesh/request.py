@@ -463,7 +463,10 @@ class Request(object):
                 try:
                     log('debug', 'writing audit entry for failed request: %s' % str(self))
                     add_params = {}
-                    add_params['path'] = request.path.path
+                    if request.path :
+                        add_params['path'] = request.path.path
+                    if request.context :
+                        add_params['x-forwarded-for']= request.context.get('x-forwarded-for','unknown')
                     controller.send_audit_data(request, response, subject, reqdata, add_params)
                 except AuditCreateError, ace:
                     error = str(ace.content)
